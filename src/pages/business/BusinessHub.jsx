@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Users, FolderEdit, Settings, 
-  Bell, LogOut, Package, ShieldCheck, X, ArrowRight, 
-  MessageSquare, CheckCircle, Clock, Building2 
+  Bell, LogOut, ShieldCheck, X, ChevronRight, 
+  Clock, Briefcase, AlertCircle
 } from 'lucide-react';
 
 // Component Imports
@@ -18,26 +18,22 @@ import { initialLeads } from '../../data/leadHistoryData';
 const BusinessHub = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const notificationRef = useRef(null);
 
-  // 1. SESSION MANAGEMENT: Identify the logged-in Business Unit
+  // 1. SESSION MANAGEMENT
   const currentUser = JSON.parse(localStorage.getItem('vynx_user') || "{}");
-  // The unique identifier for this unit (Name must match what the Agent selects)
   const businessName = currentUser.name || currentUser.businessName || "Business Unit";
 
-  // 2. DATA SYNC: Pulling from master LocalStorage
+  // 2. DATA SYNC
   const [leads, setLeads] = useState(() => {
     const saved = localStorage.getItem('vynx_leads');
     const allLeads = saved ? JSON.parse(saved) : initialLeads;
-    
-    // Initial save if storage was empty
     if (!saved) localStorage.setItem('vynx_leads', JSON.stringify(initialLeads));
-    
-    // Filter so this manager ONLY sees leads assigned to them
     return allLeads.filter(l => l.businessUnit === businessName);
   });
 
-  // 3. STORAGE LISTENER: Sync if Admin/Agent changes data in another tab
+  // 3. STORAGE LISTENER
   useEffect(() => {
     const handleSync = () => {
       const saved = localStorage.getItem('vynx_leads');
@@ -46,12 +42,11 @@ const BusinessHub = ({ onLogout }) => {
         setLeads(allLeads.filter(l => l.businessUnit === businessName));
       }
     };
-
     window.addEventListener('storage', handleSync);
     return () => window.removeEventListener('storage', handleSync);
   }, [businessName]);
 
-  // 4. NOTIFICATION LOGIC (Only Pending leads for this unit)
+  // 4. NOTIFICATION LOGIC
   const notificationLeads = leads.filter(l => l.status === 'Pending');
   const notificationCount = notificationLeads.length;
 
@@ -65,20 +60,13 @@ const BusinessHub = ({ onLogout }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 5. UPDATE HANDLER: Saves status changes back to the global database
+  // 5. UPDATE HANDLER
   const updateLeadStatus = (id, newStatus) => {
-    // Read the latest state from storage (Master List)
     const masterSaved = JSON.parse(localStorage.getItem('vynx_leads') || "[]");
-    
-    // Update the specific lead across the entire system
     const updatedMasterLeads = masterSaved.map(l => 
       l.id === id ? { ...l, status: newStatus } : l
     );
-
-    // Save back to master LocalStorage
     localStorage.setItem('vynx_leads', JSON.stringify(updatedMasterLeads));
-    
-    // Update local filtered UI state
     setLeads(updatedMasterLeads.filter(l => l.businessUnit === businessName));
   };
 
@@ -87,83 +75,98 @@ const BusinessHub = ({ onLogout }) => {
       case 'dashboard': return <BusinessOverview leads={leads} />;
       case 'leads': return <ManageLeads businessName={businessName} leads={leads} onUpdateStatus={updateLeadStatus} />;
       case 'portfolio': return <PortfolioManager />;
-      case 'settings': return <BusinessSettings onLogout={onLogout} />;
+      case 'settings': return <BusinessSettings onLogout={() => setShowLogoutConfirm(true)} />;
       default: return <BusinessOverview leads={leads} />;
     }
   };
 
   const navItems = [
-    { id: 'dashboard', label: 'Overview', icon: <LayoutDashboard size={18} /> },
+    { id: 'dashboard', label: 'Unit Overview', icon: <LayoutDashboard size={18} /> },
     { id: 'leads', label: 'Incoming Leads', icon: <Users size={18} /> },
-    { id: 'portfolio', label: 'Unit Portfolio', icon: <FolderEdit size={18} /> },
-    { id: 'settings', label: 'Settings', icon: <Settings size={18} /> },
+    { id: 'portfolio', label: 'Portfolio', icon: <FolderEdit size={18} /> },
+    { id: 'settings', label: 'Unit Settings', icon: <Settings size={18} /> },
   ];
 
   return (
-    <div className="flex h-screen bg-[#FDFDFD] font-sans text-slate-900 overflow-hidden">
+    <div className="flex h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100 overflow-hidden">
       
       {/* SIDEBAR - Desktop */}
-      <aside className="hidden lg:flex w-64 bg-white border-r border-slate-100 flex-col shrink-0">
-        <div className="h-20 flex items-center px-8 border-b border-slate-50">
-          <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black mr-3 shadow-lg shadow-indigo-100">
-            B
+      <aside className="hidden lg:flex flex-col w-64 bg-slate-900 sticky top-0 h-screen z-30">
+        <div className="p-6 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 bg-indigo-600 flex items-center justify-center text-white rounded-none">
+              <Briefcase size={18} />
+            </div>
+            <h1 className="text-lg font-bold text-white tracking-tight">Vynx Unit</h1>
           </div>
-          <span className="font-black text-slate-900 tracking-tighter uppercase text-sm">Vynx Unit</span>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Management Portal</p>
         </div>
 
-        <nav className="flex-1 p-5 space-y-1.5 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => (
-            <button 
-              key={item.id} 
-              onClick={() => setActiveTab(item.id)} 
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center justify-between p-3.5 transition-all rounded-none ${
                 activeTab === item.id 
-                  ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' 
-                  : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-indigo-600 text-white shadow-lg' 
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
             >
-              {item.icon}
-              {item.label}
+              <div className="flex items-center gap-3">
+                {item.icon}
+                <span className="text-xs font-semibold">{item.label}</span>
+              </div>
+              <ChevronRight size={14} className={`transition-transform ${activeTab === item.id ? 'opacity-100' : 'opacity-0'}`} />
             </button>
           ))}
         </nav>
-        
-        <div className="p-6 border-t border-slate-50">
-           <div className="flex items-center gap-3 mb-6 px-2">
-              <div className="h-9 w-9 rounded-xl bg-indigo-50 flex items-center justify-center text-[11px] font-black text-indigo-600 border border-indigo-100">
+
+        <div className="p-6 border-t border-slate-800 bg-slate-900/50">
+           <div className="flex items-center gap-3 mb-6 px-1">
+              <div className="h-9 w-9 rounded-none bg-indigo-600/20 flex items-center justify-center text-xs font-bold text-indigo-400 border border-indigo-400/30 uppercase">
                 {businessName[0]}
               </div>
               <div className="overflow-hidden">
-                <p className="text-[10px] font-black text-slate-900 uppercase truncate leading-none mb-1">Manager</p>
-                <p className="text-[9px] text-slate-400 font-bold uppercase truncate tracking-tighter">{businessName}</p>
+                <p className="text-[10px] font-bold text-slate-500 uppercase leading-none mb-1">Unit Manager</p>
+                <p className="text-sm font-bold text-white truncate tracking-tight">{businessName}</p>
               </div>
            </div>
-           
            <button 
-             onClick={onLogout}
-             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-50 transition-all active:scale-95"
+             onClick={() => setShowLogoutConfirm(true)}
+             className="w-full flex items-center gap-3 p-3 rounded-none text-xs font-bold text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
            >
-             <LogOut size={18} /> Exit Portal
+             <LogOut size={16} /> Exit System
            </button>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-6 sm:px-10 shrink-0 z-30">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">
-            {navItems.find(n => n.id === activeTab)?.label} Hub
-          </h2>
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 flex flex-col min-w-0 relative">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 sticky top-0 z-20">
+          <div className="hidden lg:block">
+            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Portal / <span className="text-slate-900">{activeTab.replace('-', ' ')}</span>
+            </h2>
+          </div>
+
+          <div className="lg:hidden flex items-center gap-3">
+             <div className="h-7 w-7 bg-slate-900 flex items-center justify-center text-white rounded-none">
+                <Briefcase size={14} />
+             </div>
+             <span className="text-sm font-bold uppercase">{activeTab}</span>
+          </div>
           
-          <div className="flex items-center gap-5">
-            {/* Notifications */}
+          <div className="flex items-center gap-4">
+            {/* Notifications Terminal */}
             <div className="relative" ref={notificationRef}>
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
-                className={`relative p-2.5 rounded-xl transition-all border ${showNotifications ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'}`}
+                className={`relative p-2 transition-all border rounded-none ${showNotifications ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-400'}`}
               >
                 <Bell size={20} />
                 {notificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-rose-500 rounded-full border-2 border-white text-[9px] flex items-center justify-center text-white font-black">
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-600 rounded-none border border-white text-[8px] flex items-center justify-center text-white font-bold">
                     {notificationCount}
                   </span>
                 )}
@@ -172,58 +175,106 @@ const BusinessHub = ({ onLogout }) => {
               <AnimatePresence>
                 {showNotifications && (
                   <motion.div 
-                    initial={{ opacity: 0, y: 15, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                    className="absolute top-14 right-0 w-[320px] bg-white border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[1.5rem] overflow-hidden z-50 p-2"
+                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-12 right-0 w-80 bg-white border border-slate-200 shadow-2xl rounded-none overflow-hidden z-50"
                   >
-                    <div className="px-5 py-4 border-b border-slate-50 flex justify-between items-center">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Action Required</span>
+                    <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Incoming Alerts</span>
                     </div>
-                    <div className="max-h-[350px] overflow-y-auto scrollbar-hide">
+                    <div className="max-h-80 overflow-y-auto">
                       {notificationLeads.length > 0 ? notificationLeads.map((note) => (
-                        <button key={note.id} onClick={() => { setActiveTab('leads'); setShowNotifications(false); }} className="w-full p-4 flex gap-4 hover:bg-slate-50 rounded-2xl text-left transition-all group">
-                          <div className="h-10 w-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-all"><Clock size={18} /></div>
+                        <button key={note.id} onClick={() => { setActiveTab('leads'); setShowNotifications(false); }} className="w-full p-4 flex gap-4 hover:bg-slate-50 border-b border-slate-50 text-left transition-all group last:border-0">
+                          <div className="h-10 w-10 bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 rounded-none border border-amber-100"><Clock size={18} /></div>
                           <div>
-                            <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{note.clientName}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{note.service}</p>
+                            <p className="text-xs font-bold text-slate-900 uppercase">{note.clientName}</p>
+                            <p className="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">{note.service}</p>
                           </div>
                         </button>
                       )) : (
-                        <div className="p-10 text-center text-[10px] font-black uppercase text-slate-300 tracking-widest">No pending leads</div>
+                        <div className="p-10 text-center text-xs font-bold text-slate-300 uppercase tracking-widest">Zero Pending Tasks</div>
                       )}
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
-            <div className="h-8 w-px bg-slate-100"></div>
-            <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-[10px] font-black shadow-lg shadow-slate-200">DXB</div>
+            {/* DXB NODE REMOVED FROM HERE */}
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-[#FDFDFD] p-6 sm:p-10 scroll-smooth">
-          <div className="max-w-7xl mx-auto pb-20">
+        <div className="flex-1 overflow-y-auto p-6 lg:p-10 scroll-smooth">
+          <motion.div 
+            key={activeTab}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="max-w-7xl mx-auto"
+          >
             {renderContent()}
-          </div>
-        </main>
-      </div>
+          </motion.div>
+        </div>
+      </main>
 
       {/* MOBILE NAVIGATION */}
-      <nav className="lg:hidden fixed bottom-6 left-6 right-6 bg-white border border-slate-100 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] z-40 p-2">
-        <div className="flex justify-around items-center h-16">
-          {navItems.map((item) => (
-            <button 
-              key={item.id} 
-              onClick={() => setActiveTab(item.id)} 
-              className={`flex flex-col items-center justify-center flex-1 gap-1 transition-all ${activeTab === item.id ? 'text-indigo-600 scale-110' : 'text-slate-300'}`}
-            >
-              {item.icon}
-              <span className="text-[8px] font-black uppercase tracking-tighter">{item.label}</span>
-            </button>
-          ))}
-          <button onClick={onLogout} className="flex flex-col items-center justify-center flex-1 text-rose-400 hover:text-rose-600"><LogOut size={20}/></button>
-        </div>
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center p-3 z-40">
+        {navItems.map((item) => (
+          <button 
+            key={item.id} 
+            onClick={() => setActiveTab(item.id)} 
+            className={`flex flex-col items-center justify-center p-2 transition-all ${activeTab === item.id ? 'text-indigo-600' : 'text-slate-400'}`}
+          >
+            {item.icon}
+            <span className="text-[9px] font-bold uppercase mt-1">{item.label.split(' ')[0]}</span>
+          </button>
+        ))}
+        <button onClick={() => setShowLogoutConfirm(true)} className="flex flex-col items-center justify-center p-2 text-rose-500">
+          <LogOut size={20} />
+          <span className="text-[9px] font-bold uppercase mt-1">Exit</span>
+        </button>
       </nav>
 
+      {/* LOGOUT CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowLogoutConfirm(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white w-full max-w-sm rounded-none p-8 relative shadow-2xl border border-slate-200"
+            >
+              <div className="text-center space-y-6">
+                <div className="w-14 h-14 bg-red-50 text-red-600 rounded-none flex items-center justify-center mx-auto border border-red-100">
+                  <AlertCircle size={28} />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-slate-900 uppercase tracking-tight">Confirm Logout</h3>
+                  <p className="text-sm text-slate-500 font-medium leading-relaxed px-4">
+                    Are you sure you want to terminate your current session? You will need to re-authenticate to access the unit portal.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button 
+                    onClick={() => setShowLogoutConfirm(false)}
+                    className="py-3 bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-200 transition-all rounded-none"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={onLogout}
+                    className="py-3 bg-red-600 text-white text-xs font-bold uppercase tracking-widest shadow-lg shadow-red-100 hover:bg-red-700 transition-all rounded-none"
+                  >
+                    Terminate
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

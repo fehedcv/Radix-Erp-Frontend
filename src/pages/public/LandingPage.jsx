@@ -1,18 +1,20 @@
-import React, { useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import { 
   ArrowRight, Terminal, Users, Building2, Briefcase, 
-  Wallet, Layers, ChevronRight, Globe, ShieldCheck, 
-  MessageCircle, Mail, Send, Zap, BarChart3, Database
+  Wallet, ChevronRight, Globe, ShieldCheck, 
+  MessageCircle, Send, Database, Activity, Cpu, Code2
 } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const LandingPage = ({ onEnterPortal }) => {
   const scrollRef = useRef(null);
+  const workflowRef = useRef(null);
+  const lineRef = useRef(null);
 
   useEffect(() => {
     const lenis = new Lenis();
@@ -22,14 +24,43 @@ const LandingPage = ({ onEnterPortal }) => {
     }
     requestAnimationFrame(raf);
 
-    // GSAP Reveal for standard sections
     const reveals = gsap.utils.toArray('.reveal');
     reveals.forEach((el) => {
       gsap.fromTo(el, 
         { opacity: 0, y: 30 },
         { 
-          opacity: 1, y: 0, duration: 0.8,
-          scrollTrigger: { trigger: el, start: "top 90%" }
+          opacity: 1, y: 0, duration: 0.8, ease: "power2.out",
+          scrollTrigger: { trigger: el, start: "top 92%" }
+        }
+      );
+    });
+
+    gsap.to(lineRef.current, {
+      height: "100%",
+      ease: "none",
+      scrollTrigger: {
+        trigger: workflowRef.current,
+        start: "top center", 
+        end: "bottom center",
+        scrub: 1, 
+      }
+    });
+
+    const nodes = gsap.utils.toArray('.node-circle');
+    nodes.forEach((node) => {
+      gsap.fromTo(node, 
+        { borderColor: "#f1f5f9", backgroundColor: "#ffffff", color: "#94a3b8" },
+        { 
+          borderColor: "#4f46e5", 
+          backgroundColor: "#f8fafc",
+          color: "#4f46e5",
+          scrollTrigger: {
+            trigger: node,
+            start: "top center",
+            end: "bottom center",
+            toggleActions: "play reverse play reverse",
+            scrub: 0.5
+          }
         }
       );
     });
@@ -38,195 +69,223 @@ const LandingPage = ({ onEnterPortal }) => {
   }, []);
 
   return (
-    <div ref={scrollRef} className="bg-white text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-600">
+    <div ref={scrollRef} className="bg-white text-slate-800 font-sans antialiased selection:bg-indigo-600 selection:text-white">
       
-      {/* --- HEADER --- */}
-      <nav className="fixed top-0 w-full z-[100] bg-white/90 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-sm">
-              <Terminal size={22} />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold tracking-tighter leading-none uppercase">PrimeVerse</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Holdings Group</span>
-            </div>
+      {/* --- NAVBAR: RESPONSIVE --- */}
+      <nav className="fixed top-0 w-full z-[100] bg-white/80 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-16 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Terminal size={18} className="text-indigo-600" />
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-slate-900">Radix</span>
           </div>
           
-          <div className="hidden md:flex items-center gap-10">
-            {['Process', 'Ecosystem', 'Contact'].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-indigo-600 transition-colors">
-                {item}
-              </a>
-            ))}
+          <div className="flex items-center gap-4 sm:gap-8">
+            <div className="hidden md:flex items-center gap-8">
+              {['Process', 'Ecosystem', 'Contact'].map((item) => (
+                <a key={item} href={`#${item.toLowerCase()}`} className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors">
+                  {item}
+                </a>
+              ))}
+            </div>
+            <button 
+              onClick={onEnterPortal}
+              className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest bg-slate-900 text-white px-4 sm:px-5 py-2 hover:bg-indigo-600 transition-all active:scale-95"
+            >
+              Partner Portal
+            </button>
           </div>
-
-          <button 
-            onClick={onEnterPortal}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all hover:bg-slate-900 shadow-md active:scale-95"
-          >
-            Partner Portal <ArrowRight size={14} />
-          </button>
         </div>
       </nav>
 
-      {/* --- HERO SECTION: FULLY VISIBLE --- */}
-      <section className="relative pt-32 lg:pt-40 pb-20 px-6 lg:px-12 max-w-7xl mx-auto min-h-[90vh] flex flex-col justify-center">
-        <div className="grid lg:grid-cols-12 gap-12 items-center">
+      {/* --- HERO: RESPONSIVE TYPOGRAPHY --- */}
+      <section className="pt-32 sm:pt-[120px] pb-20 px-6 max-w-5xl mx-auto text-center">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }}>
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.3em] sm:tracking-[0.4em] text-indigo-600 mb-6 block">Unified Infrastructure</span>
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-medium tracking-tight text-slate-900 leading-[1.2] sm:leading-[1.1] mb-8">
+            The central intelligence for <br className="hidden sm:block" /> modern business operations.
+          </h1>
+          <p className="text-slate-500 text-sm sm:text-lg max-w-xl mx-auto mb-10 leading-relaxed px-4">
+            Managing multiple business nodes, agents, and credit ledgers through a single, high-performance headquarters.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button onClick={onEnterPortal} className="w-full sm:w-auto group flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-3.5 text-[11px] font-bold uppercase tracking-widest hover:bg-indigo-600 transition-all">
+              Initialize Onboarding <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </button>
+            <span className="w-full sm:w-auto text-[10px] font-bold uppercase tracking-widest text-slate-400 border border-slate-100 px-6 py-3.5">
+              1 Credit = 1 INR
+            </span>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* --- ECOSYSTEM: RESPONSIVE GRID --- */}
+      <section id="ecosystem" className="py-10 sm:py-20 px-4 sm:px-6 max-w-6xl mx-auto reveal">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-px bg-slate-100 border border-slate-100 shadow-sm">
+          <EcoCard icon={<Building2 size={20}/>} title="Construction" desc="Agent-led sourcing for infrastructure projects." />
+          <EcoCard icon={<Briefcase size={20}/>} title="Events Mgmt" desc="Full-scale coordination for enterprise events." />
+          <EcoCard icon={<Wallet size={20}/>} title="Digital Ledger" desc="Instant credit settlements for all network partners." />
+          <EcoCard icon={<Database size={20}/>} title="HQ Systems" desc="Centralized data and deal verification." />
+          <EcoCard icon={<Users size={20}/>} title="Agent Network" desc="A unified portal for verified business agents." />
+          <EcoCard icon={<Activity size={20}/>} title="Live Metrics" desc="Real-time monitoring of all ecosystem nodes." />
+        </div>
+      </section>
+
+      {/* --- WORKFLOW: RESPONSIVE STACKING --- */}
+      <section id="process" ref={workflowRef} className="py-20 sm:py-32 px-6 max-w-5xl mx-auto reveal">
+        <div className="flex flex-col items-center text-center mb-16 sm:mb-24">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-600 mb-4">Operational Architecture</h2>
+          <h3 className="text-2xl sm:text-4xl font-bold text-slate-900 uppercase tracking-tighter">The Radix Workflow</h3>
+        </div>
+
+        <div className="relative">
+          {/* Static Track Line (Responsive positioning) */}
+          <div className="absolute left-[23px] md:left-1/2 top-0 w-[1px] h-full bg-slate-100 -translate-x-1/2 z-0" />
           
-          {/* Left Side: Content */}
-          <div className="lg:col-span-7 space-y-8">
-            <motion.h1 
-              initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-              className="text-6xl md:text-8xl font-black tracking-tighter text-slate-900 leading-[0.9] uppercase"
-            >
-              The Central <br />
-              <span className="text-indigo-600">Brain</span> of <br />
-              Modern Business.
-            </motion.h1>
+          {/* Animated Progress Line */}
+          <div 
+            ref={lineRef}
+            className="absolute left-[23px] md:left-1/2 top-0 w-[2px] bg-indigo-600 -translate-x-1/2 z-10 origin-top h-0 shadow-[0_0_15px_rgba(79,70,229,0.3)]" 
+          />
 
-            <motion.p 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-              className="max-w-lg text-slate-500 text-lg font-medium leading-relaxed"
-            >
-              PrimeVerse Holdings is a unified ecosystem managing multiple businesses, agents, and credits under one headquarters.
-            </motion.p>
+          <DetailedStep 
+            side="left"
+            num="01" 
+            title="Sourcing & Ingestion" 
+            desc="Registered agents transmit business nodes through the Radix encrypted portal."
+            icon={<Database size={18} />}
+          />
+          <DetailedStep 
+            side="right"
+            num="02" 
+            title="HQ Validation" 
+            desc="The central audit engine reviews parameters and verifies agent credentials within 24 hours."
+            icon={<ShieldCheck size={18} />}
+          />
+          <DetailedStep 
+            side="left"
+            num="03" 
+            title="Ledger Settlement" 
+            desc="Upon deal confirmation, the system executes an automated credit dispatch to the agent's ledger."
+            icon={<Activity size={18} />}
+          />
+        </div>
+      </section>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-              className="flex flex-col sm:flex-row items-center gap-4"
-            >
-              <button onClick={onEnterPortal} className="w-full sm:w-auto px-10 py-4 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg">
-                Initialize Onboarding
-              </button>
-              <div className="flex items-center gap-3 px-6 py-4 bg-slate-50 border border-slate-100 rounded-xl">
-                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">1 Credit = 1 INR [cite: 122]</span>
-              </div>
-            </motion.div>
+      {/* --- CONTACT SECTION: RESPONSIVE --- */}
+      <section id="contact" className="py-20 sm:py-32 px-6 bg-slate-50">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 sm:gap-20 items-center reveal">
+          <div>
+            <h3 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-6 sm:mb-8 tracking-tighter uppercase leading-none">Connect <br /> to HQ.</h3>
+            <p className="text-slate-500 mb-10 leading-relaxed font-medium text-base sm:text-lg">Inquire about partnership opportunities or technical integration.</p>
+            <div className="flex flex-col gap-6">
+               <ContactLink icon={<MessageCircle size={18}/>} label="WhatsApp Business" sub="Direct line to support" />
+               <ContactLink icon={<Globe size={18}/>} label="Global Support" sub="hq@radixgroup.com" />
+            </div>
           </div>
 
-          {/* Right Side: Professional Figure Card */}
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}
-            className="lg:col-span-5 relative"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            className="bg-white p-6 sm:p-10 border border-slate-100 shadow-sm"
           >
-            <div className="bg-indigo-50/50 p-6 rounded-[2.5rem] border border-indigo-100/50 shadow-sm">
-                <div className="grid grid-cols-2 gap-4">
-                    {/* Construction Node */}
-                    <div className="aspect-square bg-indigo-600 rounded-3xl flex flex-col items-center justify-center text-white shadow-xl shadow-indigo-200 group hover:scale-105 transition-transform">
-                        <Building2 size={32} />
-                        <span className="text-[9px] font-black uppercase mt-3 tracking-widest opacity-80">Construction </span>
-                    </div>
-                    {/* Events Node */}
-                    <div className="aspect-square bg-white rounded-3xl border border-slate-100 p-6 flex flex-col justify-between hover:shadow-lg transition-all">
-                        <Briefcase size={24} className="text-indigo-600" />
-                        <div className="space-y-1.5">
-                            <div className="h-1 w-full bg-slate-100 rounded-full" />
-                            <div className="h-1 w-2/3 bg-slate-100 rounded-full" />
-                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mt-1">Events Management </p>
-                        </div>
-                    </div>
-                    {/* Wallet/Credit Node */}
-                    <div className="aspect-square bg-emerald-50 rounded-3xl border border-emerald-100 flex flex-col items-center justify-center gap-3">
-                        <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm">
-                            <Wallet size={20} />
-                        </div>
-                        <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Active Ledger </span>
-                    </div>
-                    {/* Core System Node */}
-                    <div className="aspect-square bg-slate-900 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden">
-                        <BarChart3 size={40} className="text-indigo-400 opacity-10 absolute scale-150 -rotate-12" />
-                        <Database size={24} className="text-indigo-400 mb-2" />
-                        <span className="text-white text-xs font-bold tracking-widest uppercase">Ecosystem </span>
-                    </div>
-                </div>
-            </div>
+            <form className="space-y-6">
+              <div className="group space-y-1">
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Legal Name</label>
+                <input type="text" className="w-full bg-transparent border-b border-slate-200 py-3 outline-none focus:border-indigo-600 transition-all text-sm font-bold" />
+              </div>
+              <div className="group space-y-1">
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Business Email</label>
+                <input type="email" className="w-full bg-transparent border-b border-slate-200 py-3 outline-none focus:border-indigo-600 transition-all text-sm font-bold" />
+              </div>
+              <div className="group space-y-1">
+                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Message</label>
+                <textarea rows="3" className="w-full bg-transparent border-b border-slate-200 py-3 outline-none focus:border-indigo-600 transition-all text-sm font-bold resize-none" />
+              </div>
+              <button className="w-full bg-slate-900 text-white py-5 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all flex items-center justify-center gap-3">
+                Transmit Inquiry <Send size={14} />
+              </button>
+            </form>
           </motion.div>
-
         </div>
       </section>
 
-      {/* --- THE CHAIN WORKFLOW --- */}
-      <section id="process" className="py-24 px-6 lg:px-12 bg-slate-50 border-y border-slate-100">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-16 reveal">
-            <h2 className="text-xs font-black uppercase tracking-[0.4em] text-indigo-600 mb-2">The Infrastructure</h2>
-            <h3 className="text-4xl font-black uppercase tracking-tight text-slate-900">How the Chain Operates [cite: 148]</h3>
+      {/* --- FOOTER: SIMPLE & CLEAN --- */}
+      <footer className="py-12 px-6 border-t border-slate-100 bg-white">
+        <div className="max-w-6xl mx-auto flex flex-col items-center gap-8">
+          <div className="flex flex-col md:flex-row justify-between w-full items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Terminal size={16} className="text-slate-900" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Radix Holdings</span>
+            </div>
+            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">
+              © 2025 Infrastructure Layer • All Rights Reserved
+            </div>
+            <div className="flex gap-4">
+              <ShieldCheck size={16} className="text-slate-300" />
+              <Globe size={16} className="text-slate-300" />
+            </div>
           </div>
+          
+          <div className="w-full h-px bg-slate-50" />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <ChainCard num="01" title="Sourcing" desc="Agents submit leads for construction, events, or manpower[cite: 75, 88]." icon={<Users size={20}/>} />
-            <ChainCard num="02" title="Verification" desc="Business units and HQ audit the deals and prepare estimates[cite: 78, 150]." icon={<ShieldCheck size={20}/>} />
-            <ChainCard num="03" title="Settlement" desc="Agents receive credits instantly in their digital ledger[cite: 81, 153]." icon={<Zap size={20}/>} />
+          <div className="flex flex-col items-center gap-4">
+            <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-300">Engineered by</span>
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Vynx Webworks</span>
+              <div className="h-3 w-px bg-slate-200" />
+              <a href="#" className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline">Contact Developer</a>
+            </div>
           </div>
-        </div>
-      </section>
-
-      {/* --- CONTACT & INQUIRY --- */}
-      <section id="contact" className="py-24 px-6 lg:px-12 max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-16 items-center reveal">
-            <div className="space-y-8">
-                <h3 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none text-slate-900">Get in touch <br /> with the HQ.</h3>
-                <p className="text-slate-500 text-lg font-medium max-w-sm">Ready to scale your business nodes or join as a network partner?</p>
-                
-                <div className="flex flex-wrap gap-4">
-                    <a href="https://wa.me/yournumber" className="flex items-center gap-3 bg-[#25D366] text-white px-8 py-4 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:opacity-90 transition-all shadow-lg shadow-emerald-100">
-                        <MessageCircle size={18} /> WhatsApp Now
-                    </a>
-                    <button className="flex items-center gap-3 bg-white border border-slate-200 text-slate-600 px-8 py-4 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-slate-50 transition-all">
-                        Contact Support
-                    </button>
-                </div>
-            </div>
-
-            <div className="bg-white border border-slate-100 p-8 md:p-10 rounded-[2.5rem] shadow-2xl">
-                <form className="space-y-5">
-                    <input type="text" placeholder="Full Legal Name" className="w-full bg-slate-50 border-none rounded-xl px-6 py-4 text-slate-900 font-bold outline-none focus:ring-2 ring-indigo-600 transition-all" />
-                    <input type="email" placeholder="Business Email" className="w-full bg-slate-50 border-none rounded-xl px-6 py-4 text-slate-900 font-bold outline-none focus:ring-2 ring-indigo-600 transition-all" />
-                    <textarea placeholder="Message / Inquiry" rows="3" className="w-full bg-slate-50 border-none rounded-xl px-6 py-4 text-slate-900 font-bold outline-none focus:ring-2 ring-indigo-600 transition-all resize-none" />
-                    <button type="button" className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-xl">
-                        Send Inquiry <Send size={16} />
-                    </button>
-                </form>
-            </div>
-        </div>
-      </section>
-
-      {/* --- FOOTER --- */}
-      <footer className="py-12 px-6 lg:px-12 bg-white border-t border-slate-100">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="flex items-center gap-3">
-                <Terminal size={16} className="text-indigo-600" />
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-900">PrimeVerse Holdings Group</span>
-            </div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center md:text-left">© 2025 Business Chain Management • Unified Infrastructure [cite: 2]</p>
-            <div className="flex gap-6">
-                <Globe size={16} className="text-slate-200" />
-                <ShieldCheck size={16} className="text-slate-200" />
-            </div>
         </div>
       </footer>
-
     </div>
   );
 };
 
 // --- SUB COMPONENTS ---
 
-const ChainCard = ({ num, title, desc, icon }) => (
-    <div className="p-8 bg-white border border-slate-100 rounded-[2rem] space-y-6 hover:shadow-xl transition-all group reveal">
-        <div className="flex justify-between items-start">
-            <div className="h-12 w-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                {icon}
-            </div>
-            <span className="text-3xl font-black text-slate-100 group-hover:text-indigo-50 transition-colors">{num}</span>
-        </div>
-        <div>
-            <h4 className="text-lg font-black uppercase tracking-tight text-slate-900 mb-2">{title}</h4>
-            <p className="text-sm text-slate-400 font-medium leading-relaxed">{desc}</p>
-        </div>
+const EcoCard = ({ icon, title, desc }) => (
+  <div className="bg-white p-8 sm:p-10 group hover:bg-slate-50/50 transition-colors cursor-default">
+    <div className="text-slate-900 mb-6 sm:mb-8 p-3 border border-slate-100 inline-block group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all rounded-lg">
+      {icon}
     </div>
+    <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900 mb-3">{title}</h4>
+    <p className="text-[11px] text-slate-400 leading-relaxed font-bold">{desc}</p>
+  </div>
+);
+
+const DetailedStep = ({ num, title, desc, icon, side }) => (
+  <div className={`flex flex-row items-start md:items-center gap-6 md:gap-0 relative z-20 py-10 sm:py-16 ${side === 'right' ? 'md:flex-row-reverse' : ''}`}>
+    {/* Content */}
+    <div className="w-full md:w-1/2 md:px-10 pl-14 pr-4">
+      <div className={`${side === 'right' ? 'text-left' : 'text-left md:text-right'} space-y-2`}>
+        <div className={`flex items-center gap-3 ${side === 'right' ? 'justify-start' : 'justify-start md:justify-end'}`}>
+          <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase">{num}</span>
+          <h4 className="text-base sm:text-lg font-bold text-slate-900 uppercase tracking-tight">{title}</h4>
+        </div>
+        <p className="text-slate-400 text-[11px] leading-relaxed font-bold max-w-sm ml-0 md:ml-auto md:mr-0">{desc}</p>
+      </div>
+    </div>
+    
+    {/* Node Circle */}
+    <div className="absolute left-0 md:relative md:left-auto flex-shrink-0 w-12 h-12 bg-white border-2 border-slate-100 rounded-full flex items-center justify-center z-30 shadow-sm transition-transform duration-500 node-circle">
+      {icon}
+    </div>
+
+    <div className="hidden md:block w-1/2" />
+  </div>
+);
+
+const ContactLink = ({ icon, label, sub }) => (
+  <div className="flex items-center gap-4 group cursor-pointer">
+    <div className="h-10 w-10 sm:h-12 sm:w-12 bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 group-hover:border-indigo-600 transition-all rounded-xl shadow-sm">
+      {icon}
+    </div>
+    <div>
+      <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-900">{label}</p>
+      <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">{sub}</p>
+    </div>
+  </div>
 );
 
 export default LandingPage;

@@ -2,137 +2,165 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, MapPin, Package, ShieldCheck, Sparkles, Star, 
-  Phone, Globe, Instagram, CheckCircle2, Image as ImageIcon 
+  Phone, Globe, CheckCircle2, Image as ImageIcon, Briefcase,
+  ExternalLink 
 } from 'lucide-react';
 
 const BusinessDetail = ({ unit, openModal, onBack }) => {
-  // Defensive Check: If unit is not passed, return null to prevent crashes [cite: 53-55]
+  // [cite_start]// Defensive Check: Prevents runtime errors if unit data is missing [cite: 54, 58]
   if (!unit) return null;
 
   return (
     <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="max-w-7xl mx-auto pb-20"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="max-w-6xl mx-auto space-y-8"
     >
-      {/* 1. TOP NAVIGATION & HERO COVER */}
-      <div className="relative mb-12">
-        <button 
-          onClick={onBack} 
-          className="absolute top-6 left-6 z-10 flex items-center gap-2 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-slate-900 font-black text-[10px] uppercase tracking-widest shadow-xl border border-white/20 hover:bg-indigo-600 hover:text-white transition-all"
-        >
-          <ArrowLeft size={16} /> Back to Directory
-        </button>
-
-        <div className="h-[350px] md:h-[450px] w-full rounded-[3rem] overflow-hidden shadow-2xl relative">
-          <img 
-            src={unit?.coverImage || "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"} 
-            alt={unit?.name} 
-            className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent" />
+      {/* 1. NAVIGATION & HEADER */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-4">
+          <button 
+            onClick={onBack} 
+            className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-widest"
+          >
+            <ArrowLeft size={16} /> Back to Directory
+          </button>
           
-          <div className="absolute bottom-10 left-10 flex items-end gap-6">
-            <div className="h-24 w-24 md:h-32 md:w-32 bg-white rounded-[2rem] p-4 shadow-2xl flex items-center justify-center border-4 border-white/10">
-              <Package size={60} className="text-indigo-600" />
+          <div className="flex items-start gap-5">
+            <div className="h-20 w-20 bg-slate-900 flex items-center justify-center text-white rounded-none shrink-0 shadow-lg shadow-slate-200">
+              <Briefcase size={32} />
             </div>
-            <div className="mb-2">
-              <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter">{unit?.name}</h2>
-              <div className="flex items-center gap-4 mt-2">
-                <span className="flex items-center gap-1.5 text-indigo-300 font-bold text-xs uppercase tracking-widest">
-                  <Star size={14} fill="currentColor" /> Premium Unit
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <h2 className="text-4xl font-bold text-slate-900 tracking-tight">{unit?.name}</h2>
+                <div className="bg-emerald-50 text-emerald-600 px-2 py-1 flex items-center gap-1.5 rounded-none border border-emerald-100">
+                  <ShieldCheck size={12} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Verified Unit [cite: 33]</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-slate-400">
+                <span className="flex items-center gap-1.5 text-xs font-semibold">
+                  <MapPin size={14} /> {unit?.location || 'Dubai, UAE'}
                 </span>
-                <span className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs uppercase tracking-widest">
-                  <ShieldCheck size={14} /> Verified Partner
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600">
+                  <Star size={14} fill="currentColor" /> Premium Partner
                 </span>
               </div>
             </div>
           </div>
         </div>
+
+        <button 
+          onClick={() => openModal(unit?.name)}
+          className="bg-indigo-600 text-white px-8 py-4 rounded-none font-bold text-sm shadow-xl shadow-indigo-100 hover:bg-slate-900 transition-all flex items-center justify-center gap-3"
+        >
+         Submit New Lead 
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 px-4 md:px-0">
+      {/* 2. HERO IMAGE */}
+      <div className="h-64 md:h-80 w-full overflow-hidden rounded-none border border-slate-200 shadow-sm relative">
+        <img 
+          src={unit?.coverImage || "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"} 
+          alt={unit?.name} 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-slate-900/10" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* 2. LEFT COLUMN: PORTFOLIO & SERVICES */}
-        <div className="lg:col-span-2 space-y-12">
+        {/* 3. CORE INFORMATION */}
+        <div className="lg:col-span-2 space-y-8">
           
-          <section>
-            <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-4 underline underline-offset-8">Unit Overview</h4>
-            <p className="text-xl md:text-2xl text-slate-600 leading-relaxed font-medium italic">
-              "{unit?.description || 'No description available for this unit.'}"
+          <section className="bg-white p-8 border border-slate-200 rounded-none shadow-sm">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">About This Unit</h4>
+            <p className="text-lg text-slate-600 leading-relaxed font-medium">
+              {unit?.description || 'No description available for this business unit.'}
             </p>
           </section>
 
-          {/* Gallery with optional chaining to fix the 'length' error */}
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em]">Project Gallery</h4>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <ImageIcon size={14} /> {(unit?.gallery?.length || 0)} Portfolio Images
-              </span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {unit?.gallery?.map((img, idx) => (
-                <motion.div 
-                  key={idx}
-                  whileHover={{ scale: 0.98 }}
-                  className="rounded-[2.5rem] overflow-hidden aspect-video shadow-lg border-2 border-slate-100"
-                >
-                  <img src={img} alt={`${unit?.name} project`} className="w-full h-full object-cover" />
-                </motion.div>
+          {/* [cite_start]Service Portfolio Checklist [cite: 32] */}
+          <section className="bg-white p-8 border border-slate-200 rounded-none shadow-sm">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Available Services</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {unit?.products?.map((product, i) => (
+                <div key={i} className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-100 rounded-none">
+                  <CheckCircle2 size={18} className="text-indigo-600" />
+                  <span className="font-bold text-slate-800 text-sm">{product}</span>
+                </div>
               ))}
             </div>
           </section>
 
-          {/* Services Checklist */}
-          <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
-            <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-8">Service Portfolio</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {unit?.products?.map((p, i) => (
-                <div key={i} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-transparent hover:border-indigo-100 transition-all cursor-default">
-                  <div className="bg-white p-2 rounded-lg shadow-sm text-indigo-500">
-                    <CheckCircle2 size={18} />
-                  </div>
-                  <span className="font-bold text-slate-800 text-sm tracking-tight">{p}</span>
+          {/* [cite_start]Project Gallery [cite: 32] */}
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Unit Portfolio</h4>
+              <span className="text-[10px] font-bold text-slate-400 flex items-center gap-2">
+                <ImageIcon size={14} /> {(unit?.gallery?.length || 0)} PROJECT_IMAGES
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {unit?.gallery?.map((img, idx) => (
+                <div key={idx} className="aspect-video bg-slate-100 border border-slate-200 rounded-none overflow-hidden group">
+                  <img src={img} alt="Portfolio item" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
                 </div>
               ))}
             </div>
           </section>
         </div>
 
-        {/* 3. RIGHT COLUMN: DYNAMIC ACTION CARD */}
+        {/* 4. SIDEBAR ACTIONS & CONTACT */}
         <div className="space-y-6">
-          <div className="sticky top-28 space-y-6">
-            
-            <div className="bg-indigo-600 p-10 rounded-[3rem] shadow-2xl text-white relative overflow-hidden group">
-              <div className="relative z-10 text-center">
-                <h4 className="text-2xl font-black mb-4 tracking-tight">Refer & Earn</h4>
-                <p className="text-indigo-100 text-sm mb-10 font-medium leading-relaxed">
-                  Refer a lead to {unit?.name} today. Upon successful verification, earn real amount based on internal credits.
-                </p>
-                <button 
-                  onClick={() => openModal(unit?.name)}
-                  className="w-full py-6 bg-white text-indigo-600 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:bg-slate-900 hover:text-white transition-all active:scale-95 flex items-center justify-center gap-3"
-                >
-                  Submit Lead Now
-                </button>
-              </div>
-              <Sparkles className="absolute -bottom-6 -right-6 text-white/10 group-hover:rotate-12 transition-transform" size={150} />
+          <div className="bg-indigo-600 p-8 rounded-none shadow-2xl text-white space-y-6">
+            <div className="space-y-2">
+             <h4 className="text-xl font-bold tracking-tight">Lead Rewards [cite: 44]</h4>
+              <p className="text-indigo-100 text-xs font-medium leading-relaxed">
+                Submit a valid lead for {unit?.name}. Earn business credits and track your payout status in your wallet dashboard[cite: 26, 45].
+              </p>
             </div>
+            <button 
+              onClick={() => openModal(unit?.name)}
+              className="w-full py-4 bg-white text-indigo-600 rounded-none font-bold text-xs uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2"
+            >
+              <Sparkles size={16} /> Submit Proposal
+            </button>
+          </div>
 
-            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
+          <div className="bg-white p-8 border border-slate-200 rounded-none shadow-sm space-y-6">
+            <div className="space-y-4">
+              {/* WEBSITE LINK SECTION */}
               <div>
-                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-3">Unit HQ Location</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Digital Identity</p>
+                <a 
+                  href={unit?.website || "#"} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between group p-3 bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-all"
+                >
+                  <div className="flex items-center gap-3 text-slate-700 font-bold text-sm">
+                    <Globe size={16} className="text-indigo-600" />
+                    <span>Visit Website</span>
+                  </div>
+                  <ExternalLink size={14} className="text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
+                </a>
+              </div>
+
+              <div className="pt-4 border-t border-slate-50">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Location Identity</p>
                 <div className="flex items-center gap-3 text-slate-700 font-bold text-sm">
-                  <div className="p-2 bg-slate-50 rounded-lg text-slate-400"><MapPin size={16} /></div>
-                  {unit?.location || 'Dubai, UAE'}
+                  <MapPin size={16} className="text-slate-400" />
+                  <span>{unit?.location || 'Dubai, United Arab Emirates'}</span>
                 </div>
               </div>
+
               <div className="pt-4 border-t border-slate-50">
-                 <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-3">Business Contact</p>
-                 <div className="flex items-center gap-3 text-indigo-600 font-black text-sm">
-                   <Phone size={16} /> {unit?.contact || '+971 00 000 0000'}
-                 </div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Primary Contact</p>
+                <div className="flex items-center gap-3 text-indigo-600 font-bold text-sm">
+                  <Phone size={16} />
+                  <span>{unit?.contact || '+971 00 000 0000'}</span>
+                </div>
               </div>
             </div>
           </div>

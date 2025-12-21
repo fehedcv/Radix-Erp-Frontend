@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  LogIn, UserPlus, Mail, Lock, User, Terminal, 
-  Loader2, AlertCircle, Eye, EyeOff, ShieldCheck 
+  LogIn, UserPlus, Mail, Lock, User, 
+  Loader2, AlertCircle, Eye, EyeOff, ChevronLeft, ShieldCheck 
 } from 'lucide-react';
 
-// 1. IMPORT DUMMY DATA (Pre-defined users)
+// 1. IMPORT DUMMY DATA (Core Access Roles)
 import { dummyUsers } from '../../data/userData';
 
 const AuthGateway = ({ onLoginSuccess }) => {
@@ -24,18 +24,15 @@ const AuthGateway = ({ onLoginSuccess }) => {
     const password = formData.get('password');
     const name = formData.get('name');
 
-    // Simulate Network Latency
+    // Authentication Logic [cite: 18, 22]
     setTimeout(() => {
       if (isLogin) {
-        // --- LOGIN LOGIC ---
-
-        // A. Check Master Admin (from JSON)
+        // Private HQ Access [cite: 19]
         if (email === dummyUsers.admin.email && password === dummyUsers.admin.password) {
           completeAuth(dummyUsers.admin);
           return;
         }
-
-        // B. Check Business Units (JSON + LocalStorage created by Admin)
+        // Private Business Access [cite: 21]
         const localUnits = JSON.parse(localStorage.getItem('vynx_units') || "[]");
         const allUnits = [...dummyUsers.businessUnits, ...localUnits];
         const bizMatch = allUnits.find(u => u.email === email && u.password === password);
@@ -43,8 +40,7 @@ const AuthGateway = ({ onLoginSuccess }) => {
           completeAuth({ ...bizMatch, role: 'business' });
           return;
         }
-
-        // C. Check Agents (JSON + Self-Signup LocalStorage)
+        // Agent Access [cite: 20]
         const localAgents = JSON.parse(localStorage.getItem('vynx_agents') || "[]");
         const allAgents = [...dummyUsers.agents, ...localAgents];
         const agentMatch = allAgents.find(a => a.email === email && a.password === password);
@@ -52,28 +48,20 @@ const AuthGateway = ({ onLoginSuccess }) => {
           completeAuth({ ...agentMatch, role: 'agent' });
           return;
         }
-
-        setError("Access Denied. Invalid credentials for this node.");
+        setError("AUTHENTICATION_FAILED: ACCESS_DENIED");
       } else {
-        // --- SIGNUP LOGIC (Agents Only) ---
+        // Agent Registry [cite: 14]
         const existingAgents = JSON.parse(localStorage.getItem('vynx_agents') || "[]");
-        
-        // Email Collision Check
         const emailExists = dummyUsers.agents.some(a => a.email === email) || 
                             existingAgents.some(a => a.email === email);
-
         if (emailExists) {
-          setError("This identity is already active in the network.");
+          setError("REGISTRATION_FAILED: IDENTITY_EXISTS");
         } else {
           const newAgent = { 
             id: `A-${Math.floor(1000 + Math.random() * 9000)}`, 
-            name, 
-            email, 
-            password, 
-            role: 'agent',
+            name, email, password, role: 'agent',
             joinedDate: new Date().toISOString()
           };
-          
           localStorage.setItem('vynx_agents', JSON.stringify([...existingAgents, newAgent]));
           completeAuth(newAgent);
         }
@@ -83,107 +71,135 @@ const AuthGateway = ({ onLoginSuccess }) => {
   };
 
   const completeAuth = (userData) => {
-    // Lock session into LocalStorage
     localStorage.setItem('vynx_user', JSON.stringify(userData));
-    // Trigger App.jsx routing
     onLoginSuccess(userData.role);
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] flex items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-[420px] space-y-8">
-        
-        {/* BRANDING */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-3"
-        >
-          <div className="h-16 w-16 bg-slate-900 rounded-[1.5rem] flex items-center justify-center text-white mx-auto shadow-2xl shadow-slate-200">
-            <Terminal size={32} />
-          </div>
-          <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Vynx Network</h1>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Multi-Node Infrastructure Access</p>
-        </motion.div>
+    <div className="h-screen bg-slate-100 flex flex-col items-center justify-center p-4 font-sans relative overflow-hidden">
+      
+      {/* TECHNICAL GRID BACKDROP  */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.05]" 
+           style={{ backgroundImage: `linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)`, backgroundSize: '32px 32px' }} />
 
-        {/* TOGGLE SWITCH */}
-        <div className="flex bg-slate-100 p-1.5 rounded-2xl">
+      {/* PORTAL CARD [cite: 60, 62] */}
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-[420px] bg-slate-50 border border-slate-200 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] relative z-10"
+      >
+        {/* HEADER BAR */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-white/50">
           <button 
-            type="button"
-            onClick={() => {setIsLogin(true); setError("");}}
-            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${isLogin ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            onClick={() => window.location.href = '/'}
+            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-indigo-600 transition-colors"
           >
-            Terminal Login
+            <ChevronLeft size={12} />
+            Home
           </button>
-          <button 
-            type="button"
-            onClick={() => {setIsLogin(false); setError("");}}
-            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 ${!isLogin ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            Agent Onboarding
-          </button>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Radix Network</span>
         </div>
 
-        {/* LOGIN/SIGNUP CARD */}
-        <motion.div layout className="bg-white border border-slate-100 p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/60">
-          <form onSubmit={handleAuth} className="space-y-5">
+        <div className="p-6 lg:p-8 space-y-5">
+          {/* BRANDING SECTION */}
+          <div className="flex items-center gap-4">
+            <div className="h-9 w-9 bg-slate-900 flex items-center justify-center text-white shrink-0">
+              <ShieldCheck size={18} />
+            </div>
+            <div>
+              <h1 className="text-xl font-medium text-slate-900 tracking-tight">
+                {isLogin ? "Secure Portal" : "Agent Registry"}
+              </h1>
+              <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Authorized Access Only</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleAuth} className="space-y-4">
             <AnimatePresence mode='wait'>
               {!isLogin && (
                 <motion.div 
                   initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                  className="space-y-2 overflow-hidden"
+                  className="space-y-1.5 overflow-hidden"
                 >
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Registry Name</label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                    <input required name="name" type="text" placeholder="John Doe" className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-900 outline-none focus:border-indigo-500 transition-all" />
+                  <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Legal Name</label>
+                  <div className="relative group">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" size={16} />
+                    <input required name="name" type="text" placeholder="Identity Name" className="w-full bg-white border border-slate-200 py-3 pl-10 pr-4 text-xs font-medium text-slate-900 outline-none focus:border-indigo-600 transition-all placeholder:text-slate-400" />
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Identity Access (Email)</label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                <input required name="email" type="email" placeholder="name@vynx.in" className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-slate-900 outline-none focus:border-indigo-500 transition-all" />
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Identity (Email)</label>
+              <div className="relative group">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" size={16} />
+                <input required name="email" type="email" placeholder="name@network.com" className="w-full bg-white border border-slate-200 py-3 pl-10 pr-4 text-xs font-medium text-slate-900 outline-none focus:border-indigo-600 transition-all placeholder:text-slate-400" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Security Key</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                <input required name="password" type={showPass ? "text" : "password"} placeholder="••••••••" className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-12 text-sm font-bold text-slate-900 outline-none focus:border-indigo-500 transition-all" />
-                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 transition-colors">
-                  {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Passkey</label>
+              <div className="relative group">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" size={16} />
+                <input required name="password" type={showPass ? "text" : "password"} placeholder="••••••••" className="w-full bg-white border border-slate-200 py-3 pl-10 pr-10 text-xs font-medium text-slate-900 outline-none focus:border-indigo-600 transition-all placeholder:text-slate-400" />
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-600 transition-colors">
+                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
             {error && (
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3 text-rose-600">
-                <AlertCircle size={18} />
-                <p className="text-[10px] font-black uppercase tracking-tight leading-none">{error}</p>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-2 text-red-600 border-l-2 border-red-600 pl-3 py-1 bg-red-50/50">
+                <AlertCircle size={12} className="mt-0.5 shrink-0" />
+                <p className="text-[9px] font-black uppercase tracking-tight">{error}</p>
               </motion.div>
             )}
 
             <button 
               disabled={isLoading}
-              className="w-full py-5 bg-slate-900 hover:bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-3 active:scale-95"
+              className="w-full py-4 bg-slate-900 hover:bg-indigo-600 text-white font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 active:scale-[0.98] shadow-lg shadow-indigo-100/10"
             >
               {isLoading ? (
-                <Loader2 size={18} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" />
               ) : (
-                <>{isLogin ? <LogIn size={18} /> : <UserPlus size={18} />} {isLogin ? "Enter Hub" : "Initialize Agent"}</>
+                <>{isLogin ? <LogIn size={16} /> : <UserPlus size={16} />} {isLogin ? "Authenticate" : "Initialize Registry"}</>
               )}
             </button>
           </form>
-        </motion.div>
 
-        <p className="text-center text-[9px] text-slate-300 font-bold uppercase tracking-[0.4em]">
-          &copy; 2025 VYNX NETWORK — DXB SECURE LINK
-        </p>
-      </div>
+          {/* AGENT CTA SECTION [cite: 14] */}
+          <div className="pt-4 border-t border-slate-200">
+            {isLogin ? (
+              <div className="space-y-2.5">
+                <p className="text-[9px] text-center font-black text-slate-400 uppercase tracking-widest">New to the Business Chain?</p>
+                <button 
+                  onClick={() => {setIsLogin(false); setError("");}}
+                  className="w-full py-3.5 border border-indigo-600 text-indigo-600 text-[9px] font-black uppercase tracking-[0.2em] hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                >
+                  Register Your Agent Identity
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => {setIsLogin(true); setError("");}}
+                className="w-full text-[9px] font-black text-slate-400 hover:text-slate-900 uppercase tracking-[0.2em] transition-colors"
+              >
+                Return to Login Terminal
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* COMPACT FOOTER */}
+        <div className="px-6 py-4 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
+          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Radix Infrastructure</span>
+          <div className="flex gap-1.5">
+            <div className="w-6 h-0.5 bg-slate-900"></div>
+            <div className="w-2 h-0.5 bg-indigo-600"></div>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 };
