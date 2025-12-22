@@ -1,17 +1,22 @@
 import React, { useMemo } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom'; // റൂട്ടിംഗ് ഹുക്കുകൾ ചേർത്തു
 import { Wallet, Clock, CheckCircle, ArrowUpRight, BarChart3, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const DashboardOverview = ({ leads = [], openModal, onViewHistory }) => {
+const DashboardOverview = () => {
+  const navigate = useNavigate();
   
-  // 1. DYNAMIC STATS CALCULATION [cite: 26, 43, 44]
+  // AgentHub-ൽ നിന്ന് അയച്ച context ഡാറ്റ ഇവിടെ സ്വീകരിക്കുന്നു
+  const { myLeads = [], setIsModalOpen } = useOutletContext(); 
+  
+  // 1. DYNAMIC STATS CALCULATION
   const stats = useMemo(() => {
-    const totalCredits = leads.reduce((sum, item) => sum + (item.credits || 0), 0);
-    const verifiedLeads = leads.filter(l => l.status === 'Verified' || l.status === 'Completed').length;
-    const pendingLeads = leads.filter(l => l.status === 'Pending').length;
+    const totalCredits = myLeads.reduce((sum, item) => sum + (item.credits || 0), 0);
+    const verifiedLeads = myLeads.filter(l => l.status === 'Verified' || l.status === 'Completed').length;
+    const pendingLeads = myLeads.filter(l => l.status === 'Pending').length;
     
-    const successRate = leads.length > 0 
-      ? Math.round((verifiedLeads / leads.length) * 100) 
+    const successRate = myLeads.length > 0 
+      ? Math.round((verifiedLeads / myLeads.length) * 100) 
       : 0;
 
     return {
@@ -21,15 +26,15 @@ const DashboardOverview = ({ leads = [], openModal, onViewHistory }) => {
       processingCount: pendingLeads,
       successRate
     };
-  }, [leads]);
+  }, [myLeads]);
 
   return (
     <div className="space-y-10">
       
-      {/* 1. ANALYTICS GRID [cite: 42, 60] */}
+      {/* 1. ANALYTICS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        {/* Credits Card [cite: 26, 45] */}
+        {/* Credits Card */}
         <div className="bg-white p-8 border border-slate-200 rounded-none shadow-sm group hover:border-indigo-600 transition-all">
           <div className="bg-slate-900 w-12 h-12 rounded-none flex items-center justify-center text-white mb-6 transition-transform group-hover:-translate-y-1">
             <Wallet size={24} />
@@ -42,7 +47,7 @@ const DashboardOverview = ({ leads = [], openModal, onViewHistory }) => {
           <p className="text-xs font-bold text-slate-300 mt-1 uppercase">Value: ₹{stats.equivalentAmount.toLocaleString()}</p>
         </div>
 
-        {/* Payout Card [cite: 44, 45] */}
+        {/* Payout Card */}
         <div className="bg-white p-8 border border-slate-200 rounded-none shadow-sm group">
           <div className="bg-slate-100 w-12 h-12 rounded-none flex items-center justify-center text-slate-900 mb-6 transition-transform group-hover:rotate-3">
             <TrendingUp size={24} />
@@ -52,7 +57,7 @@ const DashboardOverview = ({ leads = [], openModal, onViewHistory }) => {
           <p className="text-xs font-bold text-slate-300 mt-1 uppercase">Processed Payouts</p>
         </div>
 
-        {/* Pending Card [cite: 25] */}
+        {/* Pending Card */}
         <div className="bg-white p-8 border border-slate-200 rounded-none shadow-sm">
           <div className="bg-slate-100 w-12 h-12 rounded-none flex items-center justify-center text-slate-900 mb-6">
             <Clock size={24} />
@@ -65,7 +70,7 @@ const DashboardOverview = ({ leads = [], openModal, onViewHistory }) => {
           <p className="text-xs font-bold text-slate-300 mt-1 uppercase">Pending Review</p>
         </div>
 
-        {/* Success Rate Card [cite: 42] */}
+        {/* Success Rate Card */}
         <div className="bg-indigo-600 p-8 rounded-none shadow-xl shadow-indigo-100 text-white overflow-hidden relative group">
           <div className="relative z-10">
             <p className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest mb-2">Success Score</p>
@@ -85,7 +90,7 @@ const DashboardOverview = ({ leads = [], openModal, onViewHistory }) => {
         </div>
       </div>
 
-      {/* 2. RECENT ACTIVITY LIST [cite: 30, 39] */}
+      {/* 2. RECENT ACTIVITY LIST */}
       <div className="bg-white border border-slate-200 rounded-none shadow-sm">
         <div className="flex justify-between items-center p-8 border-b border-slate-100">
           <div className="flex items-center gap-3">
@@ -93,7 +98,7 @@ const DashboardOverview = ({ leads = [], openModal, onViewHistory }) => {
           </div>
           
           <button 
-            onClick={onViewHistory} 
+            onClick={() => navigate('/agent/history')} // നാവിഗേഷൻ മാറ്റം വരുത്തി
             className="group flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-slate-900 transition-all uppercase tracking-widest"
           >
             View All History <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"/>
@@ -101,7 +106,7 @@ const DashboardOverview = ({ leads = [], openModal, onViewHistory }) => {
         </div>
 
         <div className="divide-y divide-slate-50">
-          {leads.slice(0, 5).map((lead) => (
+          {myLeads.slice(0, 5).map((lead) => (
             <div key={lead.id} className="flex items-center justify-between p-6 hover:bg-slate-50 transition-all group">
               <div className="flex items-center gap-6">
                 <div className="w-14 h-14 bg-white border border-slate-200 rounded-none flex items-center justify-center text-slate-400 font-bold text-[10px] group-hover:text-indigo-600 group-hover:border-indigo-200 transition-colors">
@@ -136,11 +141,11 @@ const DashboardOverview = ({ leads = [], openModal, onViewHistory }) => {
             </div>
           ))}
           
-          {leads.length === 0 && (
+          {myLeads.length === 0 && (
             <div className="text-center py-20 bg-slate-50/50">
                 <p className="text-slate-400 font-bold uppercase text-xs tracking-widest mb-6">No Activity Detected in Pipeline</p>
                 <button 
-                  onClick={() => openModal()} 
+                  onClick={() => setIsModalOpen(true)} // context-ൽ നിന്നുള്ള ഫങ്ക്ഷൻ ഉപയോഗിക്കുന്നു
                   className="px-6 py-3 bg-slate-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-indigo-600 transition-colors rounded-none"
                 >
                   Create Initial Lead Submission

@@ -1,26 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
+  NavLink, 
+  Outlet, 
+  useLocation, 
+  useNavigate 
+} from 'react-router-dom'; // Added routing hooks
+import { 
   ShieldAlert, LayoutDashboard, Building2, Users, 
   CreditCard, PieChart, LogOut, Bell,
   ArrowRight, Wallet, CheckCircle2, X, Menu, AlertCircle, Briefcase
 } from 'lucide-react';
 
-// Component Imports (Preserving contents and logics)
-import AdminOverview from './AdminOverview';
-import BusinessControl from './BusinessControl';
-import MasterLeadTracker from './MasterLeadTracker';
-import CreditSettlement from './CreditSettlement';
-import AgentControl from './AgentControl';
-
 // Data Sources
 import { initialLeads } from '../../data/leadHistoryData';
 
 const AdminHub = ({ onLogout }) => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  // REMOVED: activeTab state (Now handled by URL)
   const [showNotifications, setShowNotifications] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const notificationRef = useRef(null);
+  
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // 1. DATA SOURCE (Logic Preserved)
   const [leads] = useState(() => {
@@ -51,24 +53,14 @@ const AdminHub = ({ onLogout }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Updated menuItems with 'path' instead of just 'id'
   const menuItems = [
-    { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-    { id: 'leads', label: 'Leads', icon: PieChart },
-    { id: 'units', label: 'Units', icon: Building2 },
-    { id: 'agents', label: 'Agents', icon: Users },
-    { id: 'credits', label: 'Settlements', icon: CreditCard },
+    { id: 'dashboard', label: 'Overview', icon: LayoutDashboard, path: '/admin/dashboard' },
+    { id: 'leads', label: 'Leads', icon: PieChart, path: '/admin/leads' },
+    { id: 'units', label: 'Units', icon: Building2, path: '/admin/units' },
+    { id: 'agents', label: 'Agents', icon: Users, path: '/admin/agents' },
+    { id: 'credits', label: 'Settlements', icon: CreditCard, path: '/admin/credits' },
   ];
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard': return <AdminOverview onNavigate={setActiveTab} />; 
-      case 'units': return <BusinessControl onNavigate={setActiveTab} />;
-      case 'leads': return <MasterLeadTracker onNavigate={setActiveTab} />;
-      case 'credits': return <CreditSettlement onNavigate={setActiveTab} />;
-      case 'agents': return <AgentControl onNavigate={setActiveTab} />;
-      default: return <AdminOverview onNavigate={setActiveTab} />;
-    }
-  };
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100">
@@ -87,18 +79,18 @@ const AdminHub = ({ onLogout }) => {
 
         <nav className="flex-1 p-4 space-y-1">
           {menuItems.map((item) => (
-            <button
+            <NavLink
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-none text-xs font-bold uppercase tracking-widest transition-all ${
-                activeTab === item.id
+              to={item.path}
+              className={({ isActive }) => `w-full flex items-center gap-4 px-4 py-3.5 rounded-none text-xs font-bold uppercase tracking-widest transition-all ${
+                isActive
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
                 : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
             >
               <item.icon size={18} />
               <span>{item.label}</span>
-            </button>
+            </NavLink>
           ))}
         </nav>
 
@@ -126,7 +118,8 @@ const AdminHub = ({ onLogout }) => {
              </div>
              <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
              <span className="hidden sm:block text-[10px] font-bold text-slate-900 uppercase tracking-widest">
-               Portal / {activeTab.replace('-', ' ')}
+                {/* Dynamically reading the current route name */}
+                Portal / {location.pathname.split('/').pop().replace('-', ' ')}
              </span>
           </div>
 
@@ -158,7 +151,7 @@ const AdminHub = ({ onLogout }) => {
 
                     <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
                       {withdrawalRequests.map(req => (
-                        <button key={req.id} onClick={() => { setActiveTab('agents'); setShowNotifications(false); }} className="w-full p-4 flex items-start gap-4 hover:bg-slate-50 text-left transition-all group">
+                        <button key={req.id} onClick={() => { navigate('/admin/agents'); setShowNotifications(false); }} className="w-full p-4 flex items-start gap-4 hover:bg-slate-50 text-left transition-all group">
                           <div className="h-9 w-9 bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100 rounded-none"><Wallet size={16}/></div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Payout • {req.time}</p>
@@ -179,12 +172,13 @@ const AdminHub = ({ onLogout }) => {
 
         <div className="p-6 lg:p-10 max-w-7xl w-full mx-auto pb-24">
           <motion.div
-            key={activeTab}
+            key={location.pathname} // Animation triggers on route change
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
           >
-            {renderContent()}
+            {/* --- THIS RENDERS THE SUB-PAGE COMPONENT --- */}
+            <Outlet />
           </motion.div>
         </div>
       </main>
@@ -192,14 +186,14 @@ const AdminHub = ({ onLogout }) => {
       {/* 3. MOBILE BOTTOM NAV - Functional Layer */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center p-3 z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         {menuItems.map((item) => (
-          <button 
+          <NavLink 
             key={item.id}
-            onClick={() => setActiveTab(item.id)} 
-            className={`flex flex-col items-center gap-1 p-2 transition-colors ${activeTab === item.id ? 'text-indigo-600' : 'text-slate-400'}`}
+            to={item.path} 
+            className={({ isActive }) => `flex flex-col items-center gap-1 p-2 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}
           >
             <item.icon size={20} />
             <span className="text-[9px] font-bold uppercase tracking-tighter">{item.label}</span>
-          </button>
+          </NavLink>
         ))}
         <button onClick={() => setShowLogoutConfirm(true)} className="flex flex-col items-center gap-1 p-2 text-rose-500">
           <LogOut size={20} />

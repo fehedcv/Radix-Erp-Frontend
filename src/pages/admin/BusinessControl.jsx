@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom'; // റൂട്ടിംഗിനായി ചേർത്തു
 import { 
   Plus, Building2, Trash2, X, 
   ShieldCheck, Globe, Phone, MapPin, 
@@ -8,11 +9,11 @@ import {
   Info
 } from 'lucide-react';
 
-// Data Import to match registry with core business data
+// Data Import
 import { businessUnits as coreBusinessData } from '../../data/businessData';
 
 const BusinessControl = () => {
-  // --- STATE MANAGEMENT (Logic Preserved) ---
+  const navigate = useNavigate(); // Navigation hook
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState(null);
   
@@ -127,12 +128,11 @@ const BusinessControl = () => {
         )}
       </div>
 
-      {/* 3. PROVISIONING TERMINAL (REGISTRATION FORM MODAL) */}
+      {/* 3. PROVISIONING TERMINAL (MODAL) */}
       <AnimatePresence>
         {showAddModal && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm">
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white w-full max-w-2xl rounded-none relative shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
-              {/* Modal Header */}
               <div className="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
                 <div className="flex items-center gap-3 text-indigo-600">
                   <UserPlus size={18} />
@@ -141,10 +141,8 @@ const BusinessControl = () => {
                 <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-900 transition-colors p-1"><X size={20}/></button>
               </div>
               
-              {/* Modal Body (Scrollable) */}
               <div className="flex-1 overflow-y-auto">
                 <form id="unit-form" onSubmit={handleCreateUnit} className="p-8 md:p-10 space-y-10">
-                  {/* Segment 01: Identity */}
                   <div className="space-y-6">
                     <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] border-b border-slate-100 pb-2">01. Unit Identity</h5>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -159,7 +157,6 @@ const BusinessControl = () => {
                     </div>
                   </div>
 
-                  {/* Segment 02: Operational Manager */}
                   <div className="space-y-6">
                     <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] border-b border-slate-100 pb-2">02. Operational Authority</h5>
                     <div className="space-y-2">
@@ -171,7 +168,6 @@ const BusinessControl = () => {
                     </div>
                   </div>
 
-                  {/* Segment 03: Security Node */}
                   <div className="space-y-6">
                     <h5 className="text-[10px] font-bold text-indigo-600 uppercase tracking-[0.3em] border-b border-slate-100 pb-2">03. Security Authorization</h5>
                     <div className="p-8 bg-slate-900 border border-slate-800 rounded-none space-y-6">
@@ -196,7 +192,6 @@ const BusinessControl = () => {
                 </form>
               </div>
               
-              {/* Modal Footer */}
               <div className="p-8 border-t border-slate-100 bg-slate-50 shrink-0 flex flex-col md:flex-row gap-4">
                 <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-none text-xs font-bold uppercase tracking-widest hover:bg-slate-100 transition-all">Cancel</button>
                 <button form="unit-form" type="submit" className="flex-[2] py-4 bg-slate-900 hover:bg-indigo-600 text-white rounded-none font-bold text-xs uppercase tracking-widest shadow-xl transition-all active:scale-[0.98]">
@@ -208,7 +203,7 @@ const BusinessControl = () => {
         )}
       </AnimatePresence>
 
-      {/* 4. CENTRAL UNIT DOSSIER (FULL PROFILE MODAL) */}
+      {/* 4. CENTRAL UNIT DOSSIER */}
       <AnimatePresence>
         {selectedUnit && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-10 bg-slate-950/80 backdrop-blur-md">
@@ -216,7 +211,6 @@ const BusinessControl = () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="bg-white w-full max-w-5xl max-h-[90vh] rounded-none shadow-2xl relative overflow-hidden flex flex-col border border-slate-200"
             >
-              {/* dossier Header */}
               <div className="p-8 border-b border-slate-200 bg-slate-900 text-white flex justify-between items-center shrink-0">
                 <div className="flex items-center gap-6">
                   <div className="h-20 w-20 bg-white text-slate-900 rounded-none flex items-center justify-center font-bold text-3xl border-b-8 border-indigo-600 shadow-xl">
@@ -234,11 +228,8 @@ const BusinessControl = () => {
                 <button onClick={() => setSelectedUnit(null)} className="p-2 border border-white/20 text-white hover:bg-red-600 transition-all rounded-none"><X size={24}/></button>
               </div>
 
-              {/* dossier Content */}
               <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-16">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
-                  
-                  {/* Left Segment: Auth & Comms */}
                   <div className="space-y-12">
                      <section className="space-y-5">
                         <h5 className="text-[10px] font-bold text-indigo-600 uppercase tracking-[0.3em] border-b border-slate-100 pb-3 flex items-center gap-2">
@@ -279,7 +270,6 @@ const BusinessControl = () => {
                      </section>
                   </div>
 
-                  {/* Right Segment: Geography & Capabilities */}
                   <div className="space-y-12">
                      <section className="space-y-5">
                         <h5 className="text-[10px] font-bold text-indigo-600 uppercase tracking-[0.3em] border-b border-slate-100 pb-3 flex items-center gap-2">
@@ -313,12 +303,11 @@ const BusinessControl = () => {
                 <div className="p-6 bg-amber-50 border border-amber-100 flex gap-5 rounded-none">
                    <Info size={24} className="text-amber-600 shrink-0 mt-0.5" />
                    <p className="text-xs text-amber-800 leading-relaxed font-semibold uppercase tracking-tight">
-                     Registry record synchronized with global HQ database. Identity modifications will propagate to all field terminals and agent dashboards immediately.
+                     Registry record synchronized with global HQ database. Identity modifications will propagate immediately.
                    </p>
                 </div>
               </div>
 
-              {/* dossier Footer */}
               <div className="p-8 bg-slate-50 border-t border-slate-200 shrink-0">
                   <button onClick={() => setSelectedUnit(null)} className="w-full py-4 bg-slate-900 text-white rounded-none text-xs font-bold uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl">
                     Close Dossier Profile

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom'; // 1. useNavigate ഇംപോർട്ട് ചെയ്തു
 import { 
   Activity, Users, Building2, Layers, Zap, TrendingUp, 
   ShieldCheck, ArrowRight, ChevronRight, BarChart3, 
@@ -10,7 +11,9 @@ import {
 import { initialLeads } from '../../data/leadHistoryData';
 import { businessUnits } from '../../data/businessData';
 
-const AdminOverview = ({ onNavigate }) => {
+const AdminOverview = () => { // onNavigate പ്രോപ്പ് ഒഴിവാക്കി
+  const navigate = useNavigate(); // 2. നാവിഗേഷൻ ഫങ്ക്ഷൻ സെറ്റ് ചെയ്തു
+  
   const [stats, setStats] = useState({
     totalLeads: 0,
     totalUnits: 0,
@@ -58,7 +61,7 @@ const AdminOverview = ({ onNavigate }) => {
           <p className="text-sm font-medium text-slate-500 mt-1 italic">Vynx Network Centralized Intelligence Feed</p>
         </div>
         <button 
-          onClick={() => onNavigate('leads')}
+          onClick={() => navigate('/admin/leads')} // മാറ്റം വരുത്തി
           className="px-6 py-3 bg-slate-900 text-white text-xs font-bold uppercase tracking-widest rounded-none hover:bg-indigo-600 transition-all flex items-center gap-3 shadow-lg active:scale-[0.98]"
         >
           Audit Master Registry <ArrowRight size={16} />
@@ -121,7 +124,8 @@ const AdminOverview = ({ onNavigate }) => {
             <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
               <Briefcase size={16} className="text-indigo-600" /> Priority Units
             </h4>
-            <button onClick={() => onNavigate('units')} className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:text-slate-900 transition-colors">View Directory</button>
+            {/* NavLink അല്ലെങ്കിൽ navigate ഉപയോഗിക്കാം */}
+            <button onClick={() => navigate('/admin/units')} className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:text-slate-900 transition-colors">View Directory</button>
           </div>
           <div className="p-4 space-y-2 flex-1">
             {businessUnits.slice(0, 5).map((unit, i) => (
@@ -135,7 +139,6 @@ const AdminOverview = ({ onNavigate }) => {
                     <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase truncate tracking-widest">{unit.location}</p>
                   </div>
                 </div>
-                {/* <ChevronRight size={14} className="text-slate-300 group-hover:text-indigo-600" /> */}
               </div>
             ))}
           </div>
@@ -151,7 +154,7 @@ const AdminOverview = ({ onNavigate }) => {
             <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
               <UserPlus size={16} className="text-emerald-600" /> Field Agent Onboarding
             </h4>
-            <button onClick={() => onNavigate('agents')} className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest hover:text-slate-900">Directory</button>
+            <button onClick={() => navigate('/admin/agents')} className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest hover:text-slate-900">Directory</button>
           </div>
           <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
             {latestAgents.map((agent, i) => (
@@ -183,7 +186,7 @@ const AdminOverview = ({ onNavigate }) => {
             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">Manual Settlement Protocol</p>
           </div>
           <button 
-            onClick={() => onNavigate('credits')}
+            onClick={() => navigate('/admin/credits')} // മാറ്റം വരുത്തി
             className="relative z-10 w-full py-4 mt-12 bg-white text-slate-900 rounded-none font-bold text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 hover:text-white transition-all active:scale-[0.98]"
           >
             Access Asset Vault

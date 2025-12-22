@@ -26,7 +26,7 @@ export const initialLeads = [
     businessUnit: "IT Solutions",
     service: "Web App Development",
     description: "Need an e-commerce website for a boutique fashion brand.",
-    status: "Verified",
+    status: "Pending",
     date: "2025-12-19",
     credits: 0, // Initial value before Admin manual release
     agentName: "Sarah Mehmood",
