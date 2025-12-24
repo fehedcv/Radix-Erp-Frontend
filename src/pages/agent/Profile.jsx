@@ -42,7 +42,7 @@ const ProfilePage = () => {
     <motion.div 
       initial={{ opacity: 0, y: 10 }} 
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-[1400px] mx-auto space-y-6 pb-24 font-['Plus_Jakarta_Sans',sans-serif]"
+      className="max-w-[1400px] mx-auto space-y-6  font-['Plus_Jakarta_Sans',sans-serif]"
     >
       
       {/* 1. HEADER BAR */}
@@ -231,16 +231,7 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      <div className="pt-10 text-center space-y-4">
-        <div className="flex items-center justify-center gap-4 text-slate-200">
-           <div className="h-px w-16 bg-slate-100" />
-           <ShieldCheck size={24} className="text-slate-300" />
-           <div className="h-px w-16 bg-slate-100" />
-        </div>
-        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.4em]">
-          Secured Business Infrastructure • Radix Enterprise Terminal v1.02
-        </p>
-      </div>
+     
     </motion.div>
   );
 };

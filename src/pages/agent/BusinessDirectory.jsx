@@ -99,12 +99,12 @@ const BusinessDirectory = () => {
         </motion.div>
       </div>
 
-      {/* FOOTER INFO LINE */}
+      {/* FOOTER INFO LINE
       <div className="pt-4 flex items-center justify-center gap-4 text-slate-200">
          <div className="h-px w-12 bg-slate-200" />
          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.4em]">Radix Partner Network Infrastructure</span>
          <div className="h-px w-12 bg-slate-200" />
-      </div>
+      </div> */}
     </div>
   );
 };

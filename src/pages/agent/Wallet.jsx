@@ -87,7 +87,7 @@ const WalletPage = () => {
   };
 
   return (
-    <div className="space-y-6 font-['Plus_Jakarta_Sans',sans-serif] pb-24">
+    <div className="space-y-6 font-['Plus_Jakarta_Sans',sans-serif] ">
       
       {/* 1. ANALYTICS GRID (NOW AT TOP) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

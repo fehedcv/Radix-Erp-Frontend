@@ -40,7 +40,7 @@ const BusinessDetail = () => {
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-[1400px] mx-auto space-y-6 pb-24 font-['Plus_Jakarta_Sans',sans-serif]"
+      className="max-w-[1400px] mx-auto space-y-6  font-['Plus_Jakarta_Sans',sans-serif]"
     >
       {/* 1. BREADCRUMBS & NAVIGATION */}
       <nav className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">

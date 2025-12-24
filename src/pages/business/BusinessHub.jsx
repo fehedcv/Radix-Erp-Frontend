@@ -48,10 +48,10 @@ const BusinessHub = ({ onLogout }) => {
   };
 
   const navItems = [
-    { id: 'dashboard', label: 'Team Overview', icon: LayoutDashboard, path: '/business/dashboard' },
-    { id: 'leads', label: 'Incoming Leads', icon: Users, path: '/business/leads' },
-    { id: 'portfolio', label: 'Project Portfolio', icon: FolderEdit, path: '/business/portfolio' },
-    { id: 'settings', label: 'Account Settings', icon: Settings, path: '/business/settings' },
+    { id: 'dashboard', label: 'TEAM OVERVIEW', icon: LayoutDashboard, path: '/business/dashboard' },
+    { id: 'leads', label: 'INCOMING LEADS', icon: Users, path: '/business/leads' },
+    { id: 'portfolio', label: 'PROJECT PORTFOLIO', icon: FolderEdit, path: '/business/portfolio' },
+    { id: 'settings', label: 'SETTINGS', icon: Settings, path: '/business/settings' },
   ];
 
   const currentTabName = location.pathname.split('/').pop().replace('-', ' ');

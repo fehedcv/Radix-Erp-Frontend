@@ -85,7 +85,7 @@ const LeadHistory = () => {
   };
 
   return (
-    <div className="space-y-8 font-['Plus_Jakarta_Sans',sans-serif] pb-24">
+    <div className="space-y-8 font-['Plus_Jakarta_Sans',sans-serif]">
 
       {/* ================= PAGE HEADER ================= */}
       <div>
