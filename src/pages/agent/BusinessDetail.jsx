@@ -1,36 +1,36 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useParams, useNavigate, useOutletContext } from 'react-router-dom'; // റൂട്ടിംഗ് ഹുക്കുകൾ
+import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { 
-  ArrowLeft, MapPin, Package, ShieldCheck, Sparkles, Star, 
+  ArrowLeft, MapPin, ShieldCheck, Sparkles, Star, 
   Phone, Globe, CheckCircle2, Image as ImageIcon, Briefcase,
-  ExternalLink 
+  ExternalLink, Info, Plus, Mail, MessageSquare, Clock, Zap
 } from 'lucide-react';
 
-// ബിസിനസ് ഡാറ്റ ഇമ്പോർട്ട് ചെയ്യുന്നു
+// Import business data
 import { businessUnits } from '../../data/businessData.jsx';
 
 const BusinessDetail = () => {
-  const { id } = useParams(); // URL-ൽ നിന്ന് ID എടുക്കുന്നു (e.g., U-101)
+  const { id } = useParams();
   const navigate = useNavigate();
   
-  // AgentHub-ൽ നിന്ന് context വഴി ലഭിക്കുന്ന ഫങ്ക്ഷനുകൾ
+  // LOGIC PRESERVED: Functions from AgentHub context
   const { setIsModalOpen, setSelectedBusiness } = useOutletContext();
 
-  // ID ഉപയോഗിച്ച് കൃത്യമായ യൂണിറ്റ് കണ്ടെത്തുന്നു
   const unit = businessUnits.find(u => u.id === id);
 
-  // ഡാറ്റ ലഭ്യമല്ലെങ്കിൽ
   if (!unit) {
     return (
-      <div className="py-20 text-center">
-        <p className="text-slate-400 font-bold uppercase tracking-widest">Unit Registry Not Found</p>
-        <button onClick={() => navigate('/agent/units')} className="mt-4 text-indigo-600 font-bold uppercase text-xs">Return to Directory</button>
+      <div className="py-32 text-center font-['Plus_Jakarta_Sans',sans-serif] bg-[#F8FAFC]">
+        <div className="w-16 h-16 bg-white border border-slate-200 rounded-xl flex items-center justify-center mx-auto mb-6 text-slate-400 shadow-sm">
+          <Info size={32} />
+        </div>
+        <p className="text-slate-500 font-bold uppercase tracking-widest">Team Profile Not Found</p>
+        <button onClick={() => navigate('/agent/units')} className="mt-4 text-[#007ACC] font-bold uppercase text-xs hover:underline">Return to Directory</button>
       </div>
     );
   }
 
-  // ലീഡ് ഫോം തുറക്കാനുള്ള ഫങ്ക്ഷൻ
   const handleOpenModal = () => {
     setSelectedBusiness(unit.name);
     setIsModalOpen(true);
@@ -40,151 +40,173 @@ const BusinessDetail = () => {
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-6xl mx-auto space-y-8 pb-20"
+      className="max-w-[1400px] mx-auto space-y-6 pb-24 font-['Plus_Jakarta_Sans',sans-serif]"
     >
-      {/* 1. NAVIGATION & HEADER */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-4">
-          <button 
-            onClick={() => navigate('/agent/units')} 
-            className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-[0.2em]"
-          >
-            <ArrowLeft size={14} /> Back to Directory
-          </button>
-          
-          <div className="flex items-start gap-6">
-            <div className="h-20 w-20 bg-slate-900 flex items-center justify-center text-white rounded-none shrink-0 border-b-4 border-indigo-600 shadow-xl">
-              {unit.icon ? React.cloneElement(unit.icon, { size: 32 }) : <Briefcase size={32} />}
+      {/* 1. BREADCRUMBS & NAVIGATION */}
+      <nav className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+        <button onClick={() => navigate('/agent/units')} className="hover:text-[#007ACC] transition-colors">Directory</button>
+        <ChevronRight size={10} />
+        <span className="text-slate-900">{unit.name}</span>
+      </nav>
+
+      {/* 2. EXECUTIVE PROFILE HEADER */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-10 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-8">
+            <div className={`h-24 w-24 ${unit.bg || 'bg-slate-900'} ${unit.color || 'text-white'} flex items-center justify-center rounded-2xl shadow-xl shadow-blue-500/10 shrink-0 border border-white/20`}>
+              {unit.icon ? React.cloneElement(unit.icon, { size: 42, strokeWidth: 2 }) : <Briefcase size={42} />}
             </div>
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight uppercase">{unit.name}</h2>
-                <div className="bg-emerald-50 text-emerald-600 px-2 py-1 flex items-center gap-1.5 border border-emerald-100">
-                  <ShieldCheck size={12} />
-                  <span className="text-[9px] font-black uppercase tracking-widest">Verified Node</span>
+            
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase">{unit.name}</h1>
+                <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg border border-emerald-100 flex items-center gap-1.5 shadow-sm">
+                  <ShieldCheck size={14} strokeWidth={2.5} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Verified Team</span>
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-slate-400">
-                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
-                  <MapPin size={14} className="text-indigo-600" /> {unit.location}
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-slate-400">
+                <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+                  <MapPin size={14} className="text-[#007ACC]" /> {unit.location}
                 </span>
-                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-indigo-600">
-                  <Star size={14} fill="currentColor" /> Premium Partner
+                <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+                  <Globe size={14} className="text-[#007ACC]" /> Global Partner
+                </span>
+                <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#007ACC] bg-blue-50 px-2 py-0.5 rounded">
+                  <Star size={14} className="fill-current" /> Premium Tier
                 </span>
               </div>
             </div>
           </div>
+
+          <button 
+            onClick={handleOpenModal}
+            className="w-full lg:w-auto bg-[#007ACC] text-white px-10 py-4 rounded-xl font-bold text-xs uppercase tracking-[0.2em] shadow-lg shadow-blue-500/20 hover:bg-[#005fb8] transition-all flex items-center justify-center gap-3 active:scale-95 group"
+          >
+            <Zap size={18} className="fill-current group-hover:animate-pulse" /> Submit New Referral
+          </button>
         </div>
-
-        <button 
-          onClick={handleOpenModal}
-          className="bg-slate-900 text-white px-8 py-4 rounded-none font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3"
-        >
-          Initialize Lead Submission
-        </button>
       </div>
 
-      {/* 2. HERO IMAGE / COVER */}
-      <div className="h-64 md:h-96 w-full overflow-hidden border border-slate-200 shadow-sm relative bg-slate-100">
-        <img 
-          src={unit.coverImage || "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"} 
-          alt={unit.name} 
-          className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000"
-        />
-        <div className="absolute inset-0 bg-slate-900/5" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      {/* 3. MAIN CONTENT GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* 3. CORE INFORMATION (Left Column) */}
-        <div className="lg:col-span-8 space-y-10">
+        {/* --- LEFT SIDE: THE OVERVIEW --- */}
+        <div className="lg:col-span-8 space-y-8">
           
-          <section className="bg-white p-10 border border-slate-200 rounded-none shadow-sm">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 border-b border-slate-50 pb-4">Infrastructure Overview</h4>
-            <p className="text-lg text-slate-600 leading-relaxed font-medium">
-              {unit.description}
-            </p>
-          </section>
+          {/* VISUAL COVER */}
+          <div className="relative h-72 md:h-[450px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+            <img 
+              src={unit.coverImage || "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=80"} 
+              alt={unit.name} 
+              className="w-full h-full object-cover rounded-xl grayscale hover:grayscale-0 transition-all duration-1000"
+            />
+            <div className="absolute top-6 left-6 flex gap-2">
+               <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm border border-slate-200 flex items-center gap-2">
+                 <ImageIcon size={12} /> HQ Gallery
+               </span>
+            </div>
+          </div>
 
-          <section className="bg-white p-10 border border-slate-200 rounded-none shadow-sm">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8 border-b border-slate-50 pb-4">Service Capabilities</h4>
+          {/* TEAM BIO */}
+          <div className="bg-white p-8 md:p-12 rounded-2xl border border-slate-200 shadow-sm">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-2 border-b border-slate-50 pb-4">
+              <Info size={14} className="text-[#007ACC]" /> Team Overview
+            </h4>
+            <p className="text-xl text-slate-600 leading-relaxed font-medium">
+              {unit.description || "This specialized business team provides comprehensive project management and resource coordination for the partner network, ensuring high-speed fulfillment and verified results."}
+            </p>
+          </div>
+
+          {/* CAPABILITIES GRID */}
+          <div className="bg-white p-8 md:p-12 rounded-2xl border border-slate-200 shadow-sm">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
+               <Briefcase size={14} className="text-[#007ACC]" /> Service Capabilities
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {unit.products?.map((product, i) => (
-                <div key={i} className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-100 group hover:border-indigo-200 transition-all">
-                  <CheckCircle2 size={18} className="text-indigo-600" />
-                  <span className="font-bold text-slate-800 text-xs uppercase tracking-tight">{product}</span>
+                <div key={i} className="flex items-center gap-4 p-5 bg-slate-50 border border-slate-100 rounded-xl group hover:bg-white hover:border-[#007ACC] hover:shadow-md transition-all">
+                  <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center text-emerald-500 shadow-sm group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                    <CheckCircle2 size={20} strokeWidth={2.5} />
+                  </div>
+                  <span className="font-extrabold text-slate-800 text-sm uppercase tracking-tight">{product}</span>
                 </div>
               ))}
             </div>
-          </section>
-
-          {/* PROJECT GALLERY */}
-          {unit.gallery && (
-            <section className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Operational Portfolio</h4>
-                <span className="text-[9px] font-bold text-slate-400 flex items-center gap-2 uppercase tracking-widest">
-                  <ImageIcon size={14} /> {unit.gallery.length} Registry_Images
-                </span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {unit.gallery.map((img, idx) => (
-                  <div key={idx} className="aspect-video bg-slate-100 border border-slate-200 overflow-hidden group">
-                    <img src={img} alt="Portfolio" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 hover:scale-105" />
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* 4. SIDEBAR (Right Column) */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-indigo-600 p-10 rounded-none shadow-2xl text-white space-y-6 relative overflow-hidden group">
-            <div className="relative z-10 space-y-4">
-              <h4 className="text-xl font-bold uppercase tracking-tight leading-none">Network<br/>Referral Program</h4>
-              <p className="text-indigo-100 text-[11px] font-medium leading-relaxed">
-                Submit a verified lead for this unit. Track your settlement status and credit accumulation in the live ledger dashboard.
-              </p>
-            </div>
-            <button 
-              onClick={handleOpenModal}
-              className="relative z-10 w-full py-4 bg-white text-indigo-600 rounded-none font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-900 hover:text-white transition-all shadow-xl"
-            >
-              <Sparkles size={14} /> Submit Registry Entry
-            </button>
-            <ShieldCheck size={120} className="absolute -bottom-10 -right-10 text-white/5 -rotate-12 group-hover:scale-110 transition-transform duration-700" />
           </div>
 
-          <div className="bg-white p-10 border border-slate-200 rounded-none shadow-sm space-y-8">
-            <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Node Identity</p>
-              <a 
-                href={unit.website || "#"} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center justify-between group p-4 bg-slate-50 border border-slate-100 hover:border-indigo-600 transition-all"
-              >
-                <div className="flex items-center gap-3 text-slate-700 font-bold text-xs uppercase tracking-widest">
-                  <Globe size={16} className="text-indigo-600" />
-                  <span>Visit Domain</span>
-                </div>
-                <ExternalLink size={14} className="text-slate-300 group-hover:text-indigo-600 transition-all" />
-              </a>
-            </div>
+          {/* PROJECT LIFECYCLE (NON-FUNCTIONAL DENSITY) */}
+          <div className="bg-white p-8 md:p-12 rounded-2xl border border-slate-200 shadow-sm">
+             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-10">Fulfillment Lifecycle</h4>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+                <LifecycleStep icon={<Plus size={18}/>} title="Submission" desc="Referral entry into system" />
+                <LifecycleStep icon={<Clock size={18}/>} title="Audit" desc="Project scope verification" />
+                <LifecycleStep icon={<CheckCircle2 size={18}/>} title="Payout" desc="Credit release to wallet" />
+             </div>
+          </div>
+        </div>
 
-            <div className="space-y-4">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Registry Contacts</p>
+        {/* --- RIGHT SIDE: ACTION PANEL --- */}
+        <div className="lg:col-span-4 space-y-8">
+          
+          {/* QUICK LINKS & INFO */}
+          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-10 sticky top-24">
+            
+            <section>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-5">Digital Access</p>
               <div className="space-y-3">
-                <div className="flex items-center gap-3 text-slate-700 font-bold text-xs uppercase tracking-widest">
-                  <MapPin size={16} className="text-slate-300" />
-                  <span>{unit.location}</span>
-                </div>
-                <div className="flex items-center gap-3 text-indigo-600 font-bold text-xs uppercase tracking-widest">
-                  <Phone size={16} />
-                  <span>{unit.contact || '+971 00 000 0000'}</span>
+                <a 
+                  href={unit.website || "#"} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between group p-4 bg-slate-50 border border-slate-100 rounded-xl hover:border-[#007ACC] hover:bg-white transition-all shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <Globe size={18} className="text-[#007ACC]" />
+                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Team Website</span>
+                  </div>
+                  <ExternalLink size={14} className="text-slate-300 group-hover:text-[#007ACC] transition-all" />
+                </a>
+                
+                <div className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                   <Mail size={18} className="text-[#007ACC]" />
+                   <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">support@radix.team</span>
                 </div>
               </div>
+            </section>
+
+            <section className="space-y-6">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Communication Lines</p>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 p-4 border border-slate-100 rounded-xl group hover:border-[#007ACC] transition-colors">
+                  <div className="h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center text-[#007ACC]">
+                    <Phone size={18} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase">Head Office</span>
+                    <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-tighter">{unit.contact || '+971 00 000 0000'}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 p-4 border border-slate-100 rounded-xl group hover:border-[#007ACC] transition-colors">
+                  <div className="h-10 w-10 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:text-[#007ACC]">
+                    <MapPin size={18} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase">Location Hub</span>
+                    <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-tighter">{unit.location}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div className="pt-4">
+               <div className="p-5 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-4">
+                  <Sparkles size={20} className="text-[#007ACC] shrink-0 mt-1" />
+                  <p className="text-[10px] text-slate-600 font-medium leading-relaxed uppercase">
+                    Referring a new lead to this team increases your <span className="font-black text-slate-900">Success Score</span> in the network database.
+                  </p>
+               </div>
             </div>
           </div>
         </div>
@@ -192,5 +214,25 @@ const BusinessDetail = () => {
     </motion.div>
   );
 };
+
+// --- HELPER COMPONENTS ---
+
+const LifecycleStep = ({ icon, title, desc }) => (
+  <div className="relative z-10 flex flex-col items-center text-center md:items-start md:text-left space-y-3">
+    <div className="h-12 w-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-[#007ACC] shadow-sm">
+      {icon}
+    </div>
+    <div>
+      <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{title}</h5>
+      <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">{desc}</p>
+    </div>
+  </div>
+);
+
+const ChevronRight = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m9 18 6-6-6-6" />
+  </svg>
+);
 
 export default BusinessDetail;

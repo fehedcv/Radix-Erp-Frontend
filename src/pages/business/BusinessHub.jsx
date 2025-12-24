@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   NavLink, 
   Outlet, 
   useLocation, 
   useNavigate 
-} from 'react-router-dom'; // റൂട്ടിംഗ് ഹുക്കുകൾ ചേർത്തു
+} from 'react-router-dom';
 import { 
   LayoutDashboard, Users, FolderEdit, Settings, 
-  Bell, LogOut, ShieldCheck, X, ChevronRight, 
-  Clock, Briefcase, AlertCircle
+  Bell, LogOut, Briefcase, ChevronRight, AlertCircle, 
+  ShieldCheck, Activity, Clock
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Data Sources
 import { initialLeads } from '../../data/leadHistoryData';
@@ -23,11 +23,10 @@ const BusinessHub = ({ onLogout }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 1. SESSION MANAGEMENT
+  // 1. SESSION & DATA MANAGEMENT
   const currentUser = JSON.parse(localStorage.getItem('vynx_user') || "{}");
-  const businessName = currentUser.name || currentUser.businessName || "Business Unit";
+  const businessName = currentUser.name || currentUser.businessName || "Business Team";
 
-  // 2. DATA SYNC
   const [leads, setLeads] = useState(() => {
     const saved = localStorage.getItem('vynx_leads');
     const allLeads = saved ? JSON.parse(saved) : initialLeads;
@@ -35,34 +34,10 @@ const BusinessHub = ({ onLogout }) => {
     return allLeads.filter(l => l.businessUnit === businessName);
   });
 
-  // 3. STORAGE LISTENER
-  useEffect(() => {
-    const handleSync = () => {
-      const saved = localStorage.getItem('vynx_leads');
-      if (saved) {
-        const allLeads = JSON.parse(saved);
-        setLeads(allLeads.filter(l => l.businessUnit === businessName));
-      }
-    };
-    window.addEventListener('storage', handleSync);
-    return () => window.removeEventListener('storage', handleSync);
-  }, [businessName]);
-
-  // 4. NOTIFICATION LOGIC
   const notificationLeads = leads.filter(l => l.status === 'Pending');
   const notificationCount = notificationLeads.length;
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-        setShowNotifications(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // 5. UPDATE HANDLER (Passed to sub-pages via Outlet context)
+  // 2. STATUS UPDATE HANDLER
   const updateLeadStatus = (id, newStatus) => {
     const masterSaved = JSON.parse(localStorage.getItem('vynx_leads') || "[]");
     const updatedMasterLeads = masterSaved.map(l => 
@@ -73,179 +48,199 @@ const BusinessHub = ({ onLogout }) => {
   };
 
   const navItems = [
-    { id: 'dashboard', label: 'Unit Overview', icon: <LayoutDashboard size={18} />, path: '/business/dashboard' },
-    { id: 'leads', label: 'Incoming Leads', icon: <Users size={18} />, path: '/business/leads' },
-    { id: 'portfolio', label: 'Portfolio', icon: <FolderEdit size={18} />, path: '/business/portfolio' },
-    { id: 'settings', label: 'Unit Settings', icon: <Settings size={18} />, path: '/business/settings' },
+    { id: 'dashboard', label: 'Team Overview', icon: LayoutDashboard, path: '/business/dashboard' },
+    { id: 'leads', label: 'Incoming Leads', icon: Users, path: '/business/leads' },
+    { id: 'portfolio', label: 'Project Portfolio', icon: FolderEdit, path: '/business/portfolio' },
+    { id: 'settings', label: 'Account Settings', icon: Settings, path: '/business/settings' },
   ];
 
-  // Get current path name for header
-  const currentPathName = location.pathname.split('/').pop().replace('-', ' ');
+  const currentTabName = location.pathname.split('/').pop().replace('-', ' ');
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100 overflow-hidden">
+    <div className="flex h-screen bg-[#F8FAFC] text-[#1E1E1E] font-['Plus_Jakarta_Sans',sans-serif] selection:bg-blue-100 overflow-hidden">
       
-      {/* SIDEBAR - Desktop */}
-      <aside className="hidden lg:flex flex-col w-64 bg-slate-900 sticky top-0 h-screen z-30">
-        <div className="p-6 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 bg-indigo-600 flex items-center justify-center text-white rounded-none">
-              <Briefcase size={18} />
+      {/* 1. SIDEBAR (DESKTOP) - DENSE & ANIMATED */}
+      <aside className="hidden lg:flex flex-col w-[280px] bg-white border-r border-slate-200 z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+        <div className="p-8 pb-4">
+          <div className="flex items-center gap-3.5 mb-2">
+            <div className="h-10 w-10 bg-[#007ACC] rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+              <Briefcase size={22} strokeWidth={2.5} />
             </div>
-            <h1 className="text-lg font-bold text-white tracking-tight uppercase">Vynx Unit</h1>
+            <div className="flex flex-col">
+              <span className="text-base font-extrabold tracking-tight leading-none uppercase">Radix</span>
+              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">Business Hub</span>
+            </div>
           </div>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 italic">Management Portal</p>
+{/*           
+          <div className="flex items-center gap-2.5 mt-6 px-3 py-2.5 bg-slate-50 rounded-xl border border-slate-100">
+             <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Unit ID: {currentUser.id || "B-000"}</span>
+          </div> */}
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 px-4 space-y-1 mt-8 overflow-hidden">
+          <p className="px-4 text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-4 opacity-70">Management Menu</p>
+
           {navItems.map((item) => (
             <NavLink
               key={item.id}
               to={item.path}
               className={({ isActive }) => `
-                w-full flex items-center justify-between p-3.5 transition-all rounded-none
-                ${isActive 
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
+                group relative w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all duration-300
+                ${isActive ? 'bg-blue-50 text-[#007ACC] shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
               `}
             >
-              <div className="flex items-center gap-3">
-                {item.icon}
-                <span className="text-xs font-bold uppercase tracking-widest">{item.label}</span>
-              </div>
-              <ChevronRight size={14} className="opacity-40" />
+              {({ isActive }) => (
+                <>
+                  <div className="flex items-center gap-3.5">
+                    <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} className="transition-transform group-hover:scale-110" />
+                    <span className="text-[12px] font-bold tracking-tight">{item.label}</span>
+                  </div>
+                  
+                  {/* VERTICAL LINE ANIMATION - FIXED VISIBILITY */}
+                  {isActive && (
+                    <motion.div 
+                      layoutId="active-pill" 
+                      className="absolute right-0 w-1 h-5 bg-[#007ACC] rounded-l-full shadow-[0_0_12px_rgba(0,122,204,0.4)]"
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
 
-        <div className="p-6 border-t border-slate-800 bg-slate-900/50">
-           <div className="flex items-center gap-3 mb-6 px-1">
-              <div className="h-9 w-9 rounded-none bg-indigo-600/20 flex items-center justify-center text-xs font-bold text-indigo-400 border border-indigo-400/30 uppercase">
+        <div className="p-6 border-t border-slate-100 bg-slate-50/40">
+           <div className="flex items-center gap-3 p-3.5 bg-white border border-slate-200 rounded-2xl mb-4 shadow-sm group transition-all hover:border-blue-200">
+              <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center text-xs font-black text-[#007ACC] border border-blue-100 uppercase group-hover:scale-105 transition-transform">
                 {businessName[0]}
               </div>
               <div className="overflow-hidden">
-                <p className="text-[10px] font-bold text-slate-500 uppercase leading-none mb-1">Unit Manager</p>
-                <p className="text-sm font-bold text-white truncate tracking-tight uppercase">{businessName}</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase leading-none mb-1">Manager Access</p>
+                <p className="text-[11px] font-black text-slate-900 truncate tracking-tight uppercase">{businessName}</p>
               </div>
            </div>
            <button 
-             onClick={() => setShowLogoutConfirm(true)}
-             className="w-full flex items-center gap-3 p-3 rounded-none text-xs font-bold text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all uppercase tracking-widest"
+             onClick={() => setShowLogoutConfirm(true)} 
+             className="w-full flex items-center justify-center gap-3 p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all rounded-xl text-[11px] font-bold uppercase tracking-widest active:scale-95"
            >
-             <LogOut size={16} /> Exit System
+             <LogOut size={18} /> Sign Out
            </button>
         </div>
       </aside>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col min-w-0 relative">
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 sticky top-0 z-20">
-          <div className="hidden lg:block">
-            <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-              Portal / <span className="text-slate-900">{currentPathName}</span>
-            </h2>
-          </div>
-
-          <div className="lg:hidden flex items-center gap-3">
-             <div className="h-8 w-8 bg-slate-900 flex items-center justify-center text-white rounded-none">
-                <Briefcase size={16} />
-             </div>
-             <span className="text-sm font-bold uppercase tracking-tight">{currentPathName}</span>
-          </div>
-          
+      {/* 2. MAIN WORKSPACE */}
+      <main className="flex-1 flex flex-col min-w-0 relative h-screen overflow-y-auto">
+        <header className="h-16 border-b border-slate-200 flex items-center justify-between px-8 py-3 lg:px-12 sticky top-0 bg-white/80 backdrop-blur-xl z-20">
           <div className="flex items-center gap-4">
-            {/* Notifications Terminal */}
-            <div className="relative" ref={notificationRef}>
-              <button 
-                onClick={() => setShowNotifications(!showNotifications)}
-                className={`relative p-2 transition-all border rounded-none ${showNotifications ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-400'}`}
-              >
-                <Bell size={20} />
-                {notificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-600 rounded-none border border-white text-[8px] flex items-center justify-center text-white font-bold">
-                    {notificationCount}
-                  </span>
-                )}
-              </button>
+              <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+               <span className="text-blue-600 font-extrabold uppercase italic">{currentTabName}</span>
+              </h2>
+          </div>
 
-              <AnimatePresence>
-                {showNotifications && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-12 right-0 w-80 bg-white border border-slate-200 shadow-2xl rounded-none overflow-hidden z-50"
-                  >
-                    <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Incoming Alerts</span>
-                    </div>
-                    <div className="max-h-80 overflow-y-auto">
-                      {notificationLeads.length > 0 ? notificationLeads.map((note) => (
-                        <button key={note.id} onClick={() => { navigate('/business/leads'); setShowNotifications(false); }} className="w-full p-4 flex gap-4 hover:bg-slate-50 border-b border-slate-50 text-left transition-all group last:border-0">
-                          <div className="h-10 w-10 bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 rounded-none border border-amber-100"><Clock size={18} /></div>
-                          <div>
-                            <p className="text-xs font-bold text-slate-900 uppercase">{note.clientName}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{note.service}</p>
-                          </div>
-                        </button>
-                      )) : (
-                        <div className="p-10 text-center text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Zero Pending Tasks</div>
-                      )}
-                    </div>
-                    <button onClick={() => setShowNotifications(false)} className="w-full py-4 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-600 transition-all">Close Terminal</button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+          <div className="flex items-center gap-4">
+             {/* Notification Bell */}
+             <div className="relative" ref={notificationRef}>
+                <motion.button 
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className={`p-2.5 rounded-xl border transition-all ${showNotifications ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-white text-slate-400 border-slate-200 hover:border-[#007ACC] hover:text-[#007ACC] shadow-sm'}`}
+                >
+                  <Bell size={18} />
+                  {notificationCount > 0 && <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-600 rounded-full border-2 border-white text-[8px] flex items-center justify-center text-white font-bold">{notificationCount}</span>}
+                </motion.button>
+
+                <AnimatePresence>
+                  {showNotifications && (
+                    <motion.div initial={{ opacity: 0, y: 15, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 15, scale: 0.95 }} className="absolute top-14 right-0 w-80 bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-50">
+                       <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Active Alerts</span>
+                          <span className="text-[9px] bg-blue-100 text-[#007ACC] px-2 py-0.5 rounded font-bold uppercase">{notificationCount} New</span>
+                       </div>
+                       <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
+                          {notificationLeads.map((note) => (
+                             <button key={note.id} onClick={() => { navigate('/business/leads'); setShowNotifications(false); }} className="w-full p-4 flex gap-4 hover:bg-slate-50 text-left transition-all group">
+                                <div className="h-10 w-10 bg-blue-50 text-[#007ACC] flex items-center justify-center shrink-0 rounded-xl border border-blue-100 group-hover:bg-[#007ACC] group-hover:text-white transition-colors"><Clock size={18} /></div>
+                                <div className="overflow-hidden">
+                                   <p className="text-[11px] font-black text-slate-900 uppercase truncate">{note.clientName}</p>
+                                   <p className="text-[9px] text-slate-500 font-medium uppercase tracking-tight truncate mt-0.5">{note.service}</p>
+                                </div>
+                             </button>
+                          ))}
+                          {notificationCount === 0 && <div className="p-12 text-center text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Zero New Notifications</div>}
+                       </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+             </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 lg:p-10 scroll-smooth">
-          <motion.div 
-            key={location.pathname}
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="max-w-7xl mx-auto"
-          >
-            {/* SUB-PAGES RENDER HERE */}
-            <Outlet context={{ leads, businessName, updateLeadStatus }} />
-          </motion.div>
+        <div className="p-6 lg:p-12 max-w-[1400px] w-full mx-auto pb-32">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+            >
+              <Outlet context={{ leads, businessName, updateLeadStatus }} />
+            </motion.div>
+          </AnimatePresence>
         </div>
+
+        <footer className="hidden lg:flex fixed bottom-0 right-0 left-[280px] h-8 bg-white border-t border-slate-200 text-slate-400 px-6 items-center justify-between z-30">
+           <div className="flex items-center gap-8">
+              <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+                <ShieldCheck size={14} className="text-emerald-500" /> Account Secure
+              </span>
+              <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+                <Activity size={14} className="text-blue-500" /> Network Sync Active
+              </span>
+           </div>
+           <span className="text-[10px] font-bold uppercase tracking-widest opacity-50 italic">Enterprise v1.0.2</span>
+        </footer>
       </main>
 
-      {/* MOBILE NAVIGATION */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center p-3 z-40 shadow-xl">
+      {/* 3. MOBILE NAVIGATION - FIXED BOTTOM BAR */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center px-4 py-4 z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.04)] h-16">
         {navItems.map((item) => (
           <NavLink 
-            key={item.id} 
+            key={item.id}
             to={item.path} 
-            className={({ isActive }) => `flex flex-col items-center justify-center p-2 transition-all ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}
+            className={({ isActive }) => `flex flex-col items-center gap-1.5 transition-all duration-300 ${isActive ? 'text-[#007ACC]' : 'text-slate-400'}`}
           >
-            {item.icon}
-            <span className="text-[9px] font-bold uppercase mt-1">{item.label.split(' ')[0]}</span>
+            {({ isActive }) => (
+              <>
+                <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                <span className="text-[9px] font-bold uppercase tracking-tight">{item.label.split(' ')[0]}</span>
+              </>
+            )}
           </NavLink>
         ))}
-        <button onClick={() => setShowLogoutConfirm(true)} className="flex flex-col items-center justify-center p-2 text-rose-500">
-          <LogOut size={20} />
-          <span className="text-[9px] font-bold uppercase mt-1">Exit</span>
+        <button onClick={() => setShowLogoutConfirm(true)} className="flex flex-col items-center gap-1.5 text-rose-500">
+          <LogOut size={22} />
+          <span className="text-[9px] font-bold uppercase tracking-tight">Exit</span>
         </button>
       </nav>
 
-      {/* LOGOUT CONFIRMATION MODAL */}
+      {/* SIGN OUT CONFIRMATION */}
       <AnimatePresence>
         {showLogoutConfirm && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white w-full max-w-sm rounded-none p-10 shadow-2xl border border-slate-200 text-center space-y-6"
-            >
-                <div className="w-16 h-16 bg-red-50 text-red-600 rounded-none flex items-center justify-center mx-auto border border-red-100">
-                  <AlertCircle size={32} />
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-sm p-10 rounded-[1.5rem] shadow-2xl border border-slate-100 text-center space-y-8">
+                <div className="w-16 h-16 bg-rose-50 text-rose-600 flex items-center justify-center mx-auto rounded-3xl border border-rose-100 shadow-inner">
+                  <AlertCircle size={32} strokeWidth={2.5} />
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900">Authorize Exit</h3>
-                  <p className="text-sm text-slate-500 font-medium">Are you sure you want to terminate the current unit management session?</p>
+                <div className="space-y-3">
+                  <h3 className="text-xl font-black uppercase tracking-tight text-slate-900">Sign Out</h3>
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed px-4 italic">"Are you sure you want to end your session?"</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  <button onClick={() => setShowLogoutConfirm(false)} className="py-4 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-all">Abort</button>
-                  <button onClick={onLogout} className="py-4 bg-red-600 text-white text-[10px] font-bold uppercase tracking-widest shadow-xl shadow-red-100 hover:bg-red-700 transition-all">Terminate</button>
+                <div className="grid grid-cols-2 gap-4">
+                  <button onClick={() => setShowLogoutConfirm(false)} className="py-4 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95">Stay</button>
+                  <button onClick={onLogout} className="py-4 bg-rose-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all active:scale-95">Confirm</button>
                 </div>
             </motion.div>
           </div>
