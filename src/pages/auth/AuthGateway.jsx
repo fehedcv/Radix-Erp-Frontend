@@ -93,7 +93,7 @@ const AuthGateway = ({ onLoginSuccess }) => {
         navigate('/unauthorized');
       }
 
-      onLoginSuccess(userData);
+      onLoginSuccess(primary_role);
 
     } catch (err) {
       console.error(err);

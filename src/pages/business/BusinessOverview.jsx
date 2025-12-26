@@ -1,94 +1,116 @@
-import React, { useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Users, Clock, Activity, ShieldCheck, 
-  TrendingUp, CheckCircle2, ArrowUpRight, Zap,
-  Layout
+import {
+  Users,
+  Clock,
+  Activity,
+  ShieldCheck,
+  TrendingUp,
+  CheckCircle2,
+  ArrowUpRight
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 
+import frappeApi from '../../api/frappeApi';
+
 const BusinessOverview = () => {
-  const { leads = [], businessName } = useOutletContext();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const myLeads = useMemo(() => {
-    return leads.filter(l => l.businessUnit === businessName);
-  }, [leads, businessName]);
-
-  const stats = useMemo(() => ({
-    total: myLeads.length,
-    verified: myLeads.filter(l => l.status === 'Verified').length,
-    inProgress: myLeads.filter(l => l.status === 'In Progress').length,
-    completed: myLeads.filter(l => l.status === 'Completed').length,
-    rejected: myLeads.filter(l => l.status === 'Rejected').length,
-  }), [myLeads]);
-
-  const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
-
-  // --- Smooth Area Chart Logic ---
-  const trendData = useMemo(() => {
-    const countsByDate = myLeads.reduce((acc, lead) => {
-      acc[lead.date] = (acc[lead.date] || 0) + 1;
-      return acc;
-    }, {});
-    
-    const sortedDates = Object.keys(countsByDate).sort().slice(-7);
-    return {
-      labels: sortedDates.map(d => d.split('-').slice(1).join('/')), 
-      data: sortedDates.map(d => countsByDate[d])
+  // ---- FETCH DASHBOARD DATA (BACKEND AUTHORITY) ----
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const res = await frappeApi.get(
+          '/method/business_chain.api.business_dashboard.get_business_overview'
+        );
+        setData(res.data.message);
+      } catch (err) {
+        console.error('Failed to load business overview', err);
+      } finally {
+        setLoading(false);
+      }
     };
-  }, [myLeads]);
 
-  const areaChartConfig = {
-    series: [{ name: 'Leads Received', data: trendData.data.length ? trendData.data : [0,0,0,0,0,0,0] }],
+    loadDashboard();
+  }, []);
+
+  // ---- SAFE DEFAULTS (CRITICAL) ----
+  const safeData = data || {
+    total: 0,
+    verified: 0,
+    in_progress: 0,
+    completed: 0,
+    rejected: 0,
+    completion_rate: 0,
+    trend: { labels: [], data: [] }
+  };
+
+  const {
+    total,
+    verified,
+    in_progress,
+    completed,
+    rejected,
+    completion_rate,
+    trend
+  } = safeData;
+
+  // ---- AREA CHART CONFIG (HOOK ALWAYS RUNS) ----
+  const areaChartConfig = useMemo(() => ({
+    series: [
+      {
+        name: 'Leads Received',
+        data: trend.data.length ? trend.data : [0, 0, 0, 0, 0, 0, 0],
+      },
+    ],
     options: {
-      chart: { 
-        type: 'area', 
-        toolbar: { show: false }, 
+      chart: {
+        type: 'area',
+        toolbar: { show: false },
         fontFamily: 'Plus Jakarta Sans',
         zoom: { enabled: false },
-        sparkline: { enabled: false }
       },
       colors: ['#007ACC'],
       dataLabels: { enabled: false },
-      stroke: { curve: 'smooth', width: 3, lineCap: 'round' },
+      stroke: { curve: 'smooth', width: 3 },
       fill: {
         type: 'gradient',
         gradient: {
-          shadeIntensity: 1,
           opacityFrom: 0.45,
           opacityTo: 0.05,
-          stops: [0, 90, 100]
-        }
+          stops: [0, 90, 100],
+        },
       },
       xaxis: {
-        categories: trendData.labels,
+        categories: trend.labels,
+        labels: {
+          style: { colors: '#94A3B8', fontSize: '11px', fontWeight: 600 },
+        },
         axisBorder: { show: false },
         axisTicks: { show: false },
-        labels: { style: { colors: '#94A3B8', fontSize: '11px', fontWeight: 600 } }
       },
-      yaxis: { 
-        show: true,
+      yaxis: {
+        labels: {
+          style: { colors: '#94A3B8', fontSize: '11px', fontWeight: 600 },
+        },
         tickAmount: 4,
-        labels: { style: { colors: '#94A3B8', fontSize: '11px', fontWeight: 600 } } 
       },
-      grid: { 
-        borderColor: '#F1F5F9', 
-        strokeDashArray: 4, 
-        xaxis: { lines: { show: false } },
-        yaxis: { lines: { show: true } }
+      grid: {
+        borderColor: '#F1F5F9',
+        strokeDashArray: 4,
       },
       tooltip: {
-        theme: 'light',
-        x: { show: false },
-        y: { formatter: (val) => `${val} New Leads` },
-        marker: { show: false }
-      }
-    }
-  };
+        y: {
+          formatter: (val) => `${val} New Leads`,
+        },
+      },
+    },
+  }), [trend]);
 
-  const successRadialConfig = {
-    series: [completionRate],
+  // ---- RADIAL COMPLETION CHART ----
+  const radialConfig = {
+    series: [completion_rate],
     options: {
       chart: { type: 'radialBar' },
       plotOptions: {
@@ -96,149 +118,98 @@ const BusinessOverview = () => {
           startAngle: -135,
           endAngle: 135,
           hollow: { size: '65%' },
-          track: { background: '#F8FAFC', strokeWidth: '100%' },
+          track: { background: '#F8FAFC' },
           dataLabels: {
-            name: { offsetY: 20, color: '#64748B', fontSize: '11px', fontWeight: 700, label: 'COMPLETED' },
-            value: { offsetY: -15, color: '#1E293B', fontSize: '26px', fontWeight: 800, formatter: (val) => `${val}%` }
-          }
-        }
+            name: {
+              offsetY: 20,
+              color: '#64748B',
+              fontSize: '11px',
+              fontWeight: 700,
+            },
+            value: {
+              offsetY: -15,
+              color: '#1E293B',
+              fontSize: '26px',
+              fontWeight: 800,
+              formatter: (val) => `${val}%`,
+            },
+          },
+        },
       },
       colors: ['#10B981'],
-      stroke: { lineCap: 'round' }
-    }
+      stroke: { lineCap: 'round' },
+    },
   };
+
+  // ✅ EARLY RETURN IS NOW SAFE
+  if (loading) return null;
 
   return (
     <div className="font-['Plus_Jakarta_Sans',sans-serif] space-y-6 pb-16 px-4 sm:px-6 lg:px-0 max-w-[1400px] mx-auto">
-      
-      {/* 0. HEADER SECTION */}
-      <motion.div 
+
+      {/* HEADER */}
+      <motion.div
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white border border-slate-200 p-5 md:p-6 rounded-2xl shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+        className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex items-center justify-between"
       >
         <div className="flex items-center gap-4">
-           <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center text-[#007ACC] border border-blue-100 shrink-0">
-              <TrendingUp size={24} />
-           </div>
-           <div>
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Business Analytics</h2>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                <Activity size={12} className="text-[#007ACC]" /> Operational Performance: {businessName}
-              </p>
-           </div>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex flex-col items-end">
-             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Network Status</span>
-             <span className="text-[10px] font-bold text-emerald-600 uppercase flex items-center gap-1.5">
-               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Sync Active
-             </span>
+          <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center text-[#007ACC] border border-blue-100">
+            <TrendingUp size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+              Business Analytics
+            </h2>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-2">
+              <Activity size={12} className="text-[#007ACC]" />
+              Operational Performance
+            </p>
           </div>
         </div>
       </motion.div>
 
-      {/* 1. RESPONSIVE METRICS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <MetricCard label="Total Leads" value={stats.total} icon={<Users size={18}/>} color="text-blue-600" bg="bg-blue-50" trend="+12.5%" />
-        <MetricCard label="Verified" value={stats.verified} icon={<CheckCircle2 size={18}/>} color="text-emerald-600" bg="bg-emerald-50" trend="Stable" />
-        <MetricCard label="Working" value={stats.inProgress} icon={<Clock size={18}/>} color="text-amber-600" bg="bg-amber-50" trend="Active" />
-        <MetricCard label="Rejected" value={stats.rejected} icon={<Activity size={18}/>} color="text-rose-600" bg="bg-rose-50" trend="Low" />
+      {/* METRICS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard label="Total Leads" value={total} icon={<Users size={18} />} />
+        <MetricCard label="Verified" value={verified} icon={<CheckCircle2 size={18} />} />
+        <MetricCard label="In Progress" value={in_progress} icon={<Clock size={18} />} />
+        <MetricCard label="Rejected" value={rejected} icon={<Activity size={18} />} />
       </div>
 
-      {/* 2. ANALYTICS SECTION */}
+      {/* CHARTS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 sm:p-8 shadow-sm overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 tracking-tight">Lead Activity Trend</h3>
-              <p className="text-[11px] text-slate-400 font-medium">Inquiry flow (Last 7 days)</p>
-            </div>
-            <div className="flex items-center gap-2 self-start text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-              <ArrowUpRight size={14} />
-              <span className="text-[10px] font-bold uppercase tracking-tight">Growth Active</span>
-            </div>
-          </div>
-          <div className="h-[280px] w-full">
-            <Chart options={areaChartConfig.options} series={areaChartConfig.series} type="area" height="100%" />
-          </div>
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <Chart
+            options={areaChartConfig.options}
+            series={areaChartConfig.series}
+            type="area"
+            height={280}
+          />
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-8 shadow-sm flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 tracking-tight">Efficiency</h3>
-            <p className="text-[11px] text-slate-400 font-medium">Lead conversion rate</p>
-          </div>
-          <div className="h-60 w-full flex items-center justify-center">
-            <Chart options={successRadialConfig.options} series={successRadialConfig.series} type="radialBar" height="100%" />
-          </div>
-          <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-             <span className="text-[10px] font-bold text-slate-500 uppercase">Target 80%</span>
-             <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">On Track</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. STATUS & PROTOCOL */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 flex flex-col sm:flex-row items-start gap-5 group transition-all hover:border-blue-200">
-          <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center border border-blue-100 shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-            <ShieldCheck size={24} />
-          </div>
-          <div>
-            <h4 className="text-[14px] font-extrabold text-slate-900 uppercase tracking-tight">Lead Processing Status</h4>
-            <p className="text-[12px] text-slate-500 mt-2 leading-relaxed font-medium">
-              System is currently monitoring all incoming leads. Verification protocols are active to ensure data integrity and maximize conversion probability.
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
-          <div className="flex items-center justify-between">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Network Pulse</h4>
-            <div className="flex items-center gap-2">
-               <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-               <span className="text-[10px] font-black text-blue-600 uppercase">Live</span>
-            </div>
-          </div>
-          <div className="space-y-4">
-             <StatusLine label="Database Health" val="Stable" color="bg-emerald-500" />
-             <StatusLine label="Sync Latency" val="0.4ms" color="bg-blue-500" />
-          </div>
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <Chart
+            options={radialConfig.options}
+            series={radialConfig.series}
+            type="radialBar"
+            height={260}
+          />
         </div>
       </div>
     </div>
   );
 };
 
-// --- HELPERS ---
+// ---- HELPERS ----
 
-const MetricCard = ({ label, value, icon, color, bg, trend }) => (
-  <motion.div 
-    whileHover={{ y: -4 }}
-    className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col gap-4 group transition-all hover:shadow-md cursor-default"
-  >
-    <div className="flex justify-between items-center">
-      <div className={`h-10 w-10 ${bg} ${color} rounded-xl flex items-center justify-center border border-transparent group-hover:border-current transition-all`}>
-        {icon}
-      </div>
-      <span className="text-[10px] font-bold text-slate-400 px-2 py-0.5 bg-slate-50 rounded-md">{trend}</span>
+const MetricCard = ({ label, value, icon }) => (
+  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+    <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+      {icon}
     </div>
-    <div>
-      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
-      <h3 className="text-3xl font-black text-slate-900 tracking-tight">{value}</h3>
-    </div>
-  </motion.div>
-);
-
-const StatusLine = ({ label, val, color }) => (
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-3 text-[11px] font-bold text-slate-600 uppercase">
-      <div className={`h-1.5 w-1.5 rounded-full ${color}`} />
-      {label}
-    </div>
-    <span className="text-[11px] font-black text-slate-900">{val}</span>
+    <p className="text-[11px] font-bold text-slate-400 uppercase mt-4">{label}</p>
+    <h3 className="text-3xl font-black text-slate-900">{value}</h3>
   </div>
 );
 
