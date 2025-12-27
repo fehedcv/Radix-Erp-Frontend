@@ -1,79 +1,55 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
-import { 
-  ArrowLeft, Phone, MapPin, 
-  CheckCircle2, XCircle, User, 
-  AlertTriangle, Loader2, Calendar, 
-  FileText, ShieldCheck, Star, Mail, Check,
-  Briefcase, ChevronRight, Info, Activity,
-  ChevronDown, MessageSquare, ClipboardCheck, History,
-  ExternalLink
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft, Phone, Mail,
+  CheckCircle2, XCircle, User,
+  AlertTriangle, Loader2, Calendar,
+  ShieldCheck, Info, Activity,
+  MessageSquare, ClipboardCheck,
+  Play, Check, Briefcase, Layers
 } from 'lucide-react';
+
+import frappeApi from '../../api/frappeApi';
 
 const LeadReview = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  // 1. DATA SOURCE (Logic Preserved)
-  const { leads, updateLeadStatus } = useOutletContext();
-  const lead = useMemo(() => leads.find(l => l.id === id), [leads, id]);
 
-  const [modal, setModal] = useState({ show: false, type: '', title: '', message: '', confirmText: '', targetStatus: '' });
+  const [lead, setLead] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState({ show: false, targetStatus: '' });
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showAgentContact, setShowAgentContact] = useState(false);
 
-  if (!lead) {
-    return (
-      <div className="py-32 text-center font-['Plus_Jakarta_Sans',sans-serif]">
-        <div className="w-16 h-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-6 text-slate-300 shadow-sm">
-           <Info size={32} />
-        </div>
-        <p className="text-slate-500 font-bold uppercase tracking-widest">Request Not Found</p>
-        <button onClick={() => navigate('/business/leads')} className="mt-4 text-[#007ACC] font-black uppercase text-xs hover:underline">Return to Registry</button>
-      </div>
-    );
-  }
+  // ---------------- FETCH LEAD ----------------
+  useEffect(() => {
+    const fetchLead = async () => {
+      try {
+        const res = await frappeApi.get(
+          '/method/business_chain.api.leads.get_business_lead_detail',
+          { params: { lead_id: id } }
+        );
+        setLead(res.data.message);
+      } catch (err) {
+        console.error(err);
+        setLead(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLead();
+  }, [id]);
 
-  // --- CONFIG (Logic Preserved) ---
-  const workflowSteps = ['Verified', 'Started', 'In Progress', 'Completed'];
-  const userFriendlySteps = ['Approved', 'Kicked Off', 'Working On It', 'Finished'];
-  const normalizedStatus = (lead.status === 'Verfied' || lead.status === 'Verified') ? 'Verified' : lead.status;
-  const currentStepIndex = workflowSteps.indexOf(normalizedStatus);
-  const progressPercent = currentStepIndex > -1 ? ((currentStepIndex + 1) / workflowSteps.length) * 100 : 0;
-
-  // Clean phone for WhatsApp Link (removes spaces and symbols)
-  const cleanPhone = lead.clientPhone?.replace(/\D/g, '');
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Verified': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      case 'Started': return 'bg-blue-50 text-[#007ACC] border-blue-100';
-      case 'In Progress': return 'bg-indigo-50 text-indigo-700 border-indigo-100';
-      case 'Completed': return 'bg-[#007ACC] text-white border-[#007ACC]';
-      case 'Rejected': return 'bg-rose-50 text-rose-700 border-rose-100';
-      default: return 'bg-amber-50 text-amber-700 border-amber-100';
-    }
-  };
-
-  // --- HANDLERS (Logic Preserved) ---
-  const confirmAction = (type, targetStatus = '') => {
-    let config = {};
-    if (type === 'verify') {
-        config = { title: 'Approve Request', message: 'Move this request into the active project list?', confirmText: 'Confirm Approval', targetStatus: 'Verified' };
-    } else if (type === 'reject') {
-        config = { title: 'Cancel Request', message: 'Mark this request as canceled? This cannot be reversed.', confirmText: 'Confirm Cancel', targetStatus: 'Rejected' };
-    } else if (type === 'statusChange') {
-        config = { title: `Move to ${targetStatus}`, message: `Update the project to the "${targetStatus}" stage?`, confirmText: 'Update Progress', targetStatus: targetStatus };
-    }
-    setModal({ ...config, show: true, type });
-  };
-
-  const executeModalAction = async () => {
+  // ---------------- STATUS UPDATE ----------------
+  const updateStatus = async (status) => {
     setIsProcessing(true);
     try {
-      await updateLeadStatus(lead.id, modal.targetStatus);
-      setModal(prev => ({ ...prev, show: false }));
+      await frappeApi.post(
+        '/method/business_chain.api.leads.update_lead_status',
+        { lead_id: lead.id, status }
+      );
+      setLead(prev => ({ ...prev, status }));
+      setModal({ show: false, targetStatus: '' });
     } catch (err) {
       console.error(err);
     } finally {
@@ -81,227 +57,320 @@ const LeadReview = () => {
     }
   };
 
+  // ---------------- HELPERS ----------------
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Pending': return 'text-amber-600 bg-amber-50 border-amber-100';
+      case 'Verified': return 'text-blue-600 bg-blue-50 border-blue-100';
+      case 'In Progress': return 'text-indigo-600 bg-indigo-50 border-indigo-100';
+      case 'Completed': return 'text-emerald-600 bg-emerald-50 border-emerald-100';
+      case 'Rejected': return 'text-rose-600 bg-rose-50 border-rose-100';
+      default: return 'text-slate-500 bg-slate-50 border-slate-100';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  };
+
+  // ---------------- LOADING / ERROR STATES ----------------
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="animate-spin text-[#007ACC]" size={32} />
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Lead Details...</p>
+      </div>
+    );
+  }
+
+  if (!lead) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
+        <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300">
+           <Info size={32} />
+        </div>
+        <div className="text-center">
+            <p className="text-lg font-black uppercase text-slate-700 tracking-tight">Lead Unavailable</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                The requested ID could not be found.
+            </p>
+        </div>
+        <button
+          onClick={() => navigate('/business/leads')}
+          className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all"
+        >
+          Return to Registry
+        </button>
+      </div>
+    );
+  }
+
+  // Progress Logic
+  const workflow = ['Pending', 'Verified', 'In Progress', 'Completed'];
+  const currentStepIndex = workflow.indexOf(lead.status);
+  const cleanPhone = lead.clientPhone?.replace(/\D/g, '') || '';
+
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-[1400px] mx-auto space-y-6 pb-16 font-['Plus_Jakarta_Sans',sans-serif]">
-      
-      {/* 1. COMPACT HEADER */}
-      <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-3">
-          <button onClick={() => navigate('/business/leads')} className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-[#007ACC] transition-all uppercase tracking-widest"><ArrowLeft size={14} /> Back to Registry</button>
-          <div className="flex items-center gap-4">
-             <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Request Details</h2>
-             <span className="bg-slate-50 border border-slate-100 px-3 py-1 text-[10px] font-black text-[#007ACC] tracking-widest rounded-lg"># {lead.id}</span>
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-[1000px] mx-auto space-y-6 pb-16 font-sans px-4 sm:px-6"
+    >
+
+      {/* 1. TOP NAVIGATION & HEADER */}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <button 
+            onClick={() => navigate('/business/leads')} 
+            className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#007ACC] transition-colors mb-3"
+          >
+            <ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform" />
+            Back to Registry
+          </button>
+          
+          <div className="flex items-center gap-3">
+             <h2 className="text-3xl md:text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none">
+                {lead.clientName}
+             </h2>
+             {lead.status === 'Rejected' && <XCircle size={24} className="text-rose-500" />}
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-4 mt-3">
+             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                <ShieldCheck size={12} className="text-[#007ACC]" /> Lead #{lead.id}
+             </span>
+             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                <Calendar size={12} /> {formatDate(lead.date)}
+             </span>
           </div>
         </div>
-        <div className={`px-5 py-3 text-[10px] font-black uppercase tracking-widest border rounded-xl shadow-sm ${getStatusColor(lead.status)}`}>
-          {lead.status === 'Pending' ? 'Status: Waiting for Review' : `Stage: ${lead.status}`}
+
+        <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 ${getStatusColor(lead.status)}`}>
+            <Activity size={14} />
+            <span className="text-[10px] font-black uppercase tracking-widest">{lead.status}</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* 2. MAIN CONTENT GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* 2. LEFT: REQUEST DATA & TIMELINE */}
-        <div className="lg:col-span-8 space-y-6">
+        {/* LEFT COLUMN: Customer & Project Info */}
+        <div className="md:col-span-2 space-y-6">
             
-            {/* PROGRESS BAR SECTION */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                     <Activity size={14} className="text-[#007ACC]" /> Fulfillment Progress
-                   </h4>
-                   <span className="text-[11px] font-black text-slate-900">{progressPercent}% Done</span>
+            {/* Contact Card */}
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#007ACC]" />
+                
+                <div className="flex justify-between items-start mb-6">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                        <User size={12} /> Contact Information
+                    </p>
                 </div>
-                <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-100 shadow-inner mb-6">
-                   <motion.div initial={{ width: 0 }} animate={{ width: `${progressPercent}%` }} transition={{ duration: 1.5 }} className="bg-[#007ACC] h-full rounded-full shadow-[0_0_10px_rgba(0,122,204,0.3)]" />
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                   {userFriendlySteps.map((stepLabel, i) => (
-                      <div key={i} className="text-center">
-                         <p className={`text-[8px] font-bold uppercase tracking-tighter ${i <= currentStepIndex ? 'text-[#007ACC]' : 'text-slate-300'}`}>{stepLabel}</p>
-                      </div>
-                   ))}
-                </div>
-            </div>
 
-            {/* REQUEST REQUIREMENTS */}
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-8 py-5 border-b border-slate-50 bg-slate-50/50 flex items-center gap-3">
-                    <Briefcase size={18} className="text-[#007ACC]" />
-                    <h3 className="font-black text-slate-900 text-[10px] uppercase tracking-widest">Request Summary</h3>
-                </div>
-                <div className="p-8 md:p-10 space-y-6">
-                    <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Project Type</p>
-                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight leading-none">{lead.service}</h2>
-                    </div>
-                    <div className="bg-slate-50 p-6 md:p-8 rounded-2xl border border-slate-100 border-l-4 border-l-[#007ACC]">
-                        <p className="text-slate-600 text-sm leading-relaxed font-medium italic">
-                            "{lead.description || "No project notes provided."}"
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* CUSTOMER PROFILE WITH CONTACT ACTIONS */}
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-8 py-5 border-b border-slate-50 bg-slate-50/50 flex items-center gap-3">
-                    <User size={18} className="text-[#007ACC]" />
-                    <h3 className="font-black text-slate-900 text-[10px] uppercase tracking-widest">Customer Identity</h3>
-                </div>
-                <div className="p-8 md:p-10 space-y-10">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <ProfileItem label="Customer Name" value={lead.clientName} />
-                        
-                        <div className="space-y-4">
-                           <ProfileItem label="Contact Number" value={lead.clientPhone} />
-                           {/* CONTACT BUTTONS ROW */}
-                           <div className="flex flex-wrap gap-2">
-                              <a 
-                                href={`tel:${lead.clientPhone}`}
-                                className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 hover:bg-[#007ACC] hover:text-white rounded-lg transition-all text-[9px] font-black uppercase tracking-widest border border-slate-200 shadow-sm active:scale-95"
-                              >
-                                 <Phone size={12} /> Call Now
-                              </a>
-                              <a 
-                                href={`https://wa.me/${cleanPhone}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-lg transition-all text-[9px] font-black uppercase tracking-widest border border-emerald-100 shadow-sm active:scale-95"
-                              >
-                                 <MessageSquare size={12} /> WhatsApp Now
-                              </a>
-                           </div>
+                <div className="grid gap-6">
+                    {/* Phone Actions */}
+                    <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 shrink-0 mt-1">
+                            <Phone size={16} />
+                        </div>
+                        <div className="w-full">
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                                Mobile: {lead.clientPhone}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                <a 
+                                    href={`tel:${lead.clientPhone}`} 
+                                    className="flex-1 min-w-[120px] py-2.5 px-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 flex items-center justify-center gap-2 transition-all active:scale-95"
+                                >
+                                    <Phone size={14} /> Call Now
+                                </a>
+                                <a 
+                                    href={`https://wa.me/${cleanPhone}`} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="flex-1 min-w-[120px] py-2.5 px-4 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-lg text-[10px] font-black uppercase tracking-widest text-emerald-700 flex items-center justify-center gap-2 transition-all active:scale-95"
+                                >
+                                    <MessageSquare size={14} /> WhatsApp
+                                </a>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="pt-8 border-t border-slate-50 flex items-start gap-4">
-                        <MapPin size={20} className="text-[#007ACC] shrink-0 mt-1" />
+                    {/* Agent Email */}
+                    <div className="flex items-start gap-3 pt-4 border-t border-slate-50">
+                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 shrink-0 mt-1">
+                            <Mail size={16} />
+                        </div>
                         <div>
-                           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Service Location</label>
-                           <p className="text-sm text-slate-600 font-bold uppercase mt-1">{lead.clientAddress}</p>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Handling Agent</p>
+                            <p className="text-sm font-bold text-slate-700 leading-relaxed break-all">
+                                {lead.agentId || "Unassigned"}
+                            </p>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Project Details */}
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                 <div className="flex items-center gap-2 mb-4">
+                    <ClipboardCheck size={16} className="text-[#007ACC]" />
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-800">Requirement Details</h3>
+                 </div>
+                 
+                 <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 mb-6">
+                    <p className="text-sm font-medium text-slate-700 leading-relaxed italic">
+                        "{lead.description || "No description provided."}"
+                    </p>
+                 </div>
+
+                 {/* Reference IDs Grid */}
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-3 border border-slate-100 rounded-lg">
+                        <div className="flex items-center gap-2 text-slate-400 mb-1">
+                            <Briefcase size={12} />
+                            <span className="text-[9px] font-bold uppercase tracking-widest">Business Unit</span>
+                        </div>
+                        <p className="text-xs font-mono font-bold text-slate-700 truncate">{lead.businessUnit}</p>
+                    </div>
+                    <div className="p-3 border border-slate-100 rounded-lg">
+                        <div className="flex items-center gap-2 text-slate-400 mb-1">
+                            <Layers size={12} />
+                            <span className="text-[9px] font-bold uppercase tracking-widest">Service ID</span>
+                        </div>
+                        <p className="text-xs font-mono font-bold text-slate-700 truncate">{lead.service}</p>
+                    </div>
+                 </div>
             </div>
         </div>
 
-        {/* 3. RIGHT: AGENT & ACTIONS */}
-        <div className="lg:col-span-4 space-y-6">
+        {/* RIGHT COLUMN: Workflow & Actions */}
+        <div className="space-y-6">
             
-            {/* CLICKABLE AGENT CARD */}
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-all hover:border-[#007ACC]">
-                 <button 
-                  onClick={() => setShowAgentContact(!showAgentContact)}
-                  className="w-full px-6 py-4 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between group"
-                 >
-                    <div className="flex items-center gap-3">
-                       <ShieldCheck size={18} className="text-[#007ACC]" />
-                       <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Referring Partner</h3>
-                    </div>
-                    <ChevronDown size={14} className={`text-slate-400 transition-transform ${showAgentContact ? 'rotate-180' : ''}`} />
-                </button>
-                <div className="p-6 space-y-6">
-                    <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center text-[#007ACC] font-black text-lg">
-                            {lead.agentName?.charAt(0) || 'A'}
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{lead.agentName || "System Partner"}</h4>
-                            <p className="text-[10px] font-bold text-[#007ACC] uppercase tracking-widest mt-0.5">ID: {lead.agentId}</p>
-                        </div>
-                    </div>
-
-                    <AnimatePresence>
-                      {showAgentContact && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-4 pt-4 border-t border-slate-50 overflow-hidden">
-                           <ContactInfo icon={<Mail size={12}/>} label="Email Address" value={`${lead.agentId?.toLowerCase()}@radix.team`} />
-                           <ContactInfo icon={<Phone size={12}/>} label="Direct Line" value="+91 00000 00000" />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+            {/* Progress Stepper */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                    <Activity size={12} /> Request Lifecycle
+                </p>
+                
+                <div className="space-y-4 relative">
+                    <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-slate-100 z-0" />
+                    
+                    {workflow.map((step, idx) => {
+                        const isCompleted = idx < currentStepIndex || lead.status === 'Completed';
+                        const isCurrent = step === lead.status;
+                        
+                        return (
+                            <div key={step} className="relative z-10 flex items-center gap-3">
+                                <div className={`
+                                    w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
+                                    ${isCompleted || isCurrent 
+                                        ? 'bg-[#007ACC] border-[#007ACC] text-white shadow-md shadow-blue-200' 
+                                        : 'bg-white border-slate-200 text-slate-300'}
+                                `}>
+                                    {isCompleted ? <Check size={12} strokeWidth={4} /> : <div className="w-1.5 h-1.5 rounded-full bg-current" />}
+                                </div>
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${isCurrent ? 'text-[#007ACC]' : isCompleted ? 'text-slate-800' : 'text-slate-300'}`}>
+                                    {step}
+                                </span>
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
 
-            {/* ACTION CONTROLS */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 space-y-6 shadow-sm">
-                {lead.status !== 'Pending' && lead.status !== 'Rejected' ? (
-                    <div className="space-y-6">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Update Request Stage</p>
-                        <div className="space-y-3">
-                             {['Started', 'In Progress', 'Completed'].map((stage) => {
-                                const isActive = lead.status === stage;
-                                const isPassed = workflowSteps.indexOf(stage) < currentStepIndex;
-                                return (
-                                    <button
-                                        key={stage}
-                                        onClick={() => confirmAction('statusChange', stage)}
-                                        disabled={isActive || isPassed}
-                                        className={`w-full flex items-center justify-between px-5 py-3.5 text-[10px] font-black uppercase border rounded-xl transition-all ${
-                                            isActive 
-                                            ? 'bg-[#007ACC] border-[#007ACC] text-white shadow-lg' 
-                                            : 'bg-white border-slate-200 text-slate-400 hover:border-[#007ACC] hover:text-[#007ACC]'
-                                        } ${isPassed ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                    >
-                                        {stage === 'Started' ? 'Kick Off' : stage === 'In Progress' ? 'Work On It' : 'Mark Finished'}
-                                        {isActive && <div className="h-1.5 w-1.5 bg-white rounded-full animate-pulse" />}
-                                    </button>
-                                );
-                             })}
-                        </div>
-                    </div>
-                ) : lead.status === 'Pending' && (
-                    <div className="space-y-4">
-                        <button onClick={() => confirmAction('verify')} className="w-full py-4 bg-[#0F172A] hover:bg-[#007ACC] text-white text-[10px] font-black uppercase tracking-widest transition-all rounded-xl flex items-center justify-center gap-3 active:scale-95 shadow-lg">
-                           <CheckCircle2 size={18} /> Approve Request
-                        </button>
-                        <button onClick={() => confirmAction('reject')} className="w-full py-4 bg-white border border-rose-100 text-rose-500 hover:bg-rose-50 text-[10px] font-black uppercase tracking-widest transition-all rounded-xl flex items-center justify-center gap-3 active:scale-95">
-                           <XCircle size={18} /> Cancel Request
-                        </button>
-                    </div>
-                )}
-            </div>
+            {/* ACTION PANEL */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm sticky top-6">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                    <ShieldCheck size={12} /> Management Actions
+                </p>
 
-            {/* CHECKLIST DENSITY CARD */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4">
-               <div className="flex items-center gap-2">
-                  <ClipboardCheck size={16} className="text-[#007ACC]" />
-                  <h4 className="text-[10px] font-black text-slate-900 uppercase">Verification Check</h4>
-               </div>
-               <div className="space-y-3">
-                  <CheckItem text="Customer identity verified" />
-                  <CheckItem text="Contact number reachable" />
-                  <CheckItem text="Service category matched" />
-               </div>
+                <div className="grid gap-2">
+                    {lead.status === 'Pending' && (
+                        <>
+                            <button
+                                onClick={() => setModal({ show: true, targetStatus: 'Verified' })}
+                                className="w-full py-3 bg-[#007ACC] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:bg-[#006bb3] active:scale-95 transition-all flex items-center justify-center gap-2"
+                            >
+                                <CheckCircle2 size={16} /> Approve Lead
+                            </button>
+                            <button
+                                onClick={() => setModal({ show: true, targetStatus: 'Rejected' })}
+                                className="w-full py-3 bg-white border border-rose-100 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 active:scale-95 transition-all flex items-center justify-center gap-2"
+                            >
+                                <XCircle size={16} /> Reject Request
+                            </button>
+                        </>
+                    )}
+
+                    {lead.status === 'Verified' && (
+                        <button
+                            onClick={() => setModal({ show: true, targetStatus: 'In Progress' })}
+                            className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Play size={16} /> Start Work
+                        </button>
+                    )}
+
+                    {lead.status === 'In Progress' && (
+                         <button
+                            onClick={() => setModal({ show: true, targetStatus: 'Completed' })}
+                            className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Check size={16} /> Mark Complete
+                        </button>
+                    )}
+
+                    {lead.status === 'Completed' && (
+                        <div className="w-full py-3 bg-slate-50 border border-slate-100 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                            <CheckCircle2 size={16} /> No Actions Available
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
       </div>
-{/* 
-      {/* 4. FOOTER */}
-      {/* <div className="pt-6 flex items-center justify-center gap-3 border-t border-slate-100 text-slate-300">
-          <History size={14} />
-          <p className="text-[9px] font-bold uppercase tracking-[0.4em]">Audit Registry Record #1092-AXV</p>
-      </div>  */}
 
-      {/* MODAL POPUP */}
+      {/* 3. CONFIRMATION MODAL */}
       <AnimatePresence>
         {modal.show && (
-          <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
-                <div className="p-10 text-center space-y-6">
-                    <div className={`mx-auto w-16 h-16 flex items-center justify-center border-2 rounded-2xl ${modal.type === 'reject' ? 'border-rose-100 text-rose-500' : 'border-blue-100 text-[#007ACC]'}`}>
-                        {isProcessing ? <Loader2 size={32} className="animate-spin" /> : <AlertTriangle size={32} />}
-                    </div>
-                    <div className="space-y-2">
-                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{modal.title}</h3>
-                        <p className="text-xs text-slate-500 font-bold uppercase leading-tight tracking-tight">{modal.message}</p>
-                    </div>
-                </div>
-                <div className="flex border-t border-slate-100">
-                    <button onClick={() => setModal({ ...modal, show: false })} className="flex-1 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50">Go Back</button>
-                    <button onClick={executeModalAction} className={`flex-1 py-5 text-[10px] font-black text-white uppercase tracking-widest ${modal.type === 'reject' ? 'bg-rose-600' : 'bg-[#007ACC] hover:bg-[#0F172A]'}`}>
-                        {isProcessing ? "Wait..." : "Confirm"}
-                    </button>
-                </div>
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white p-6 md:p-8 rounded-2xl w-full max-w-sm border border-slate-100 shadow-2xl"
+            >
+              <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-[#007ACC]">
+                 <AlertTriangle size={24} />
+              </div>
+              
+              <h3 className="text-lg font-black uppercase text-center text-slate-900 tracking-tight mb-2">
+                Confirm Update
+              </h3>
+              <p className="text-xs text-center text-slate-500 font-medium mb-8 leading-relaxed">
+                Are you sure you want to change the status of this lead to <span className="font-bold text-slate-800">"{modal.targetStatus}"</span>? This action is tracked.
+              </p>
+              
+              <div className="flex gap-3">
+                <button 
+                    onClick={() => setModal({ show: false })} 
+                    className="flex-1 py-3 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => updateStatus(modal.targetStatus)}
+                  disabled={isProcessing}
+                  className="flex-1 py-3 bg-[#007ACC] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#006bb3] shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center"
+                >
+                  {isProcessing ? <Loader2 size={14} className="animate-spin" /> : 'Confirm'}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
@@ -309,29 +378,5 @@ const LeadReview = () => {
     </motion.div>
   );
 };
-
-// --- LIGHT THEME HELPERS ---
-const ProfileItem = ({ label, value }) => (
-  <div className="space-y-1">
-     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
-     <p className="text-lg font-black text-slate-900 uppercase tracking-tight truncate">{value}</p>
-  </div>
-);
-
-const ContactInfo = ({ icon, label, value }) => (
-  <div className="flex items-center gap-3">
-     <div className="text-[#007ACC]">{icon}</div>
-     <div>
-        <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
-        <p className="text-[10px] font-black text-slate-700">{value}</p>
-     </div>
-  </div>
-);
-
-const CheckItem = ({ text }) => (
-  <div className="flex items-center gap-2 text-[9px] font-bold text-slate-500 uppercase">
-     <CheckCircle2 size={12} className="text-emerald-500" /> {text}
-  </div>
-);
 
 export default LeadReview;

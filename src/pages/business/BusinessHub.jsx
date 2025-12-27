@@ -51,7 +51,6 @@ const BusinessHub = ({ onLogout }) => {
     { id: 'dashboard', label: 'TEAM OVERVIEW', icon: LayoutDashboard, path: '/business/dashboard' },
     { id: 'leads', label: 'INCOMING LEADS', icon: Users, path: '/business/leads' },
     { id: 'portfolio', label: 'PROJECT PORTFOLIO', icon: FolderEdit, path: '/business/portfolio' },
-    { id: 'settings', label: 'SETTINGS', icon: Settings, path: '/business/settings' },
   ];
 
   const currentTabName = location.pathname.split('/').pop().replace('-', ' ');
