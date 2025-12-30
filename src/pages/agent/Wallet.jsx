@@ -39,7 +39,7 @@ const WalletPage = () => {
       await frappeApi.post(
         '/method/business_chain.api.wallet.request_withdrawal',
         {
-          amount: wallet.summary.available_cash
+          requested_credits: wallet.summary.available_cash
         }
       );
       await fetchWallet();
