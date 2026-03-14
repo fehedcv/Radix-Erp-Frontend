@@ -3,20 +3,31 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wallet,
   HandCoins,
-  CreditCard
+  CreditCard,
+  ClockArrowDown
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import frappeApi from '../../api/frappeApi';
 
+const STATUS_STYLES = {
+  Pending:  'bg-amber-100 text-amber-700',
+  Approved: 'bg-emerald-100 text-emerald-700',
+  Rejected: 'bg-rose-100 text-rose-700',
+  default:  'bg-slate-100 text-slate-600',
+};
+
 const WalletPage = () => {
-  const [wallet, setWallet] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [processing, setProcessing] = useState(false);
+  const [wallet, setWallet]               = useState(null);
+  const [loading, setLoading]             = useState(true);
+  const [withdrawalRequests, setWithdrawalRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading]       = useState(true);
+  const [showConfirm, setShowConfirm]     = useState(false);
+  const [processing, setProcessing]       = useState(false);
 
   /* ---------------- FETCH WALLET ---------------- */
   useEffect(() => {
     fetchWallet();
+    fetchWithdrawalRequests();
   }, []);
 
   const fetchWallet = async () => {
@@ -32,6 +43,19 @@ const WalletPage = () => {
     }
   };
 
+  const fetchWithdrawalRequests = async () => {
+    try {
+      const res = await frappeApi.get(
+        '/method/business_chain.api.wallet.get_withdrawal_requests'
+      );
+      setWithdrawalRequests(res.data.message ?? []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
   /* ---------------- REQUEST PAYOUT ---------------- */
   const handlePayout = async () => {
     setProcessing(true);
@@ -42,7 +66,7 @@ const WalletPage = () => {
           requested_credits: wallet.summary.available_cash
         }
       );
-      await fetchWallet();
+      await Promise.all([fetchWallet(), fetchWithdrawalRequests()]);
       setShowConfirm(false);
     } catch (err) {
       console.error(err);
@@ -109,13 +133,56 @@ const WalletPage = () => {
       </div>
 
       {/* ================= DONUT ================= */}
-      <div className="bg-white p-6 rounded-2xl border">
-        <Chart
-          type="donut"
-          height={260}
-          series={donutSeries}
-          options={donutOptions}
-        />
+
+      {/* ================= WITHDRAWAL REQUESTS ================= */}
+      <div className="bg-white rounded-2xl border overflow-hidden">
+        <div className="p-6 border-b flex items-center gap-2">
+          <ClockArrowDown size={15} className="text-[#007ACC]" />
+          <span className="font-black uppercase text-xs">
+            Current Withdrawal Requests
+          </span>
+        </div>
+
+        {requestsLoading ? (
+          <div className="py-10 text-center text-slate-400 uppercase font-bold text-xs">
+            Loading…
+          </div>
+        ) : withdrawalRequests.length > 0 ? (
+          withdrawalRequests.map(req => (
+            <div
+              key={req.id}
+              className="flex justify-between items-center p-6 border-b last:border-0"
+            >
+              <div>
+                <p className="font-black uppercase text-sm text-slate-800">
+                  ₹{Number(req.requested_credits).toLocaleString()}
+                </p>
+
+                <div className="flex items-center gap-2 mt-1">
+                  <span
+                    className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+                      STATUS_STYLES[req.status] ?? STATUS_STYLES.default
+                    }`}
+                  >
+                    {req.status}
+                  </span>
+
+                  {req.remarks && (
+                    <p className="text-xs text-slate-400 truncate max-w-xs">
+                      {req.remarks}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-400">{req.date}</p>
+            </div>
+          ))
+        ) : (
+          <div className="py-20 text-center text-slate-400 uppercase font-bold text-xs">
+            No withdrawal requests
+          </div>
+        )}
       </div>
 
       {/* ================= LEDGER ================= */}
