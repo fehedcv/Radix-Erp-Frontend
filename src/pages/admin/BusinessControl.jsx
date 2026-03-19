@@ -1,193 +1,281 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, Building2, Trash2, X, ShieldCheck, Phone, MapPin, 
-  Mail, Lock, User, BarChart3, CheckCircle2,
-  Info, Sparkles, TrendingUp, LayoutGrid, Eye, EyeOff,
-  Package, Globe, ChevronRight, Activity
+import {
+  Plus, Building2, Trash2, X, ShieldCheck, Phone,
+  MapPin, Mail, User, BarChart3, CheckCircle2,
+  Info, TrendingUp, LayoutGrid, Package,
+  Activity, Loader2, AlertCircle, Globe, Image, MessageSquare
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
+import frappeApi from '../../api/frappeApi';
 
-// Data Source for extending information
-import { businessUnits as coreBusinessData } from '../../data/businessData';
+// ─── Field map: Frappe doc → internal shape ───────────────────────────────────
+const mapDoc = (doc) => ({
+  id:             doc.name,
+  name:           doc.business_name  || doc.name,
+  category:       doc.category       || '—',
+  status:         doc.status         || 'Active',
+  managerName:    doc.manager_name   || '—',
+  phone:          doc.primary_phone  || '',
+  whatsapp:       doc.whatsapp_number|| '',
+  email:          doc.email          || '',
+  website:        doc.website        || '',
+  cityArea:       doc.location     || '',
+  address:        doc.address        || '',
+  description:    doc.description    || '',
+  services:       Array.isArray(doc.services) ? doc.services : [],
+  gallery:        Array.isArray(doc.gallery)  ? doc.gallery  : [],
+  date:           doc.creation ? doc.creation.split(' ')[0] : '—',
+});
 
+const BU_FIELDS = [
+  'name','business_name','category','status','manager_name',
+  'primary_phone','whatsapp_number','email','website',
+  'location','address','description','creation','services','gallery'
+];
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 const BusinessHub = () => {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
-  
-  // 1. LOCAL STORAGE SYNC (Business Units Registry)
-  const [units, setUnits] = useState(() => {
-    const saved = localStorage.getItem('vynx_units');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [units,          setUnits]          = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState(null);
+  const [showAddModal,   setShowAddModal]   = useState(false);
+  const [submitting,     setSubmitting]     = useState(false);
+  const [selectedUnit,   setSelectedUnit]   = useState(null);
 
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const saved = localStorage.getItem('vynx_units');
-      if (saved) setUnits(JSON.parse(saved));
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+  // ── Fetch all business units ──────────────────────────────────────────────
+  const fetchUnits = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await frappeApi.get('/resource/Business Unit', {
+        params: {
+          fields: JSON.stringify(BU_FIELDS),
+          limit_page_length: 0,
+          order_by: 'creation desc',
+        },
+      });
+      setUnits((res.data?.data || []).map(mapDoc));
+    } catch {
+      setError('Failed to load business units. Check your connection or permissions.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // --- ANALYTICS PROCESSING (Business Unit Data) ---
-  const chartConfigs = useMemo(() => {
-    const categories = units.reduce((acc, unit) => {
-      acc[unit.category] = (acc[unit.category] || 0) + 1;
-      return acc;
-    }, {});
+  useEffect(() => { fetchUnits(); }, [fetchUnits]);
 
-    return {
-      distribution: {
-        series: Object.values(categories),
-        options: {
-          labels: Object.keys(categories),
-          colors: ['#2563EB', '#3B82F6', '#60A5FA', '#93C5FD'],
-          legend: { position: 'bottom', fontFamily: 'Plus Jakarta Sans', fontSize: '10px', fontWeight: 600 },
-          plotOptions: { pie: { donut: { size: '75%' } } },
-          dataLabels: { enabled: false },
-          stroke: { width: 0 }
-        }
-      }
-    };
-  }, [units]);
-
-  // Function to pull extra details from your businessData file
-  const getExtendedInfo = (unitName) => {
-    return coreBusinessData.find(b => b.name === unitName) || {};
-  };
-
-  // --- HANDLERS ---
-  const handleCreateUnit = (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const newUnit = {
-      id: `B-${Math.floor(Math.random() * 900) + 100}`,
-      name: formData.get('name'),
-      category: formData.get('category'),
-      email: formData.get('email'), 
-      password: formData.get('password'), 
-      status: 'Active',
-      managerName: formData.get('manager'),
-      date: new Date().toLocaleDateString('en-GB')
-    };
-    const updatedUnits = [...units, newUnit];
-    setUnits(updatedUnits);
-    localStorage.setItem('vynx_units', JSON.stringify(updatedUnits));
-    setShowAddModal(false);
-  };
-
-  const handleDelete = (id) => {
-    if(window.confirm("Disconnect this business unit?")) {
-      const updated = units.filter(u => u.id !== id);
-      setUnits(updated);
-      localStorage.setItem('vynx_units', JSON.stringify(updated));
+  // ── Create ────────────────────────────────────────────────────────────────
+  const handleCreate = async (formData) => {
+    setSubmitting(true);
+    try {
+      await frappeApi.post('/resource/Business Unit', {
+        business_name:    formData.name,
+        category:         formData.category,
+        status:           'Active',
+        manager_name:     formData.manager,
+        primary_phone:    formData.phone,
+        whatsapp_number:  formData.whatsapp,
+        email:            formData.email,
+        website:          formData.website,
+        city_area:        formData.cityArea,
+        address:          formData.address,
+        description:      formData.description,
+      });
+      setShowAddModal(false);
+      await fetchUnits();
+    } catch {
+      alert('Failed to create business unit. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  // ── Delete ────────────────────────────────────────────────────────────────
+  const handleDelete = async (id) => {
+    if (!window.confirm('Disconnect this business unit?')) return;
+    try {
+      await frappeApi.delete(`/resource/Business Unit/${id}`);
+      setUnits((prev) => prev.filter((u) => u.id !== id));
+      if (selectedUnit?.id === id) setSelectedUnit(null);
+    } catch {
+      alert('Failed to delete. Check permissions.');
+    }
+  };
+
+  // ── Charts ────────────────────────────────────────────────────────────────
+  const chartConfigs = useMemo(() => {
+    const cats = units.reduce((acc, u) => {
+      acc[u.category] = (acc[u.category] || 0) + 1;
+      return acc;
+    }, {});
+    const hasSeries = Object.keys(cats).length > 0;
+    return {
+      distribution: {
+        series:  hasSeries ? Object.values(cats) : [1],
+        options: {
+          labels:      hasSeries ? Object.keys(cats) : ['No Data'],
+          colors:      ['#2563EB','#3B82F6','#60A5FA','#93C5FD','#BFDBFE'],
+          legend:      { position: 'bottom', fontFamily: 'Plus Jakarta Sans', fontSize: '10px', fontWeight: 600 },
+          plotOptions: { pie: { donut: { size: '75%' } } },
+          dataLabels:  { enabled: false },
+          stroke:      { width: 0 },
+        },
+      },
+    };
+  }, [units]);
+
   return (
-    <div className="font-['Plus_Jakarta_Sans',sans-serif] space-y-6 max-w-[1600px] mx-auto ">
-      
-      {/* 1. HEADER */}
-      <motion.div 
+    <div className="font-['Plus_Jakarta_Sans',sans-serif] space-y-6 max-w-[1600px] mx-auto">
+
+      {/* ── HEADER ── */}
+      <motion.div
         initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
         className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
         <div className="flex items-center gap-4">
-           <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100 shrink-0">
-              <Building2 size={24} />
-           </div>
-           <div>
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Partner Registry Hub</h2>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                <ShieldCheck size={12} className="text-blue-500" /> Authorized Business Management
-              </p>
-           </div>
-        </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-slate-900 text-white px-6 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
-        >
-          <Plus size={16} /> Add Business Unit
-        </button>
-      </motion.div>
-
-      {/* 2. ANALYTICS GRID */}
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <StatCard label="Total Business Units" value={units.length} icon={<LayoutGrid size={18}/>} color="text-blue-600" bg="bg-blue-50" />
-          <StatCard label="Live Connections" value={units.length} icon={<Activity size={18}/>} color="text-emerald-600" bg="bg-emerald-50" />
-          
-          <div className="md:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-             <div className="flex items-center gap-2 mb-3">
-               <TrendingUp size={14} className="text-blue-600"/>
-               <h4 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Network Distribution Status</h4>
-             </div>
-             <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-               System is currently managing <span className="text-blue-600 font-bold">{units.length} business units</span> across {Object.keys(chartConfigs.distribution.options.labels).length} industry sectors. All node connections are optimized.
-             </p>
+          <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100 shrink-0">
+            <Building2 size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Partner Registry Hub</h2>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
+              <ShieldCheck size={12} className="text-blue-500" /> Authorized Business Management
+            </p>
           </div>
         </div>
+        <div className="flex gap-3">
+          <button
+            onClick={fetchUnits}
+            className="p-3 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all shadow-sm"
+            title="Refresh"
+          >
+            <BarChart3 size={18} />
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-slate-900 text-white px-6 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
+          >
+            <Plus size={16} /> Add Business Unit
+          </button>
+        </div>
+      </motion.div>
 
+      {/* ── ANALYTICS ── */}
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <StatCard label="Total Business Units"  value={units.length} icon={<LayoutGrid size={18}/>} color="text-blue-600"    bg="bg-blue-50" />
+          <StatCard label="Active Connections"     value={units.filter(u => u.status === 'Active').length} icon={<Activity size={18}/>} color="text-emerald-600" bg="bg-emerald-50" />
+          <div className="md:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <TrendingUp size={14} className="text-blue-600"/>
+              <h4 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Network Distribution Status</h4>
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+              System is managing{' '}
+              <span className="text-blue-600 font-bold">{units.length} business units</span>{' '}
+              across{' '}
+              <span className="text-blue-600 font-bold">
+                {[...new Set(units.map(u => u.category))].length} industry sector(s)
+              </span>.
+              All node connections are optimized.
+            </p>
+          </div>
+        </div>
         <div className="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm min-h-[250px] flex flex-col">
-           <h4 className="text-[9px] font-black text-slate-900 uppercase tracking-widest mb-4">Sectors Representation</h4>
-           <div className="flex-1 flex items-center justify-center">
-             <Chart options={chartConfigs.distribution.options} series={chartConfigs.distribution.series} type="donut" width="100%" height={200} />
-           </div>
+          <h4 className="text-[9px] font-black text-slate-900 uppercase tracking-widest mb-4">Sectors Representation</h4>
+          <div className="flex-1 flex items-center justify-center">
+            <Chart options={chartConfigs.distribution.options} series={chartConfigs.distribution.series} type="donut" width="100%" height={200} />
+          </div>
         </div>
       </div>
 
-      {/* 3. BUSINESS UNITS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-        <AnimatePresence>
-          {units.map((unit, idx) => (
-            <motion.div 
-              layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.05 }}
-              key={unit.id} className="bg-white border border-slate-200 rounded-xl p-5 hover:border-blue-500 transition-all group relative shadow-sm"
-            >
-              <div className="flex items-center gap-4 mb-5">
+      {/* ── UNITS GRID ── */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-400">
+          <Loader2 size={28} className="animate-spin text-blue-400" />
+          <p className="text-[10px] font-black uppercase tracking-widest">Loading Business Units...</p>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-3 text-red-400">
+          <AlertCircle size={28} />
+          <p className="text-[10px] font-black uppercase tracking-widest">{error}</p>
+          <button onClick={fetchUnits} className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">Retry</button>
+        </div>
+      ) : units.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-2 text-slate-300">
+          <Building2 size={32} />
+          <p className="text-[10px] font-black uppercase tracking-widest">No business units registered yet</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          <AnimatePresence>
+            {units.map((unit, idx) => (
+              <motion.div
+                layout key={unit.id}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.04 }}
+                className="bg-white border border-slate-200 rounded-xl p-5 hover:border-blue-500 transition-all group relative shadow-sm"
+              >
+                <div className="flex items-center gap-4 mb-5">
                   <div className="h-12 w-12 bg-slate-900 text-white rounded-lg flex items-center justify-center font-black text-xl uppercase group-hover:bg-blue-600 transition-colors shadow-md">
-                      {unit.name.charAt(0)}
+                    {unit.name.charAt(0)}
                   </div>
-                  <div>
-                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{unit.name}</h3>
-                      <p className="text-[8px] text-slate-400 font-black mt-0.5 uppercase tracking-widest">{unit.category}</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight truncate">{unit.name}</h3>
+                    <p className="text-[8px] text-slate-400 font-black mt-0.5 uppercase tracking-widest">{unit.category}</p>
                   </div>
-              </div>
+                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-[8px] font-black uppercase border ${unit.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                    {unit.status}
+                  </span>
+                </div>
 
-              <div className="space-y-2 mb-5 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <div className="space-y-2 mb-5 bg-slate-50 p-3 rounded-lg border border-slate-100">
                   <div className="flex justify-between items-center text-[9px] font-bold uppercase">
-                      <span className="text-slate-400 tracking-tighter">Assigned Manager</span>
-                      <span className="text-slate-900">{unit.managerName}</span>
+                    <span className="text-slate-400 tracking-tighter">Manager</span>
+                    <span className="text-slate-900">{unit.managerName}</span>
                   </div>
+                  {unit.cityArea && (
+                    <div className="flex justify-between items-center text-[9px] font-bold uppercase">
+                      <span className="text-slate-400 tracking-tighter">City / Area</span>
+                      <span className="text-slate-700">{unit.cityArea}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center text-[9px] font-bold uppercase">
-                      <span className="text-slate-400 tracking-tighter">Registry ID</span>
-                      <span className="text-blue-600 font-mono tracking-tighter">{unit.id}</span>
+                    <span className="text-slate-400 tracking-tighter">Registry ID</span>
+                    <span className="text-blue-600 font-mono tracking-tighter">{unit.id}</span>
                   </div>
-              </div>
+                </div>
 
-              <div className="flex gap-2">
-                  <button onClick={() => setSelectedUnit(unit)} className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 hover:border-blue-600 hover:text-blue-600 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2">
-                      <BarChart3 size={14}/> System Profile
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelectedUnit(unit)}
+                    className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 hover:border-blue-600 hover:text-blue-600 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <BarChart3 size={14}/> System Profile
                   </button>
-                  <button onClick={() => handleDelete(unit.id)} className="p-2.5 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-all">
-                      <Trash2 size={14}/>
+                  <button
+                    onClick={() => handleDelete(unit.id)}
+                    className="p-2.5 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-all"
+                  >
+                    <Trash2 size={14}/>
                   </button>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
 
-      {/* 4. BUSINESS UNIT DOSSIER MODAL */}
+      {/* ── DOSSIER MODAL ── */}
       <AnimatePresence>
         {selectedUnit && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               className="bg-white w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl overflow-hidden flex flex-col border border-slate-200"
             >
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-50/50">
+              {/* Modal Header */}
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-50/50 shrink-0">
                 <div className="flex items-center gap-4">
                   <div className="h-12 w-12 bg-slate-900 text-white rounded-lg flex items-center justify-center font-black text-xl shadow-lg">
                     {selectedUnit.name.charAt(0)}
@@ -197,114 +285,144 @@ const BusinessHub = () => {
                     <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">{selectedUnit.category}</p>
                   </div>
                 </div>
-                <button onClick={() => {setSelectedUnit(null); setShowPassword(false);}} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"><X size={18}/></button>
+                <button onClick={() => setSelectedUnit(null)} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all">
+                  <X size={18}/>
+                </button>
               </div>
 
+              {/* Modal Body */}
               <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10">
-                
-                {/* 4.1 ACCESS CREDENTIALS */}
-                <section className="bg-slate-900 rounded-xl p-5 text-white shadow-lg relative overflow-hidden">
-                    <h5 className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-5 flex items-center gap-2 border-b border-slate-800 pb-3">
-                        <Lock size={12} /> Unit Access Authentication
-                    </h5>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       <div className="space-y-1">
-                           <span className="text-[8px] text-slate-500 font-black uppercase">System Email ID</span>
-                           <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border border-white/10">
-                              <Mail size={14} className="text-blue-400" />
-                              <p className="text-xs font-bold lowercase truncate">{selectedUnit.email}</p>
-                           </div>
-                       </div>
-                       <div className="space-y-1">
-                           <span className="text-[8px] text-slate-500 font-black uppercase">Master Password</span>
-                           <div className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border border-white/10">
-                              <Lock size={14} className="text-blue-400" />
-                              <p className="text-xs font-bold tracking-widest">{showPassword ? selectedUnit.password : '••••••••'}</p>
-                              <button onClick={() => setShowPassword(!showPassword)} className="ml-auto text-[8px] font-black uppercase bg-blue-600 px-2 py-1 rounded">
-                                {showPassword ? <EyeOff size={10}/> : <Eye size={10}/>}
-                              </button>
-                           </div>
-                       </div>
-                    </div>
-                </section>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                  {/* Left Column: Business Info */}
+                  {/* Left: Identity + Location */}
                   <div className="space-y-8">
-                     <DossierSection title="Unit Identity" icon={<User size={12}/>}>
-                        <InfoItem label="Manager Name" value={selectedUnit.managerName} />
-                        <InfoItem label="Onboarded Since" value={selectedUnit.date} />
-                        <InfoItem label="Contact Primary" value={getExtendedInfo(selectedUnit.name).phone || "+971 50 000 0000"} />
-                     </DossierSection>
-
-                     <DossierSection title="HQ Coordinates" icon={<MapPin size={12}/>}>
-                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-lg flex items-start gap-3">
-                           <MapPin size={18} className="text-blue-600 shrink-0 mt-0.5" />
-                           <div>
-                              <p className="text-[8px] text-slate-400 font-black uppercase mb-1">HQ Physical Location</p>
-                              <p className="text-xs font-bold text-slate-900 uppercase leading-relaxed">{getExtendedInfo(selectedUnit.name).location || "Business Bay, Dubai, UAE"}</p>
-                           </div>
+                    <DossierSection title="Unit Identity" icon={<User size={12}/>}>
+                      <InfoItem label="Manager"      value={selectedUnit.managerName} />
+                      <InfoItem label="Onboarded"    value={selectedUnit.date} />
+                      <InfoItem label="Status"       value={selectedUnit.status} />
+                      {selectedUnit.phone && <InfoItem label="Primary Phone" value={selectedUnit.phone} />}
+                      {selectedUnit.whatsapp && <InfoItem label="WhatsApp"   value={selectedUnit.whatsapp} />}
+                      {selectedUnit.email && (
+                        <div className="flex justify-between items-center border-b border-slate-50 pb-1.5">
+                          <span className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">Email</span>
+                          <span className="text-xs font-bold text-blue-600 lowercase">{selectedUnit.email}</span>
                         </div>
-                     </DossierSection>
+                      )}
+                      {selectedUnit.website && (
+                        <div className="flex justify-between items-center border-b border-slate-50 pb-1.5">
+                          <span className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">Website</span>
+                          <a href={selectedUnit.website} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">
+                            <Globe size={10}/> {selectedUnit.website}
+                          </a>
+                        </div>
+                      )}
+                    </DossierSection>
+
+                    <DossierSection title="HQ Coordinates" icon={<MapPin size={12}/>}>
+                      <div className="p-4 bg-slate-50 border border-slate-100 rounded-lg flex items-start gap-3">
+                        <MapPin size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          {selectedUnit.cityArea && (
+                            <p className="text-[9px] text-blue-500 font-black uppercase tracking-widest">{selectedUnit.cityArea}</p>
+                          )}
+                          <p className="text-xs font-bold text-slate-900 uppercase leading-relaxed">
+                            {selectedUnit.address || 'No address on file'}
+                          </p>
+                        </div>
+                      </div>
+                      {selectedUnit.description && (
+                        <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                          <p className="text-[8px] text-slate-400 font-black uppercase mb-1">About</p>
+                          <p className="text-[10px] text-slate-600 leading-relaxed">{selectedUnit.description}</p>
+                        </div>
+                      )}
+                    </DossierSection>
                   </div>
 
-                  {/* Right Column: Services */}
+                  {/* Right: Services + Gallery */}
                   <div className="space-y-8">
-                     <DossierSection title="Service Portfolio" icon={<Package size={12}/>}>
-                        <div className="grid grid-cols-1 gap-2">
-                           {(getExtendedInfo(selectedUnit.name).products || ["Premium Web Solutions", "Commercial Infrastructure"]).map((p, i) => (
-                              <div key={i} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg group hover:border-blue-400 transition-all">
-                                 <span className="text-[10px] font-bold text-slate-700 uppercase tracking-tight">{p}</span>
-                                 <CheckCircle2 size={14} className="text-emerald-500" />
+                    <DossierSection title="Service Portfolio" icon={<Package size={12}/>}>
+                      {selectedUnit.services.length > 0 ? (
+                        <div className="space-y-2">
+                          {selectedUnit.services.map((s, i) => (
+                            <div key={i} className="p-3 bg-white border border-slate-100 rounded-lg hover:border-blue-400 transition-all">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] font-black text-slate-800 uppercase tracking-tight">{s.service_name}</span>
+                                <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
                               </div>
-                           ))}
+                              {s.description && (
+                                <p className="text-[9px] text-slate-400 font-medium leading-relaxed">{s.description}</p>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                     </DossierSection>
+                      ) : (
+                        <p className="text-[9px] text-slate-300 font-black uppercase">No services listed</p>
+                      )}
+                    </DossierSection>
+
+                    <DossierSection title="Gallery" icon={<Image size={12}/>}>
+                      {selectedUnit.gallery.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {selectedUnit.gallery.map((g, i) => (
+                            <div key={i} className="aspect-video bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                              {g.image ? (
+                                <img
+                                  src={g.image}
+                                  alt={`Gallery ${i + 1}`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { e.target.style.display = 'none'; }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                  <Image size={20} />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[9px] text-slate-300 font-black uppercase">No gallery items</p>
+                      )}
+                    </DossierSection>
                   </div>
                 </div>
 
                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex gap-4">
-                    <Info size={18} className="text-blue-600 shrink-0" />
-                    <p className="text-[10px] text-blue-800 font-bold uppercase leading-relaxed tracking-tight">
-                      Security Protocol: Registry modifications are logged in the Vynx infrastructure database. Syncing with global HQ...
-                    </p>
+                  <Info size={18} className="text-blue-600 shrink-0" />
+                  <p className="text-[10px] text-blue-800 font-bold uppercase leading-relaxed tracking-tight">
+                    Registry ID: {selectedUnit.id} — Last synced from Frappe ERP. Contact your admin for modifications.
+                  </p>
                 </div>
               </div>
 
-              <div className="p-6 border-t border-slate-100 mt-auto bg-slate-50 flex justify-end">
-                  <button onClick={() => {setSelectedUnit(null); setShowPassword(false);}} className="px-10 py-3 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-md">
-                    Return to HUB
-                  </button>
+              <div className="p-6 border-t border-slate-100 shrink-0 bg-slate-50 flex justify-end">
+                <button
+                  onClick={() => setSelectedUnit(null)}
+                  className="px-10 py-3 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-md"
+                >
+                  Return to HUB
+                </button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* 5. ADD PARTNER MODAL */}
+      {/* ── ADD MODAL ── */}
       <AnimatePresence>
         {showAddModal && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.98, opacity: 0 }}
-              className="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden border border-slate-100"
+            <motion.div
+              initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.98, opacity: 0 }}
+              className="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col"
             >
-              <div className="px-6 py-4 border-b border-slate-50 flex justify-between items-center bg-slate-50">
+              <div className="px-6 py-4 border-b border-slate-50 flex justify-between items-center bg-slate-50 shrink-0">
                 <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Register New Unit</h3>
                 <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-900"><X size={18}/></button>
               </div>
-              <form onSubmit={handleCreateUnit} className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormInput name="name" label="Business Unit Name" placeholder="e.g. SKYLINE TECH" />
-                  <FormInput name="category" label="Market Industry" placeholder="e.g. SOFTWARE DEV" />
-                  <FormInput name="manager" label="Unit Manager" placeholder="e.g. ZAID AL-FARSI" />
-                  <FormInput name="email" label="System ID (Email)" placeholder="unit@vynx.com" type="email" />
-                  <FormInput name="password" label="Authorization Key" placeholder="••••••••" type="password" />
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase">Cancel</button>
-                  <button type="submit" className="flex-[2] py-3 bg-blue-600 hover:bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 shadow-blue-100">Register Node</button>
-                </div>
-              </form>
+
+              <AddUnitForm onSubmit={handleCreate} onCancel={() => setShowAddModal(false)} submitting={submitting} />
             </motion.div>
           </div>
         )}
@@ -313,10 +431,53 @@ const BusinessHub = () => {
   );
 };
 
-// --- HELPER COMPONENTS ---
+// ─── Add Unit Form ─────────────────────────────────────────────────────────────
+const AddUnitForm = ({ onSubmit, onCancel, submitting }) => {
+  const [form, setForm] = useState({
+    name: '', category: '', manager: '', phone: '',
+    whatsapp: '', email: '', website: '', cityArea: '',
+    address: '', description: '',
+  });
+
+  const set = (k) => (e) => setForm((prev) => ({ ...prev, [k]: e.target.value }));
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(form);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormInput label="Business Name *"    value={form.name}        onChange={set('name')}        placeholder="e.g. SKYLINE TECH"     required />
+        <FormInput label="Market Category *"  value={form.category}    onChange={set('category')}    placeholder="e.g. SOFTWARE DEV"     required isSelect
+          options={['Technology','Real Estate','Finance','Healthcare','Retail','Construction','Other']} />
+        <FormInput label="Unit Manager *"     value={form.manager}     onChange={set('manager')}     placeholder="e.g. ZAID AL-FARSI"    required />
+        <FormInput label="Primary Phone *"    value={form.phone}       onChange={set('phone')}       placeholder="+971 50 000 0000"      required />
+        <FormInput label="WhatsApp Number *"  value={form.whatsapp}    onChange={set('whatsapp')}    placeholder="+971 50 000 0000"      required />
+        <FormInput label="Email *"            value={form.email}       onChange={set('email')}       placeholder="unit@example.com"      required type="email" />
+        <FormInput label="Website"            value={form.website}     onChange={set('website')}     placeholder="https://example.com"   type="url" />
+        <FormInput label="City / Area"        value={form.cityArea}    onChange={set('cityArea')}    placeholder="e.g. Business Bay, Dubai" />
+      </div>
+      <FormInput label="Address *" value={form.address} onChange={set('address')} placeholder="Full address..." required isTextarea />
+      <FormInput label="Description *" value={form.description} onChange={set('description')} placeholder="Brief overview of this business unit..." required isTextarea />
+
+      <div className="flex gap-3 pt-2">
+        <button type="button" onClick={onCancel} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase">Cancel</button>
+        <button type="submit" disabled={submitting}
+          className="flex-[2] py-3 bg-blue-600 hover:bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
+        >
+          {submitting ? <><Loader2 size={14} className="animate-spin"/> Registering...</> : 'Register Node'}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+// ─── Helper Components ─────────────────────────────────────────────────────────
 const StatCard = ({ label, value, icon, color, bg }) => (
   <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm hover:border-blue-500 transition-all group">
-    <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 border transition-colors ${bg} ${color} border-current/10 group-hover:scale-110 transition-transform`}>
+    <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 border ${bg} ${color} border-current/10 group-hover:scale-110 transition-transform`}>
       {icon}
     </div>
     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{label}</p>
@@ -340,10 +501,28 @@ const InfoItem = ({ label, value }) => (
   </div>
 );
 
-const FormInput = ({ name, label, placeholder, type = "text" }) => (
+const FormInput = ({ label, value, onChange, placeholder, type = 'text', required, isTextarea, isSelect, options = [] }) => (
   <div className="space-y-1.5">
     <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
-    <input name={name} required type={type} placeholder={placeholder} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-blue-600 transition-all placeholder:text-slate-300" />
+    {isTextarea ? (
+      <textarea
+        value={value} onChange={onChange} placeholder={placeholder} required={required} rows={3}
+        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-blue-600 transition-all placeholder:text-slate-300 resize-none"
+      />
+    ) : isSelect ? (
+      <select
+        value={value} onChange={onChange} required={required}
+        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-blue-600 transition-all"
+      >
+        <option value="">Select category...</option>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+    ) : (
+      <input
+        type={type} value={value} onChange={onChange} placeholder={placeholder} required={required}
+        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-blue-600 transition-all placeholder:text-slate-300"
+      />
+    )}
   </div>
 );
 
