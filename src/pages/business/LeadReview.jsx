@@ -252,37 +252,82 @@ const LeadReview = () => {
         <div className="space-y-6">
             
             {/* Progress Stepper */}
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
-                    <Activity size={12} /> Request Lifecycle
-                </p>
-                
-                <div className="space-y-4 relative">
-                    <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-slate-100 z-0" />
-                    
-                    {workflow.map((step, idx) => {
-                        const isCompleted = idx < currentStepIndex || lead.status === 'Completed';
-                        const isCurrent = step === lead.status;
-                        
-                        return (
-                            <div key={step} className="relative z-10 flex items-center gap-3">
-                                <div className={`
-                                    w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
-                                    ${isCompleted || isCurrent 
-                                        ? 'bg-[#007ACC] border-[#007ACC] text-white shadow-md shadow-blue-200' 
-                                        : 'bg-white border-slate-200 text-slate-300'}
-                                `}>
-                                    {isCompleted ? <Check size={12} strokeWidth={4} /> : <div className="w-1.5 h-1.5 rounded-full bg-current" />}
-                                </div>
-                                <span className={`text-[10px] font-black uppercase tracking-widest ${isCurrent ? 'text-[#007ACC]' : isCompleted ? 'text-slate-800' : 'text-slate-300'}`}>
-                                    {step}
-                                </span>
-                            </div>
-                        )
-                    })}
-                </div>
-            </div>
+{/* Progress Stepper */}
+<div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+    <Activity size={12} /> Request Lifecycle
+  </p>
 
+  <div className="space-y-4 relative">
+    <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-slate-100 z-0" />
+
+    {workflow.map((step, idx) => {
+      const isCompleted = idx < currentStepIndex || lead.status === 'Completed';
+      const isCurrent   = step === lead.status;
+      const isClickable = idx > currentStepIndex && lead.status !== 'Completed';
+      const isLoading   = isProcessing && modal.targetStatus === step;
+
+      return (
+        <div
+          key={step}
+          role={isClickable ? 'button' : undefined}
+          tabIndex={isClickable ? 0 : undefined}
+          onClick={() => {
+            if (!isClickable || isProcessing) return;
+            // Reuse modal.targetStatus as a lightweight "which step is loading" tracker
+            setModal({ show: false, targetStatus: step });
+            updateStatus(step);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && isClickable && !isProcessing) {
+              setModal({ show: false, targetStatus: step });
+              updateStatus(step);
+            }
+          }}
+          className={`relative z-10 flex items-center gap-3 rounded-lg px-2 py-1 -mx-2 transition-all
+            ${isClickable && !isProcessing
+              ? 'cursor-pointer hover:bg-slate-50 ring-1 ring-transparent hover:ring-slate-200 active:scale-95'
+              : 'cursor-default'
+            }`}
+        >
+          {/* Step dot */}
+          <div className={`
+            w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0
+            ${isCompleted || isCurrent
+              ? 'bg-[#007ACC] border-[#007ACC] text-white shadow-md shadow-blue-200'
+              : isClickable
+                ? 'bg-white border-slate-300 text-slate-400'
+                : 'bg-white border-slate-200 text-slate-300'}
+          `}>
+            {isLoading
+              ? <Loader2 size={10} className="animate-spin" />
+              : isCompleted
+                ? <Check size={12} strokeWidth={4} />
+                : <div className="w-1.5 h-1.5 rounded-full bg-current" />
+            }
+          </div>
+
+          {/* Step label */}
+          <span className={`text-[10px] font-black uppercase tracking-widest flex-1 ${
+            isCurrent   ? 'text-[#007ACC]' :
+            isCompleted ? 'text-slate-800'  :
+            isClickable ? 'text-slate-500'  :
+                          'text-slate-300'
+          }`}>
+            {step}
+          </span>
+
+          {/* Set hint — hidden while any step is processing */}
+          {isClickable && !isProcessing && (
+            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+              Set →
+            </span>
+          )}
+        </div>
+      );
+    })}
+  </div>
+</div>
             {/* ACTION PANEL */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm sticky top-6">
                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
