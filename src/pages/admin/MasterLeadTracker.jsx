@@ -43,6 +43,70 @@ const MasterLeadTracker = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [businessUnitMap, setBusinessUnitMap] = useState({});
+  const [serviceMap, setServiceMap] = useState({});
+
+  const getBusinessUnitName = useCallback(
+    (unitId) => businessUnitMap[unitId] || unitId || '—',
+    [businessUnitMap]
+  );
+
+  const getBusinessServiceName = useCallback(
+    (serviceId) => serviceMap[serviceId] || serviceId || '—',
+    [serviceMap]
+  );
+
+  // Fetch business units and services in parallel.
+  // - Business Unit list API:       name (unit doc ID) → business_name
+  // - Business Unit Service list API: name (service row ID) → service_name
+  const fetchBusinessUnits = useCallback(async () => {
+  try {
+    // Single call — Frappe returns one denormalized row per service child.
+    // Each row has: name (service row ID), business_name (unit display name),
+    // service_name (service display name), services.parent (unit doc ID)
+    const res = await frappeApi.get('/resource/Business Unit', {
+      params: {
+        fields: JSON.stringify([
+          'name',           // unit doc ID  (present when no child rows expand it)
+          'business_name',  // unit display name
+          'services.name',        // service row ID
+          'services.service_name', // service display name
+          'services.parent',       // parent unit doc ID (key fix)
+        ]),
+        limit_page_length: 0,
+      },
+    });
+
+    const unitMap = {};
+    const svcMap = {};
+
+    (res.data?.data || []).forEach((row) => {
+      // row.name           = service row ID  (e.g. "m5g07m83qr")
+      // row.business_name  = unit display name (e.g. "Archi Zaid")
+      // row['services.parent'] = unit doc ID  (e.g. "f4cpjpb41i")
+      // row['services.name']   = same as row.name when child fields included
+      // row.service_name   = service display name
+
+      const unitId = row['services.parent'] || row.parent;
+      const unitName = row.business_name;
+      const serviceRowId = row['services.name'] || row.name;
+      const serviceName = row.service_name;
+
+      if (unitId && unitName) {
+        unitMap[unitId] = unitName;
+      }
+
+      if (serviceRowId && serviceName) {
+        svcMap[serviceRowId] = serviceName;
+      }
+    });
+
+    setBusinessUnitMap(unitMap);
+    setServiceMap(svcMap);
+  } catch (err) {
+    console.warn('Failed to fetch business units/services', err);
+  }
+}, []);
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -54,17 +118,33 @@ const MasterLeadTracker = () => {
           order_by: 'creation desc',
         },
       });
-      setLeads((res.data?.data || []).map(mapDoc));
+      const leadsWithNames = (res.data?.data || []).map((doc) => {
+        const base = mapDoc(doc);
+        return {
+          ...base,
+          businessUnit: getBusinessUnitName(doc.business_unit),
+          service: getBusinessServiceName(doc.service),
+        };
+      });
+      setLeads(leadsWithNames);
     } catch (err) {
       setError('Failed to load leads. Please check your connection or permissions.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getBusinessUnitName, getBusinessServiceName]);
 
-  useEffect(() => { fetchLeads(); }, [fetchLeads]);
+  useEffect(() => {
+    fetchBusinessUnits();
+  }, [fetchBusinessUnits]);
 
-  useEffect(() => { setShowAgentContact(false); }, [selectedLead]);
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
+
+  useEffect(() => {
+    setShowAgentContact(false);
+  }, [selectedLead]);
 
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {

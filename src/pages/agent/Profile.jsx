@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, Phone, Mail, ShieldCheck, Star, 
@@ -6,9 +6,10 @@ import {
   Activity, Settings, FileText, ExternalLink, Layers, 
   Info, Target, Zap, BarChart2
 } from 'lucide-react';
+import frappeApi from '../../api/frappeApi';
 
 const ProfilePage = () => {
-  // --- 1. STATE MANAGEMENT (Logic Preserved) ---
+  // --- 1. STATE MANAGEMENT ---
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
     name: "John Doe",
@@ -17,12 +18,43 @@ const ProfilePage = () => {
     status: "Active",
     successRate: 64,
     totalLeads: 50,
-    avatar: null 
+    avatar: null, // URL for display
+    avatarFile: null // File object for upload
   });
 
   const fileInputRef = useRef(null);
 
-  // --- 2. HANDLERS (Logic Preserved) ---
+  // Effect to fetch initial data
+  useEffect(() => {
+    frappeApi.get('/method/business_chain.api.agent.get_agent_profile')
+      .then(response => {
+        const agentData = response.data.message;
+        setProfile(prevProfile => ({
+          ...prevProfile,
+          name: agentData.fullName,
+          phone: agentData.phone,
+          email: agentData.email,
+          avatar: agentData.profilePicture,
+          avatarFile: null // Ensure file is null on initial load
+        }));
+      })
+      .catch(error => {
+        console.error("Error fetching agent profile:", error);
+      });
+  }, []);
+
+  // Effect to clean up blob URLs
+  useEffect(() => {
+    const avatar = profile.avatar;
+    return () => {
+      if (avatar && avatar.startsWith('blob:')) {
+        URL.revokeObjectURL(avatar);
+      }
+    };
+  }, [profile.avatar]);
+
+
+  // --- 2. HANDLERS ---
   const handleImageClick = () => {
     if (isEditing) fileInputRef.current.click();
   };
@@ -30,12 +62,54 @@ const ProfilePage = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setProfile({ ...profile, avatar: URL.createObjectURL(file) });
+      setProfile(prevProfile => {
+        // If there's an old blob URL, revoke it to prevent memory leaks
+        if (prevProfile.avatar && prevProfile.avatar.startsWith('blob:')) {
+          URL.revokeObjectURL(prevProfile.avatar);
+        }
+        return {
+          ...prevProfile,
+          avatar: URL.createObjectURL(file), // Create a new blob URL for preview
+          avatarFile: file // Store the actual file for upload
+        };
+      });
     }
   };
 
   const handleSave = () => {
-    setIsEditing(false);
+    const formData = new FormData();
+    formData.append('full_name', profile.name);
+    formData.append('phone', profile.phone);
+
+    // Handle profile picture
+    if (profile.avatarFile) {
+      // If a new file is staged, append it
+      formData.append('profile_picture', profile.avatarFile);
+    } else if (profile.avatar) {
+      // If no new file, but an existing avatar URL is there, send that
+      formData.append('profile_picture', profile.avatar);
+    } else {
+      // If no image at all, send an empty string to satisfy the backend requirement
+      formData.append('profile_picture', '');
+    }
+
+    frappeApi.post('/method/business_chain.api.agent.update_agent_profile', formData, {
+      // Axios will automatically set 'Content-Type': 'multipart/form-data'
+    })
+    .then(response => {
+      console.log("Profile updated successfully", response.data);
+      if(response.data.success){
+        // Optionally, refetch profile data to get new image URL from server
+        // For now, just exit editing mode
+        setIsEditing(false);
+        setProfile(p => ({...p, avatarFile: null})); // Clear staged file
+      }
+    })
+    .catch(error => {
+      console.error("Error updating profile:", error);
+      // You might want to show an error to the user here
+      setIsEditing(false); // Exit editing mode even on error for this example
+    });
   };
 
   return (

@@ -47,6 +47,51 @@ const CreditSettlement = () => {
   const [errorLeads,    setErrorLeads]    = useState(null);
   const [errorWD,       setErrorWD]       = useState(null);
 
+  const [businessUnitMap, setBusinessUnitMap] = useState({});
+  const [serviceMap, setServiceMap] = useState({});
+
+  const getBusinessUnitName = useCallback(
+    (unitId) => businessUnitMap[unitId] || unitId || '—',
+    [businessUnitMap]
+  );
+
+  const getBusinessServiceName = useCallback(
+    (serviceId) => serviceMap[serviceId] || serviceId || '—',
+    [serviceMap]
+  );
+
+  const fetchBusinessUnits = useCallback(async () => {
+    try {
+      const res = await frappeApi.get('/resource/Business Unit', {
+        params: {
+          fields: JSON.stringify(['name', 'business_name', 'services.service_name', 'services.name']),
+          limit_page_length: 0,
+        },
+      });
+      const unitMap = {};
+      const svcMap = {};
+      (res.data?.data || []).forEach((unit) => {
+        if (unit.name) {
+          unitMap[unit.name] = unit.business_name || unit.name;
+        }
+
+        const serviceId = unit['services.name'] || unit.services?.name;
+        const serviceName = unit['services.service_name'] || unit.service_name || unit.services?.service_name;
+
+        if (serviceId && serviceName) {
+          svcMap[serviceId] = serviceName;
+          svcMap[serviceName] = serviceName;
+        } else if (serviceName) {
+          svcMap[serviceName] = serviceName;
+        }
+      });
+      setBusinessUnitMap(unitMap);
+      setServiceMap(svcMap);
+    } catch (err) {
+      console.warn('Failed to fetch business units', err);
+    }
+  }, []);
+
   // Modal state
   const [selectedItem,  setSelectedItem]  = useState(null);
   const [activeModal,   setActiveModal]   = useState(null);
@@ -89,7 +134,14 @@ const CreditSettlement = () => {
       const all = [
         ...(verifiedRes.data?.data  || []),
         ...(completedRes.data?.data || []),
-      ].map(mapLead);
+      ].map((doc) => {
+        const base = mapLead(doc);
+        return {
+          ...base,
+          businessUnit: getBusinessUnitName(doc.business_unit),
+          service: getBusinessServiceName(doc.service),
+        };
+      });
 
       // Only show leads where credits haven't been assigned yet
       setLeads(all.filter(l => !l.credits || l.credits === 0));
@@ -98,7 +150,7 @@ const CreditSettlement = () => {
     } finally {
       setLoadingLeads(false);
     }
-  }, []);
+  }, [getBusinessUnitName]);
 
   // ── Fetch Withdrawal Requests ───────────────────────────────────────────────
   const fetchWithdrawals = useCallback(async () => {
@@ -123,6 +175,8 @@ const CreditSettlement = () => {
     }
   }, []);
 
+  useEffect(() => { fetchBusinessUnits(); }, [fetchBusinessUnits]);
+  useEffect(() => { fetchBusinessUnits(); }, [fetchBusinessUnits]);
   useEffect(() => { fetchLeads();       }, [fetchLeads]);
   useEffect(() => { fetchWithdrawals(); }, [fetchWithdrawals]);
 
