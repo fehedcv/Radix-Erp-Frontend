@@ -274,7 +274,7 @@ const BusinessDetail = () => {
                         </div>
                         <div>
                             <p className="text-[9px] font-bold uppercase text-slate-400">Website</p>
-                            <p className="text-xs font-bold text-slate-800">Visit Link</p>
+                            <p className="text-xs font-bold text-slate-800 truncate">{unit.website}</p>
                         </div>
                     </div>
                     <ExternalLink size={12} className="text-slate-400 group-hover:text-[#007ACC]" />

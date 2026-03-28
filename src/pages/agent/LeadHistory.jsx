@@ -35,10 +35,11 @@ const LeadHistory = () => {
 
   // ---------------- FILTER ----------------
   const filteredLeads = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
     return leads.filter(lead => {
       const matchesSearch =
-        lead.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.id.toLowerCase().includes(searchTerm.toLowerCase());
+        ((lead.clientName || '').toString()).toLowerCase().includes(search) ||
+        ((lead.id || '').toString()).toLowerCase().includes(search);
 
       const matchesStatus =
         filterStatus === "All" || lead.status === filterStatus;
@@ -135,6 +136,7 @@ const LeadHistory = () => {
           <div className="relative flex-1">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
+              value={searchTerm}
               placeholder="Search by client or deal ID..."
               className="w-full pl-11 pr-5 py-3 rounded-xl border text-xs font-bold"
               onChange={(e) => setSearchTerm(e.target.value)}

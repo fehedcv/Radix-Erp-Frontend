@@ -248,7 +248,7 @@ const WalletPage = () => {
       {/* ================= CONFIRM PAYOUT ================= */}
       <AnimatePresence>
         {showConfirm && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[200]">
+          <div className="fixed inset-0 flex items-center justify-center z-[200]">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}

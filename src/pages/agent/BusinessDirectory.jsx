@@ -134,22 +134,7 @@ const BusinessDirectory = () => {
           </motion.div>
         ))}
 
-        {/* HELP CARD */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="bg-blue-50/50 border border-dashed border-blue-200 rounded-xl p-6 flex flex-col justify-center items-center text-center space-y-4"
-        >
-          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-blue-100 text-[#007ACC]">
-            <Plus size={20} />
-          </div>
-          <h4 className="text-sm font-extrabold uppercase">
-            Missing a Team?
-          </h4>
-          <p className="text-[10px] text-slate-500">
-            Contact the administrator to add a new business unit.
-          </p>
-        </motion.div>
+        
       </div>
     </div>
   );
