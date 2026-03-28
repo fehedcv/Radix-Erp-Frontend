@@ -22,15 +22,11 @@ const BusinessDirectory = () => {
     const fetchUnits = async () => {
       try {
         const res = await frappeApi.get('/resource/Business Unit', {
-          params: {
-            fields: JSON.stringify([
-              'name',
-              'business_name',
-              'description',
-              'location'
-            ])
-          }
-        });
+        params: {
+          fields: JSON.stringify(['name', 'business_name', 'description', 'location']),
+          filters: JSON.stringify([['status', '=', 'Active']]),  // ← add this
+        }
+});
 
         // Normalize data for React safety
         const normalized = (res.data.data || []).map(unit => ({

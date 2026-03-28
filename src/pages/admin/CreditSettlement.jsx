@@ -10,19 +10,22 @@ import ApexCharts from 'apexcharts';
 import frappeApi from '../../api/frappeApi';
 
 // ─── Field maps ────────────────────────────────────────────────────────────────
-const mapLead = (doc) => ({
-  id:           doc.name,
-  clientName:   doc.customer_name  || '—',
-  clientPhone:  doc.phone          || '',
-  clientAddress:doc.client_address || '',
-  businessUnit: doc.business_unit  || '—',
-  service:      doc.service        || '—',
-  description:  doc.description    || '',
-  status:       doc.status         || '',
-  agentName:    doc.source_agent   || 'System',
-  agentId:      doc.source_agent   || 'VYNX-CORE',
-  date:         doc.creation ? doc.creation.split(' ')[0] : '—',
-  credits:      doc.credits        || 0,
+// Replace mapLead with this
+const mapLedger = (ledger, lead = {}) => ({
+  ledgerId:     ledger.name,
+  id:           lead.name        || ledger.lead || '—',
+  clientName:   lead.customer_name || '—',
+  clientPhone:  lead.phone         || '',
+  clientAddress:lead.client_address|| '',
+  businessUnit: lead.business_unit || '—',
+  service:      lead.service       || '—',
+  description:  lead.description   || '',
+  status:       lead.status        || '',
+  agentName:    ledger.agent       || lead.source_agent || 'System',
+  agentId:      ledger.agent       || 'VYNX-CORE',
+  date:         ledger.creation ? ledger.creation.split(' ')[0] : '—',
+  credits:      ledger.credits     || 0,
+  remarks:      ledger.remarks     || '',
 });
 
 const mapWithdrawal = (doc) => ({
@@ -101,56 +104,55 @@ const CreditSettlement = () => {
 
   // ── Fetch Leads (Verified + Completed, credits not yet assigned) ────────────
   const fetchLeads = useCallback(async () => {
-    setLoadingLeads(true);
-    setErrorLeads(null);
-    try {
-      const [verifiedRes, completedRes] = await Promise.all([
-        frappeApi.get('/resource/Lead', {
-          params: {
-            fields: JSON.stringify([
-              'name','customer_name','phone',
-              'business_unit','service','description','status',
-              'source_agent','creation'
-            ]),
-            filters: JSON.stringify([['status','=','Verified']]),
-            limit_page_length: 0,
-            order_by: 'creation desc',
-          },
-        }),
-        frappeApi.get('/resource/Lead', {
-          params: {
-            fields: JSON.stringify([
-              'name','customer_name','phone',
-              'business_unit','service','description','status',
-              'source_agent','creation'
-            ]),
-            filters: JSON.stringify([['status','=','Completed']]),
-            limit_page_length: 0,
-            order_by: 'creation desc',
-          },
-        }),
-      ]);
+  setLoadingLeads(true);
+  setErrorLeads(null);
+  try {
+    // Step 1: Fetch all Pending Agent Credit Ledger records
+    const ledgerRes = await frappeApi.get('/resource/Agent Credit Ledger', {
+      params: {
+        fields: JSON.stringify(['name', 'agent', 'lead', 'credits', 'status', 'remarks', 'creation']),
+        filters: JSON.stringify([['status', '=', 'Pending']]),
+        limit_page_length: 0,
+        order_by: 'creation desc',
+      },
+    });
 
-      const all = [
-        ...(verifiedRes.data?.data  || []),
-        ...(completedRes.data?.data || []),
-      ].map((doc) => {
-        const base = mapLead(doc);
-        return {
-          ...base,
-          businessUnit: getBusinessUnitName(doc.business_unit),
-          service: getBusinessServiceName(doc.service),
-        };
-      });
+    const ledgers = ledgerRes.data?.data || [];
+    if (ledgers.length === 0) { setLeads([]); return; }
 
-      // Only show leads where credits haven't been assigned yet
-      setLeads(all.filter(l => !l.credits || l.credits === 0));
-    } catch {
-      setErrorLeads('Failed to load leads.');
-    } finally {
-      setLoadingLeads(false);
-    }
-  }, [getBusinessUnitName]);
+    // Step 2: Fetch the linked Lead docs in parallel
+    const leadIds = [...new Set(ledgers.map(l => l.lead).filter(Boolean))];
+
+    const leadResults = await Promise.all(
+      leadIds.map(id =>
+        frappeApi.get(`/resource/Lead/${id}`, {
+          params: { fields: JSON.stringify(['name','customer_name','phone','client_address','business_unit','service','description','status','source_agent']) }
+        }).then(r => r.data?.data).catch(() => null)
+      )
+    );
+
+    // Build a lookup map: lead id → lead doc
+    const leadMap = {};
+    leadResults.forEach(doc => { if (doc?.name) leadMap[doc.name] = doc; });
+
+    // Step 3: Join and map
+    const all = ledgers.map(ledger => {
+      const lead = leadMap[ledger.lead] || {};
+      const mapped = mapLedger(ledger, lead);
+      return {
+        ...mapped,
+        businessUnit: getBusinessUnitName(lead.business_unit),
+        service:      getBusinessServiceName(lead.service),
+      };
+    });
+
+    setLeads(all);
+  } catch {
+    setErrorLeads('Failed to load reward queue.');
+  } finally {
+    setLoadingLeads(false);
+  }
+}, [getBusinessUnitName, getBusinessServiceName]);
 
   // ── Fetch Withdrawal Requests ───────────────────────────────────────────────
   const fetchWithdrawals = useCallback(async () => {
