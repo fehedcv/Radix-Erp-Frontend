@@ -19,7 +19,8 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
     client_name: "",
     client_phone: "",
     clientAddress: "",
-    notes: ""
+    notes: "",
+    location: "",
   });
 
   useEffect(() => {
@@ -58,7 +59,8 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
           client_name: formData.client_name,
           client_phone: formData.client_phone,
           service: formData.service,
-          notes: formData.notes
+          notes: formData.notes,
+          location: formData.clientAddress,
         }
       );
       setStep('success');
