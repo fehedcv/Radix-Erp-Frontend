@@ -9,6 +9,7 @@ import {
 import Chart from 'react-apexcharts';
 
 // Data Sources
+import frappeApi from '../../api/frappeApi';
 import { initialLeads } from '../../data/leadHistoryData';
 import { businessUnits } from '../../data/businessData';
 
@@ -22,6 +23,21 @@ const AdminOverview = () => {
     statusCounts: { Pending: 0, Verified: 0, Completed: 0 }
   });
 
+  const [dashboard, setDashboard] = useState({
+    inquiryGenerated: [],
+    inquiryPending: 0,
+    inquiryVerified: 0,
+    inquiryCompleted: 0,
+    topBusinessUnits: [],
+    allBusinessUnits: [],
+    totalLeads: 0,
+    totalBusinessUnits: 0,
+    totalAgents: 0,
+    allAgents: []
+  });
+
+  const [loading, setLoading] = useState(true);
+
   const latestAgents = [
     { id: 'A-901', name: 'Zaid Al-Farsi', joined: '2h ago', status: 'Active' },
     { id: 'A-902', name: 'Sarah Mehmood', joined: '5h ago', status: 'Active' },
@@ -30,48 +46,95 @@ const AdminOverview = () => {
   ];
 
   useEffect(() => {
-    const leadCount = initialLeads.length;
-    const unitCount = businessUnits.length;
-    const totalCredits = initialLeads.reduce((sum, l) => sum + (l.credits || 0), 0);
-    
-    const counts = initialLeads.reduce((acc, curr) => {
-      const status = (curr.status === 'Verified' || curr.status === 'Verfied') ? 'Verified' : curr.status;
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, { Pending: 0, Verified: 0, Completed: 0 });
+    const fetchDashboard = async () => {
+      try {
+        const res = await frappeApi.get('/method/business_chain.api.admin.get_admin_dashboard_data');
+        const payload = res?.data?.message || {};
 
-    setStats({
-      totalLeads: leadCount,
-      totalUnits: unitCount,
-      totalCredits: totalCredits,
-      statusCounts: counts
-    });
+        const inquiryPending = Number(payload.inquiryPending || 0);
+        const inquiryVerified = Number(payload.inquiryVerified || 0);
+        const inquiryCompleted = Number(payload.inquiryCompleted || 0);
+
+        setDashboard({
+          inquiryGenerated: payload.inquiryGenerated || [],
+          inquiryPending,
+          inquiryVerified,
+          inquiryCompleted,
+          topBusinessUnits: payload.topBusinessUnits || [],
+          allBusinessUnits: payload.allBusinessUnits || [],
+          totalLeads: Number(payload.totalLeads || 0),
+          totalBusinessUnits: Number(payload.totalBusinessUnits || 0),
+          totalAgents: Number(payload.totalAgents || 0),
+          allAgents: payload.allAgents || []
+        });
+
+        setStats({
+          totalLeads: Number(payload.totalLeads || 0),
+          totalUnits: Number(payload.totalBusinessUnits || 0),
+          totalCredits: Number(payload.totalAgents || 0),
+          statusCounts: {
+            Pending: inquiryPending,
+            Verified: inquiryVerified,
+            Completed: inquiryCompleted
+          }
+        });
+      } catch (error) {
+        console.error('Admin dashboard fetch error', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
   }, []);
 
   // --- REAL DATA CHART PROCESSING ---
   const trendChartData = useMemo(() => {
-    const dailyCounts = initialLeads.reduce((acc, lead) => {
-      acc[lead.date] = (acc[lead.date] || 0) + 1;
+    const source = (dashboard.inquiryGenerated && dashboard.inquiryGenerated.length)
+      ? dashboard.inquiryGenerated
+      : initialLeads.map(l => ({ date: l.date, count: 1 }));
+
+    const dailyCounts = source.reduce((acc, item) => {
+      const date = item.date || item.day || item.label || '';
+      const count = Number(item.count ?? item.value ?? 1);
+      if (!date) return acc;
+      acc[date] = (acc[date] || 0) + count;
       return acc;
     }, {});
+
     const sortedDates = Object.keys(dailyCounts).sort().slice(-7);
     return {
       labels: sortedDates.map(d => d.split('-').slice(1).join('/')),
       data: sortedDates.map(d => dailyCounts[d])
     };
-  }, []);
+  }, [dashboard.inquiryGenerated]);
 
   const partnerPerformanceData = useMemo(() => {
-    const unitActivity = initialLeads.reduce((acc, lead) => {
-      acc[lead.businessUnit] = (acc[lead.businessUnit] || 0) + 1;
+    const unitsById = (dashboard.allBusinessUnits || []).reduce((acc, unit) => {
+      if (unit.name) acc[unit.name] = unit.business_name || unit.name;
       return acc;
     }, {});
-    const labels = Object.keys(unitActivity).slice(0, 7);
+
+    const source = (dashboard.topBusinessUnits && dashboard.topBusinessUnits.length)
+      ? dashboard.topBusinessUnits.map(item => ({
+          label: unitsById[item.business_unit] || item.business_unit || 'Unknown',
+          count: Number(item.lead_count ?? item.count ?? 0)
+        }))
+      : businessUnits.map(u => ({ label: u.name, count: 0 }));
+
+    const activity = source.reduce((acc, item) => {
+      const key = item.label || 'Unknown';
+      const value = Number(item.count || 0);
+      acc[key] = (acc[key] || 0) + value;
+      return acc;
+    }, {});
+
+    const labels = Object.keys(activity).slice(0, 7);
     return {
-      labels: labels.map(l => l.split(' ')[0]),
-      data: labels.map(l => unitActivity[l])
+      labels,
+      data: labels.map(l => activity[l])
     };
-  }, []);
+  }, [dashboard.topBusinessUnits, dashboard.allBusinessUnits]);
 
   // --- CHART CONFIGURATIONS ---
   const activityTrendConfig = {
@@ -111,6 +174,8 @@ const AdminOverview = () => {
       dataLabels: { enabled: false },
     }
   };
+
+  const dashboardAgents = dashboard.allAgents && dashboard.allAgents.length ? dashboard.allAgents.slice(0, 4) : latestAgents;
 
   return (
     <div className="font-['Plus_Jakarta_Sans',sans-serif] space-y-6 max-w-[1600px] mx-auto">
@@ -160,8 +225,8 @@ const AdminOverview = () => {
         {[
           { label: 'Total Inquiries', val: stats.totalLeads, icon: <Activity size={16}/>, color: 'text-[#007ACC]', bg: 'bg-blue-50' },
           { label: 'Business Partners', val: stats.totalUnits, icon: <Building2 size={16}/>, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-          { label: 'Network Credits', val: stats.totalCredits, icon: <Zap size={16}/>, color: 'text-amber-600', bg: 'bg-amber-50' },
-          { label: 'Active Team', val: latestAgents.length, icon: <Users size={16}/>, color: 'text-emerald-600', bg: 'bg-emerald-50' }
+          { label: 'Total Agents', val: dashboard.totalAgents, icon: <Users size={16}/>, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Pending Requests', val: dashboard.inquiryPending, icon: <Clock size={16}/>, color: 'text-amber-600', bg: 'bg-amber-50' }
         ].map((m, i) => (
           <motion.div 
             key={i}
@@ -188,18 +253,24 @@ const AdminOverview = () => {
             <button onClick={() => navigate('/admin/agents')} className="text-[9px] font-black text-[#007ACC] uppercase tracking-widest hover:text-slate-900 transition-colors">Directory</button>
           </div>
           <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-            {latestAgents.map((agent, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl hover:border-[#007ACC] transition-all group">
-                <div className="w-10 h-10 rounded-lg bg-[#0F172A] text-white flex items-center justify-center font-black text-[10px] uppercase group-hover:scale-105 transition-transform">
-                  {agent.name.split(' ').map(n => n[0]).join('')}
+            {dashboardAgents.map((agent, i) => {
+              const displayName = agent.full_name || agent.name || agent.agentName || `${agent.firstName || ''} ${agent.lastName || ''}`.trim() || 'Unknown Agent';
+              const email = agent.email || agent.name || 'N/A';
+              const initials = displayName.split(' ').map(n => n[0]).join('').slice(0, 3).toUpperCase();
+              const status = agent.status || (agent.isActive ? 'Active' : 'Inactive') || 'Pending';
+              return (
+                <div key={i} className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl hover:border-[#007ACC] transition-all group">
+                  <div className="w-10 h-10 rounded-lg bg-[#0F172A] text-white flex items-center justify-center font-black text-[10px] uppercase group-hover:scale-105 transition-transform">
+                    {initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-slate-900 uppercase truncate">{displayName}</p>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 tracking-normal">{email}</p>
+                  </div>
+                  <div className={`w-1.5 h-1.5 rounded-full ${status === 'Active' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-black text-slate-900 uppercase truncate">{agent.name}</p>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">{agent.joined} • {agent.id}</p>
-                </div> 
-                <div className={`w-1.5 h-1.5 rounded-full ${agent.status === 'Active' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -211,20 +282,24 @@ const AdminOverview = () => {
             </h4>
           </div>
           <div className="p-3 space-y-2 flex-1">
-            {businessUnits.slice(0, 5).map((unit, i) => (
-              <div key={i} onClick={() => navigate('/admin/units')} className="flex items-center justify-between p-3 bg-white border border-slate-50 rounded-xl hover:border-[#007ACC] transition-all cursor-pointer group shadow-sm">
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-[#007ACC] group-hover:bg-[#007ACC] group-hover:text-white transition-colors">
-                    <Database size={14} />
+            {(dashboard.allBusinessUnits && dashboard.allBusinessUnits.length ? dashboard.allBusinessUnits : businessUnits).slice(0, 5).map((unit, i) => {
+              const displayName = unit.business_name || unit.name || unit.unitName || 'Unknown';
+              const location = unit.category || unit.address || 'Unknown';
+              return (
+                <div key={i} onClick={() => navigate('/admin/units')} className="flex items-center justify-between p-3 bg-white border border-slate-50 rounded-xl hover:border-[#007ACC] transition-all cursor-pointer group shadow-sm">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-[#007ACC] group-hover:bg-[#007ACC] group-hover:text-white transition-colors">
+                      <Database size={14} />
+                    </div>
+                    <div className="truncate">
+                      <p className="text-[10px] font-black text-slate-900 uppercase truncate">{displayName}</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase truncate mt-0.5">{location.split(',')[0]}</p>
+                    </div>
                   </div>
-                  <div className="truncate">
-                    <p className="text-[10px] font-black text-slate-900 uppercase truncate">{unit.name}</p>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase truncate mt-0.5">{unit.location.split(',')[0]}</p>
-                  </div>
+                  <ChevronRight size={12} className="text-slate-300 group-hover:text-[#007ACC]" />
                 </div>
-                <ChevronRight size={12} className="text-slate-300 group-hover:text-[#007ACC]" />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

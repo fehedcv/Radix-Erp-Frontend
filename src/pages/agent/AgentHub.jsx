@@ -11,6 +11,7 @@ import {
   LogOut, Briefcase, History, AlertCircle, 
   ShieldCheck, Activity, Bell, Clock 
 } from 'lucide-react';
+import frappeApi from '../../api/frappeApi';
 
 // Lead Modal Import
 import LeadFormModal from './LeadFormModal';
@@ -22,6 +23,10 @@ const AgentHub = ({ onLogout }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState("");
+
+  // businessUnits is now a grouped map: { [category]: [service_name, ...] }
+  // e.g. { "Interior Design": ["exterior desigingin", "Interior designing"] }
+  const [businessUnits, setBusinessUnits] = useState({});
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -35,6 +40,36 @@ const AgentHub = ({ onLogout }) => {
   const currentUser = JSON.parse(localStorage.getItem('vynx_user') || "{}");
 
   useEffect(() => {
+    const fetchBusinessUnits = async () => {
+      try {
+        const response = await frappeApi.get('/resource/Business Unit', {
+          params: {
+            fields: '["name", "category", "services.service_name", "services.name"]',
+            limit_page_length: 100
+          }
+        });
+
+        // API returns flat rows: [{ name, category, service_name }, ...]
+        // Group by category, collecting all service_names per category
+        const grouped = {};
+        (response.data.data || []).forEach(item => {
+          const cat = item.category;
+          const svc = item.service_name;
+          if (!cat) return;
+          if (!grouped[cat]) grouped[cat] = [];
+          if (svc && !grouped[cat].includes(svc)) {
+            grouped[cat].push(svc);
+          }
+        });
+
+        setBusinessUnits(grouped);
+      } catch (error) {
+        console.error("Failed to fetch business units", error);
+      }
+    };
+
+    fetchBusinessUnits();
+
     const handleSync = () => {
       const saved = localStorage.getItem('vynx_leads');
       if (saved) setLeads(JSON.parse(saved));
@@ -43,25 +78,7 @@ const AgentHub = ({ onLogout }) => {
     return () => window.removeEventListener('storage', handleSync);
   }, []);
 
-  const addNewLead = (formData) => {
-    const currentDatabase = JSON.parse(localStorage.getItem('vynx_leads') || "[]");
-    const newEntry = {
-      id: `L-${Math.floor(Math.random() * 900) + 100}`,
-      clientName: formData.clientName,
-      clientPhone: formData.clientPhone,
-      clientAddress: formData.clientAddress || "Not Provided",
-      businessUnit: formData.category,
-      service: formData.service,
-      description: formData.description || "",
-      status: "Pending", 
-      date: new Date().toISOString().split('T')[0],
-      credits: 0,
-      agentName: currentUser.name || "Member",
-      agentId: currentUser.id || "M-000"
-    };
-    const updatedLeads = [newEntry, ...currentDatabase];
-    localStorage.setItem('vynx_leads', JSON.stringify(updatedLeads));
-    setLeads(updatedLeads);
+  const handleLeadSubmitted = () => {
     setIsModalOpen(false);
   };
 
@@ -136,9 +153,11 @@ const AgentHub = ({ onLogout }) => {
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto relative no-scrollbar">
         
         {/* TOP HEADER */}
-        <header className="h-20 flex items-center justify-between px-8  py-2 lg:px-12 sticky top-0 bg-white/80 backdrop-blur-xl z-40 border-b border-slate-200/50 shadow-sm">
+        <header className="h-20 flex items-center justify-between px-8 py-2 lg:px-12 sticky top-0 bg-white/80 backdrop-blur-xl z-40 border-b border-slate-200/50 shadow-sm">
           <div>
-             <span className="text-[9px] font-black text-[#007ACC] uppercase tracking-[0.2em]"> <span className="text-slate-900 uppercase tracking-widest font-bold">{currentTabName}</span></span>
+            <span className="text-[9px] font-black text-[#007ACC] uppercase tracking-[0.2em]">
+              <span className="text-slate-900 uppercase tracking-widest font-bold">{currentTabName}</span>
+            </span>
           </div>
 
           <button 
@@ -155,15 +174,6 @@ const AgentHub = ({ onLogout }) => {
             <Outlet context={{ myLeads, setIsModalOpen, setSelectedBusiness, currentUser }} />
           </motion.div>
         </div>
-
-        {/* FOOTER */}
-        {/* <footer className="hidden lg:flex sticky bottom-0 h-10 bg-white/80 backdrop-blur-md border-t border-slate-200 text-slate-400 px-12 items-center justify-between z-30">
-           <div className="flex items-center gap-8">
-              <span className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.15em]"><ShieldCheck size={14} className="text-emerald-500" /> Secure Protocol</span>
-              <span className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.15em]"><Activity size={14} className="text-blue-500" /> Network Active</span>
-           </div>
-           <span className="text-[9px] font-black uppercase tracking-widest opacity-40 italic">Agent v2.1</span>
-        </footer> */}
       </main>
 
       {/* 3. MOBILE BOTTOM NAVIGATION */}
@@ -214,12 +224,13 @@ const AgentHub = ({ onLogout }) => {
         )}
       </AnimatePresence>
 
-      {/* 5. LEAD FORM MODAL (FIXED) */}
+      {/* 5. LEAD FORM MODAL */}
       <LeadFormModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onSubmit={addNewLead} 
-        selectedBusiness={selectedBusiness} 
+        onSubmit={handleLeadSubmitted}
+        businessUnits={businessUnits}   // { "Interior Design": ["exterior desigingin", "Interior designing"] }
+        initialUnit={selectedBusiness} 
       />
 
     </div>
