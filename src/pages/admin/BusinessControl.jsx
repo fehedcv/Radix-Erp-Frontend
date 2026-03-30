@@ -388,7 +388,7 @@ const BusinessHub = () => {
                 <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <EditField label="Business Name *" value={editForm.name}        onChange={setField('name')}        placeholder="e.g. SKYLINE TECH" />
-                    <EditField label="Market Category" value={editForm.category}    onChange={setField('category')}   isSelect options={CATEGORIES} />
+                    <EditField label="Market Category" value={editForm.category}    onChange={setField('category')}    />
                     <EditField label="Status"          value={editForm.status}      onChange={setField('status')}     isSelect options={STATUSES} />
                     <EditField label="Unit Manager"    value={editForm.manager}     onChange={setField('manager')}    placeholder="Manager name" />
                     <EditField label="Primary Phone"   value={editForm.phone}       onChange={setField('phone')}      placeholder="+971 50 000 0000" />
@@ -623,7 +623,7 @@ const AddUnitForm = ({ onSubmit, onCancel, submitting }) => {
     <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput label="Business Name *"   value={form.name}      onChange={set('name')}      placeholder="e.g. SKYLINE TECH"        required />
-        <FormInput label="Market Category *" value={form.category}  onChange={set('category')}  placeholder="Select..."                required isSelect options={CATEGORIES} />
+        <FormInput label="Market Category *" value={form.category}  onChange={set('category')}  placeholder="Enter Category"                required  />
         <FormInput label="Unit Manager *"    value={form.manager}   onChange={set('manager')}   placeholder="e.g. ZAID AL-FARSI"       required />
         <FormInput label="Primary Phone *"   value={form.phone}     onChange={set('phone')}     placeholder="+971 50 000 0000"          required />
         <FormInput label="WhatsApp Number *" value={form.whatsapp}  onChange={set('whatsapp')}  placeholder="+971 50 000 0000"          required />

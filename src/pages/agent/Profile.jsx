@@ -12,6 +12,7 @@ const ProfilePage = () => {
   // --- 1. STATE MANAGEMENT ---
   const [isEditing, setIsEditing] = useState(false);
   const [loading,setLoading] = useState(true);
+  const [saving,setSaving] = useState(false);
   const [profile, setProfile] = useState({
     name: "John Doe",
     phone: "+91 9876543210",
@@ -95,6 +96,7 @@ const ProfilePage = () => {
   };
 
   const handleSave = () => {
+    setSaving(true);
     const formData = new FormData();
     formData.append('full_name', profile.name);
     formData.append('phone', profile.phone);
@@ -127,7 +129,11 @@ const ProfilePage = () => {
       console.error("Error updating profile:", error);
       // You might want to show an error to the user here
       setIsEditing(false); // Exit editing mode even on error for this example
-    });
+    }).finally(()=>{
+      setSaving(false);
+
+    })
+    
   };
   if (loading) {
      return (
@@ -171,7 +177,16 @@ const ProfilePage = () => {
                 onClick={handleSave}
                 className="flex items-center gap-2 bg-[#007ACC] text-white px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:bg-[#005fb8] transition-all"
               >
-                <Save size={14} /> Commit Changes
+                 {saving ? (
+    <>
+      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+      Saving...
+    </>
+  ) : (
+    <>
+      <Save size={14} /> Save Changes
+    </>
+  )}
               </button>
             </div>
           )}
@@ -243,7 +258,7 @@ const ProfilePage = () => {
               <ProfileField isEditing={isEditing} label="Full Legal Name" value={profile.name} onChange={(v) => setProfile({...profile, name: v})} icon={<User size={16} />} />
               <ProfileField isEditing={isEditing} label="Direct Contact" value={profile.phone} onChange={(v) => setProfile({...profile, phone: v})} icon={<Phone size={16} />} />
               <div className="md:col-span-2">
-                <ProfileField isEditing={isEditing} label="Primary Network Email" value={profile.email} onChange={(v) => setProfile({...profile, email: v})} icon={<Mail size={16} />} />
+                <ProfileField isEditing={false} label="Primary Network Email" value={profile.email} onChange={(v) => setProfile({...profile, email: v})} icon={<Mail size={16} />} />
               </div>
             </div>
           </div>

@@ -139,19 +139,19 @@ const LeadHistory = () => {
             <input
               value={searchTerm}
               placeholder="Search by client or deal ID..."
-              className="w-full pl-11 pr-5 py-3 rounded-xl border border-grey-200 text-xs font-bold"
+              className="w-full pl-11 pr-5 py-3 rounded-xl border border-gray-200 text-xs font-bold"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div> 
 
           <select
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full sm:w-48 pl-4 pr-8 py-3 rounded-xl border border-grey-200 text-[10px] font-bold uppercase"
+            className="w-full sm:w-48 pl-4 pr-8 py-3 rounded-xl border border-gray-200 text-[10px] font-bold uppercase"
           >
-            <option value="All">All Status</option>
-            <option value="Successful">Successful</option>
-            <option value="Pending">Pending</option>
-            <option value="Rejected">Rejected</option>
+            <option  value="All">All Status</option>
+            <option  value="Successful">Successful</option>
+            <option  value="Pending">Pending</option>
+            <option  value="Rejected">Rejected</option>
           </select>
         </div>
       </div>
