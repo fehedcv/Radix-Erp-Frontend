@@ -38,31 +38,56 @@ const AuthGateway = ({ onLoginSuccess }) => {
 
   // ── Login ─────────────────────────────────────────────────────────────────
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoginLoading(true);
-    setLoginError('');
-    const formData = new FormData(e.target);
-    try {
-      await frappeApi.post(
-        '/method/login',
-        new URLSearchParams({ usr: formData.get('email'), pwd: formData.get('password') }),
-        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-      );
-      const res = await frappeApi.get('/method/business_chain.api.api.whoami');
-      const { user, primary_role, roles } = res.data.message;
-      if (!primary_role) throw new Error('ROLE_NOT_ASSIGNED');
-      localStorage.setItem('vynx_user', JSON.stringify({ email: user, role: primary_role, roles }));
-      onLoginSuccess(primary_role);
-      if      (primary_role === 'agent')    navigate('/agent');
-      else if (primary_role === 'business') navigate('/business');
-      else if (primary_role === 'admin')    navigate('/admin');
-      else                                  navigate('/unauthorized');
-    } catch {
+  e.preventDefault();
+  setLoginLoading(true);
+  setLoginError('');
+  const formData = new FormData(e.target);
+
+  try {
+    // 1. Get tokens via custom login endpoint
+    const tokenRes = await frappeApi.post(
+      '/method/business_chain.api.auth.mobile_login',
+      {
+        usr: formData.get('email'),
+        pwd: formData.get('password'),
+      }
+    );
+    const { api_key, api_secret } = tokenRes.data.message;
+
+    // 2. Persist tokens
+    localStorage.setItem('bc_api_key',    api_key);
+    localStorage.setItem('bc_api_secret', api_secret);
+
+    // 3. Now fetch role — interceptor will auto-attach the token
+    const res = await frappeApi.get('/method/business_chain.api.api.whoami');
+    const { user, primary_role, roles } = res.data.message;
+
+    if (!primary_role) throw new Error('ROLE_NOT_ASSIGNED');
+
+    localStorage.setItem('vynx_user', JSON.stringify({ email: user, role: primary_role, roles }));
+    onLoginSuccess(primary_role);
+
+    if      (primary_role === 'agent')    navigate('/agent');
+    else if (primary_role === 'business') navigate('/business');
+    else if (primary_role === 'admin')    navigate('/admin');
+    else                                  navigate('/unauthorized');
+
+  } catch (err) {
+    const serverMsg = err?.response?.data?._server_messages;
+    if (serverMsg) {
+      try {
+        const parsed = JSON.parse(JSON.parse(serverMsg)[0]);
+        setLoginError(parsed.message || 'Login failed.');
+      } catch {
+        setLoginError('Invalid credentials or role not assigned.');
+      }
+    } else {
       setLoginError('Invalid credentials or role not assigned.');
-    } finally {
-      setLoginLoading(false);
     }
-  };
+  } finally {
+    setLoginLoading(false);
+  }
+};
 
   // ── Signup ────────────────────────────────────────────────────────────────
   const setField = (k) => (e) => setSignupForm(prev => ({ ...prev, [k]: e.target.value }));
