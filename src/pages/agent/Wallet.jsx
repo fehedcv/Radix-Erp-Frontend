@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import frappeApi from '../../api/frappeApi';
-
+import Loader from '../../components/Loader'
 const STATUS_STYLES = {
   Pending:  'bg-amber-100 text-amber-700',
   Approved: 'bg-emerald-100 text-emerald-700',
@@ -17,12 +17,12 @@ const STATUS_STYLES = {
 };
 
 const WalletPage = () => {
-  const [wallet, setWallet]               = useState(null);
-  const [loading, setLoading]             = useState(true);
+  const [wallet, setWallet]  = useState(null);
+  const [loading, setLoading] = useState(true);
   const [withdrawalRequests, setWithdrawalRequests] = useState([]);
-  const [requestsLoading, setRequestsLoading]       = useState(true);
-  const [showConfirm, setShowConfirm]     = useState(false);
-  const [processing, setProcessing]       = useState(false);
+  const [requestsLoading, setRequestsLoading]  = useState(true);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [processing, setProcessing] = useState(false);
 
   /* ---------------- FETCH WALLET ---------------- */
   useEffect(() => {
@@ -76,12 +76,13 @@ const WalletPage = () => {
   };
 
   if (loading || !wallet) {
-    return (
-      <div className="py-32 text-center font-black uppercase text-slate-400">
-        Loading wallet…
-      </div>
-    );
-  }
+     return (
+       <div className="flex items-center justify-center w-full min-h-[70vh] font-['Plus_Jakarta_Sans',sans-serif]">
+         {/* fullScreen={false} keeps it perfectly inside your dashboard container instead of taking over the whole screen */}
+         <Loader fullScreen={false} text="Loading Wallet..." />
+       </div>
+     );
+   }
 
   const { summary, ledger } = wallet;
 
@@ -107,7 +108,7 @@ const WalletPage = () => {
     <div className="space-y-6 font-['Plus_Jakarta_Sans',sans-serif]">
 
       {/* ================= WALLET HEADER ================= */}
-      <div className="bg-white p-10 rounded-2xl border shadow-sm relative">
+      <div className="bg-white p-10 rounded-2xl  shadow-sm relative">
         <div className="flex justify-between items-start">
           <Wallet size={28} className="text-[#007ACC]" />
           <span className="text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full text-[10px] font-black uppercase">
@@ -135,7 +136,7 @@ const WalletPage = () => {
       {/* ================= DONUT ================= */}
 
       {/* ================= WITHDRAWAL REQUESTS ================= */}
-      <div className="bg-white rounded-2xl border overflow-hidden">
+      <div className="bg-white rounded-2xl  overflow-hidden">
         <div className="p-6 border-b flex items-center gap-2">
           <ClockArrowDown size={15} className="text-[#007ACC]" />
           <span className="font-black uppercase text-xs">
@@ -186,7 +187,7 @@ const WalletPage = () => {
       </div>
 
       {/* ================= LEDGER ================= */}
-      <div className="bg-white rounded-2xl border overflow-hidden">
+      <div className="bg-white rounded-2xl  overflow-hidden">
         <div className="p-6 border-b font-black uppercase text-xs">
           Transaction History
         </div>

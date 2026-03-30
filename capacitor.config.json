@@ -1,0 +1,13 @@
+{
+  "appId": "com.example.app",
+  "appName": "radix",
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorCookies": {
+      "enabled": true
+    },
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

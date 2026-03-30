@@ -7,10 +7,13 @@ import {
   Layers, ArrowRight, Wallet, CheckCircle, 
   Terminal, Filter, MessageCircle, Globe, Plus, Bell
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import AppHomePage from './AppHomePage';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const LandingPage = ({ onEnterPortal }) => {
+// 1. Rename this to WebLandingPage. This holds ALL the web logic and hooks.
+const WebLandingPage = ({ onEnterPortal }) => {
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -359,4 +362,14 @@ const BenefitItem = ({ icon, title, desc }) => (
   </div>
 );
 
-export default LandingPage;
+// 2. The Default Export: This is the ONLY thing your router sees. 
+// It safely chooses whether to load the Heavy Web UI or the Fast Mobile UI without running any hooks!
+export default function LandingPage({ onEnterPortal }) {
+  const isApp = Capacitor.isNativePlatform();
+
+  if (isApp) {
+    return <AppHomePage onEnterPortal={onEnterPortal} />;
+  }
+  
+  return <WebLandingPage onEnterPortal={onEnterPortal} />;
+}

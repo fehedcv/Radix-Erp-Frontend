@@ -7,16 +7,17 @@ import {
   Info, Target, Zap, BarChart2
 } from 'lucide-react';
 import frappeApi from '../../api/frappeApi';
-
+import Loader from '../../components/Loader'
 const ProfilePage = () => {
   // --- 1. STATE MANAGEMENT ---
   const [isEditing, setIsEditing] = useState(false);
+  const [loading,setLoading] = useState(true);
   const [profile, setProfile] = useState({
     name: "John Doe",
     phone: "+91 9876543210",
     email: "john.doe@radix.com",
     status: "Active",
-    successRate: 64,
+    // successRate: 64,
     totalLeads: 50,
     avatar: null, // URL for display
     avatarFile: null // File object for upload
@@ -26,23 +27,40 @@ const ProfilePage = () => {
 
   // Effect to fetch initial data
   useEffect(() => {
-    frappeApi.get('/method/business_chain.api.agent.get_agent_profile')
-      .then(response => {
-        const agentData = response.data.message;
-        setProfile(prevProfile => ({
-          ...prevProfile,
-          name: agentData.fullName,
-          phone: agentData.phone,
-          email: agentData.email,
-          avatar: agentData.profilePicture,
-          avatarFile: null // Ensure file is null on initial load
-        }));
-      })
-      .catch(error => {
-        console.error("Error fetching agent profile:", error);
-      });
-  }, []);
+  const fetchData = async () => {
+    try {
+      // 1. Get profile
+      setLoading(true);
+      const profileRes = await frappeApi.get('/method/business_chain.api.agent.get_agent_profile');
+      const agentData = profileRes.data.message;
 
+      // 2. Get dashboard (for leads count)
+      const dashboardRes = await frappeApi.get('/method/business_chain.api.agent.get_agent_dashboard_data');
+      const dashboardData = dashboardRes.data.message;
+
+      // 3. Calculate total leads
+      const totalLeads = dashboardData.recentActivity.length;
+
+      // 4. Set profile
+      setProfile(prevProfile => ({
+        ...prevProfile,
+        name: agentData.fullName,
+        phone: agentData.phone,
+        email: agentData.email,
+        avatar: agentData.profilePicture,
+        totalLeads: totalLeads, // ✅ THIS IS THE FIX
+        avatarFile: null
+      }));
+
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }finally {
+      setLoading(false)
+    }
+  };
+
+  fetchData();
+}, []);
   // Effect to clean up blob URLs
   useEffect(() => {
     const avatar = profile.avatar;
@@ -98,12 +116,12 @@ const ProfilePage = () => {
     })
     .then(response => {
       console.log("Profile updated successfully", response.data);
-      if(response.data.success){
+      
         // Optionally, refetch profile data to get new image URL from server
         // For now, just exit editing mode
         setIsEditing(false);
         setProfile(p => ({...p, avatarFile: null})); // Clear staged file
-      }
+      
     })
     .catch(error => {
       console.error("Error updating profile:", error);
@@ -111,7 +129,14 @@ const ProfilePage = () => {
       setIsEditing(false); // Exit editing mode even on error for this example
     });
   };
-
+  if (loading) {
+     return (
+       <div className="flex items-center justify-center w-full min-h-[70vh] font-['Plus_Jakarta_Sans',sans-serif]">
+         {/* fullScreen={false} keeps it perfectly inside your dashboard container instead of taking over the whole screen */}
+         <Loader fullScreen={false} text="Loading Profile..." />
+       </div>
+     );
+   }
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }} 
@@ -184,7 +209,7 @@ const ProfilePage = () => {
               </div>
 
               <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">{profile.name}</h3>
-              <p className="text-[10px] font-bold text-[#007ACC] uppercase tracking-[0.2em] mt-1">Platinum Partner ID: PX-928</p>
+              {/* <p className="text-[10px] font-bold text-[#007ACC] uppercase tracking-[0.2em] mt-1">Partner ID: PX-928</p> */}
               
               <div className="mt-6 flex justify-center">
                 <span className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-1.5 border border-emerald-100 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm">
@@ -192,32 +217,17 @@ const ProfilePage = () => {
                 </span>
               </div>
 
-              <div className="mt-8 pt-8 border-t border-slate-50 grid grid-cols-2 gap-4">
+              <div className="mt-8 pt-8 border-t border-slate-50 grid grid-cols-0 gap-4">
                  <div className="text-center">
                     <p className="text-xl font-black text-slate-900">{profile.totalLeads}</p>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Leads Sent</p>
                  </div>
-                 <div className="text-center border-l border-slate-100">
-                    <p className="text-xl font-black text-[#007ACC]">{profile.successRate}%</p>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Score</p>
-                 </div>
+                
               </div>
             </div>
           </div>
 
-          {/* SYSTEM PROTOCOLS CARD */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-             <div className="flex items-center gap-3 mb-6">
-                <Info size={18} className="text-[#007ACC]" />
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Partner Protocols</h4>
-             </div>
-             <div className="space-y-4">
-                <StaticListItem icon={<CheckCircle2 size={14} />} text="Identity verification completed." />
-                <StaticListItem icon={<CheckCircle2 size={14} />} text="Referral payout lines enabled." />
-                <StaticListItem icon={<CheckCircle2 size={14} />} text="Data transmission encrypted." />
-                <StaticListItem icon={<CheckCircle2 size={14} />} text="Multi-node access authorized." />
-             </div>
-          </div>
+          
         </div>
 
         {/* 3. MAIN CONTENT AREA */}
@@ -239,69 +249,13 @@ const ProfilePage = () => {
           </div>
 
           {/* DENSE GRID: PERFORMANCE & EXPERTISE */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             {/* Efficiency Dashboard */}
-             <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-                <div className="flex items-center justify-between mb-8">
-                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <Activity size={16} className="text-[#007ACC]" /> Conversion Score
-                   </h4>
-                   <Zap size={14} className="text-amber-400 fill-amber-400" />
-                </div>
-                <div className="flex items-end justify-between mb-6">
-                   <div>
-                      <p className="text-5xl font-black text-slate-900 tracking-tighter">{profile.successRate}%</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Network Benchmark</p>
-                   </div>
-                </div>
-                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-100">
-                   <motion.div initial={{ width: 0 }} animate={{ width: `${profile.successRate}%` }} transition={{ duration: 1.2 }} className="bg-[#007ACC] h-full rounded-full shadow-[0_0_10px_rgba(0,122,204,0.2)]" />
-                </div>
-             </div>
-
-             {/* Industry Expertise */}
-             <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-                <div className="flex items-center gap-2 mb-6">
-                   <Layers size={16} className="text-[#007ACC]" />
-                   <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Target Expertise</h4>
-                </div>
-                <div className="flex flex-wrap gap-2.5">
-                   <ExpertiseBadge text="Infrastructure" />
-                   <ExpertiseBadge text="Legal Tech" />
-                   <ExpertiseBadge text="Capital" />
-                   <ExpertiseBadge text="Industrial" />
-                </div>
-             </div>
-          </div>
+       
 
           {/* STRATEGIC GOALS (NON-FUNCTIONAL CONTENT) */}
-          <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-8">
-             <div className="flex items-center gap-3 mb-8">
-                <Target size={18} className="text-[#007ACC]" />
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Quarterly Objectives</h4>
-             </div>
-             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <GoalTracker label="Lead Volume" progress={80} color="bg-blue-500" />
-                <GoalTracker label="Verification Speed" progress={45} color="bg-emerald-500" />
-                <GoalTracker label="Network Growth" progress={65} color="bg-indigo-500" />
-             </div>
-          </div>
+          
 
           {/* NETWORK ASSETS (NON-FUNCTIONAL CONTENT) */}
-          <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
-             <div className="p-6 border-b border-slate-50 bg-slate-50/20 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                   <BarChart2 size={16} className="text-[#007ACC]" />
-                   <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Identity Documents</span>
-                </div>
-                <span className="text-[9px] font-bold text-slate-400 uppercase">Records: 03</span>
-             </div>
-             <div className="divide-y divide-slate-50">
-                <StaticDocLink text="Partner Authorization Letter" date="OCT 12, 2025" />
-                <StaticDocLink text="Tax Compliance Certificate" date="NOV 05, 2025" />
-                <StaticDocLink text="Network Terms of Service" date="DEC 20, 2025" />
-             </div>
-          </div>
+         
         </div>
       </div>
 

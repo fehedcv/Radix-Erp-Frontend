@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 
 import frappeApi from '../../api/frappeApi';
+import Loader from '../../components/Loader'
 
 const BusinessDirectory = () => {
   const navigate = useNavigate();
@@ -47,10 +48,11 @@ const BusinessDirectory = () => {
     fetchUnits();
   }, []);
 
-  if (loading) {
+ if (loading) {
     return (
-      <div className="text-center py-24 text-slate-400 font-black uppercase text-xs">
-        Loading Business Units…
+      <div className="flex items-center justify-center w-full min-h-[70vh] font-['Plus_Jakarta_Sans',sans-serif]">
+        {/* fullScreen={false} keeps it perfectly inside your dashboard container instead of taking over the whole screen */}
+        <Loader fullScreen={false} text="Loading Businesses..." />
       </div>
     );
   }

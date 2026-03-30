@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import frappeApi from '../../api/frappeApi';
-
+import Loader from '../../components/Loader'
 const LeadHistory = () => {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -109,10 +109,11 @@ const LeadHistory = () => {
   };
 
   // ---------------- RENDER ----------------
-  if (loading) {
+ if (loading) {
     return (
-      <div className="py-32 text-center text-slate-400 font-black uppercase text-xs">
-        Loading history…
+      <div className="flex items-center justify-center w-full min-h-[70vh] font-['Plus_Jakarta_Sans',sans-serif]">
+        {/* fullScreen={false} keeps it perfectly inside your dashboard container instead of taking over the whole screen */}
+        <Loader fullScreen={false} text="Loading History..." />
       </div>
     );
   }
@@ -131,21 +132,21 @@ const LeadHistory = () => {
       </div>
 
       {/* SEARCH / FILTER */}
-      <div className="bg-white border rounded-2xl p-5 shadow-sm">
+      <div className="bg-white  rounded-2xl p-5 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={searchTerm}
               placeholder="Search by client or deal ID..."
-              className="w-full pl-11 pr-5 py-3 rounded-xl border text-xs font-bold"
+              className="w-full pl-11 pr-5 py-3 rounded-xl border border-grey-200 text-xs font-bold"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
+          </div> 
 
           <select
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full sm:w-48 pl-4 pr-8 py-3 rounded-xl border text-[10px] font-bold uppercase"
+            className="w-full sm:w-48 pl-4 pr-8 py-3 rounded-xl border border-grey-200 text-[10px] font-bold uppercase"
           >
             <option value="All">All Status</option>
             <option value="Successful">Successful</option>
@@ -157,19 +158,19 @@ const LeadHistory = () => {
 
       {/* ANALYTICS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl border">
+        <div className="bg-white p-6 rounded-2xl ">
           <BarChart3 size={16} className="text-[#007ACC] mb-4" />
           <Chart options={barChartConfig.options} series={barChartConfig.series} type="bar" height={220} />
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border">
+        <div className="bg-white p-6 rounded-2xl ">
           <PieChart size={16} className="text-[#007ACC] mb-4" />
           <Chart options={donutChartConfig.options} series={donutChartConfig.series} type="donut" height={240} />
         </div>
       </div>
 
       {/* LIST */}
-      <div className="bg-white border rounded-2xl overflow-hidden">
+      <div className="bg-white  rounded-2xl overflow-hidden">
         {filteredLeads.length ? filteredLeads.map((lead, i) => (
           <motion.div
             key={lead.id}
@@ -186,7 +187,7 @@ const LeadHistory = () => {
             <span className="flex items-center gap-2 text-xs text-slate-400">
               <Calendar size={12} /> {lead.date}
             </span>
-            <span className={`px-4 py-1.5 text-[9px] font-black rounded-full border ${getStatusStyle(lead.status)}`}>
+            <span className={`px-4 py-1.5 text-[9px] font-black rounded-full  ${getStatusStyle(lead.status)}`}>
               {lead.status}
             </span>
           </motion.div>

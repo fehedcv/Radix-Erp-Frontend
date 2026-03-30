@@ -105,7 +105,7 @@ const AgentHub = ({ onLogout }) => {
             </div>
             <div>
               <h1 className="text-[21px] font-black text-slate-900 tracking-tighter leading-none uppercase italic">RADIX</h1>
-              <p className="text-[9px] font-black text-[#007ACC] uppercase tracking-[0.3em] mt-1.5 leading-none">Agent Hub</p>
+              <p className="text-[9px] font-black text-[#007ACC] uppercase tracking-[0.3em] mt-1.5 leading-none">Partner Dashboard</p>
             </div>
           </div>
         </div>
@@ -153,23 +153,19 @@ const AgentHub = ({ onLogout }) => {
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto relative no-scrollbar">
         
         {/* TOP HEADER */}
-        <header className="h-20 flex items-center justify-between px-8 py-2 lg:px-12 sticky top-0 bg-white/80 backdrop-blur-xl z-40 border-b border-slate-200/50 shadow-sm">
-          <div>
-            <span className="text-[9px] font-black text-[#007ACC] uppercase tracking-[0.2em]">
-              <span className="text-slate-900 uppercase tracking-widest font-bold">{currentTabName}</span>
-            </span>
-          </div>
+        <header className="h-20 flex items-center justify-end px-8 py-2 lg:px-12 sticky top-0 bg-white/80 backdrop-blur-xl z-40 border-b border-slate-200/50 shadow-sm">
+        
 
           <button 
             onClick={() => { setSelectedBusiness(""); setIsModalOpen(true); }} 
             className="bg-slate-900 text-white px-6 py-3 hover:bg-[#007ACC] transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg active:scale-95"
           >
-            <Plus size={16} strokeWidth={3} /> New Inquiry
+            <Plus size={16} strokeWidth={3} /> Submit New Lead
           </button>
         </header>
 
         {/* CONTENT */}
-        <div className="px-3 py-3 lg:p-12 max-w-[1600px] w-full mx-auto pb-24">
+        <div className="px-3 py-3 lg:p-4 max-w-[1600px] w-full mx-auto pb-24">
           <motion.div key={location.pathname} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
             <Outlet context={{ myLeads, setIsModalOpen, setSelectedBusiness, currentUser }} />
           </motion.div>
