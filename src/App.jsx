@@ -56,10 +56,12 @@ const App = () => {
   }, []);
 
   // 2. ലോഗൗട്ട് ഫങ്ക്ഷൻ
-  const handleLogout = () => {
-    localStorage.removeItem('vynx_user');
-    setUserRole(null);
-  };
+function handleLogout() {
+  localStorage.removeItem('bc_api_key');
+  localStorage.removeItem('bc_api_secret');
+  localStorage.removeItem('vynx_user');
+  window.location.href = '/auth';
+}
 
   if (isLoading) return null;
 
