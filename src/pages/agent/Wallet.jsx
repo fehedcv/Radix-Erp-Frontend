@@ -121,7 +121,7 @@ const WalletPage = () => {
         </p>
 
         <h2 className="text-6xl font-black tracking-tight">
-          ₹{summary.available_cash.toLocaleString()}
+          cr - {summary.available_cash.toLocaleString()}
         </h2>
 
         <button

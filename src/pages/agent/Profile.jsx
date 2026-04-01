@@ -228,7 +228,7 @@ const ProfilePage = () => {
               
               <div className="mt-6 flex justify-center">
                 <span className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-1.5 border border-emerald-100 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm">
-                  <CheckCircle2 size={12} /> {profile.status} Registry
+                  <CheckCircle2 size={12} /> {profile.status} Partner
                 </span>
               </div>
 

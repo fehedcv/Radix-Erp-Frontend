@@ -84,9 +84,9 @@ const AgentHub = ({ onLogout }) => {
 
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard, path: '/agent/dashboard' },
-    { id: 'units', label: 'Partner Units', icon: Building2, path: '/agent/units' },
+    { id: 'units', label: 'Businesses', icon: Building2, path: '/agent/units' },
     { id: 'wallet', label: 'Wallet', icon: Wallet, path: '/agent/wallet' },
-    { id: 'history', label: 'History', icon: History, path: '/agent/history' },
+    { id: 'history', label: 'Leads', icon: History, path: '/agent/history' },
     { id: 'profile', label: 'Profile', icon: User, path: '/agent/profile' },
   ];
 
@@ -100,14 +100,19 @@ const AgentHub = ({ onLogout }) => {
       <aside className="hidden lg:flex flex-col w-72 bg-white border-r border-slate-200 h-screen sticky top-0 z-30 shrink-0">
         <div className="p-8 pb-4">
           <div className="flex items-center gap-4">
-            <div className="h-11 w-11 bg-[#007ACC] rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 shrink-0">
-              <ShieldCheck size={24} strokeWidth={2.5} />
-            </div>
-            <div>
-              <h1 className="text-[21px] font-black text-slate-900 tracking-tighter leading-none uppercase italic">RADIX</h1>
-              <p className="text-[9px] font-black text-[#007ACC] uppercase tracking-[0.3em] mt-1.5 leading-none">Partner Dashboard</p>
-            </div>
-          </div>
+  {/* Custom Logo Image */}
+  <img 
+    src="https://placehold.co/100x100/FF0000/FFFFFF?" 
+    alt="Radix Logo" 
+    className="h-11 w-11  object-contain shrink-0 shadow-sm border border-slate-100" 
+  />
+  
+  {/* Brand Text */}
+  <div>
+    <h1 className="text-[21px] font-black text-slate-900 tracking-tighter leading-none uppercase">RADIX</h1>
+    <p className="text-[9px] font-black text-[#007ACC] uppercase tracking-[0.3em] mt-1.5 leading-none">Partner Dashboard</p>
+  </div>
+</div>
         </div>
 
         <div className="px-4 py-6 flex-1 overflow-y-auto no-scrollbar">

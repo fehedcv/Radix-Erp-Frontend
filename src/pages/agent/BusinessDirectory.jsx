@@ -64,13 +64,13 @@ const BusinessDirectory = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <Zap size={14} className="text-[#007ACC]" />
-            <span className="text-[10px] font-bold text-[#007ACC] uppercase tracking-[0.2em]">
-              Authorized Teams
+            <Zap size={14} className="text-green-500" />
+            <span className="text-[10px] font-bold text-green-500 uppercase tracking-[0.2em]">
+              Authorized Businesses 
             </span>
           </div>
           <h2 className="text-2xl font-black tracking-tight text-slate-900 uppercase">
-            Team Directory
+            Registered Businesses
           </h2>
           <p className="text-xs font-medium text-slate-500 mt-1 max-w-xl">
             Select a business unit to submit or track referrals.
