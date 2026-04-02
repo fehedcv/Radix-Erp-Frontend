@@ -7,7 +7,8 @@ import {
   ShieldCheck,
   TrendingUp,
   CheckCircle2,
-  ArrowUpRight
+  ArrowUpRight,
+  Loader2
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 
@@ -142,7 +143,17 @@ const BusinessOverview = () => {
   };
 
   // ✅ EARLY RETURN IS NOW SAFE
-  if (loading) return null;
+  // ✅ EARLY RETURN WITH SIMPLE SPINNER
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] font-['Plus_Jakarta_Sans',sans-serif]">
+        <Loader2 className="h-10 w-10 text-[#007ACC] animate-spin mb-4" />
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] animate-pulse">
+          Loading Analytics...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="font-['Plus_Jakarta_Sans',sans-serif] space-y-6 pb-16 px-4 sm:px-6 lg:px-0 max-w-[1400px] mx-auto">
@@ -163,7 +174,7 @@ const BusinessOverview = () => {
             </h2>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-2">
               <Activity size={12} className="text-[#007ACC]" />
-              Operational Performance
+              Business Performance
             </p>
           </div>
         </div>

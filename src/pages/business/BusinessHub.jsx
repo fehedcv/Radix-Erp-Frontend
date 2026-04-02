@@ -48,9 +48,9 @@ const BusinessHub = ({ onLogout }) => {
   };
 
   const navItems = [
-    { id: 'dashboard', label: 'TEAM OVERVIEW', icon: LayoutDashboard, path: '/business/dashboard' },
-    { id: 'leads', label: 'INCOMING LEADS', icon: Users, path: '/business/leads' },
-    { id: 'portfolio', label: 'PROJECT PORTFOLIO', icon: FolderEdit, path: '/business/portfolio' },
+    { id: 'dashboard', label: 'OVERVIEW', icon: LayoutDashboard, path: '/business/dashboard' },
+    { id: 'leads', label: 'LEADS', icon: Users, path: '/business/leads' },
+    { id: 'portfolio', label: 'PORFILE', icon: FolderEdit, path: '/business/portfolio' },
   ];
 
   const currentTabName = location.pathname.split('/').pop().replace('-', ' ');
@@ -62,14 +62,22 @@ const BusinessHub = ({ onLogout }) => {
       <aside className="hidden lg:flex flex-col w-[280px] bg-white border-r border-slate-200 z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
         <div className="p-8 pb-4">
           <div className="flex items-center gap-3.5 mb-2">
-            <div className="h-10 w-10 bg-[#007ACC] rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-              <Briefcase size={22} strokeWidth={2.5} />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-base font-extrabold tracking-tight leading-none uppercase">Radix</span>
-              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">Business Hub</span>
-            </div>
-          </div>
+  <div className="h-10 w-10 bg-red-500  flex items-center justify-center   overflow-hidden">
+    <img
+      src="https://placehold.co/100x100/FF0000/FFFFFF?"  
+      alt="logo"
+      className="h-6 w-6 object-contain"
+    />
+  </div>
+  <div className="flex flex-col">
+    <span className="text-base font-extrabold tracking-tight leading-none uppercase">
+      Radix
+    </span>
+    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">
+      Business Dashboard
+    </span>
+  </div>
+</div>
 {/*           
           <div className="flex items-center gap-2.5 mt-6 px-3 py-2.5 bg-slate-50 rounded-xl border border-slate-100">
              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
@@ -78,7 +86,7 @@ const BusinessHub = ({ onLogout }) => {
         </div>
 
         <nav className="flex-1 px-4 space-y-1 mt-8 overflow-hidden">
-          <p className="px-4 text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-4 opacity-70">Management Menu</p>
+          <p className="px-4 text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-4 opacity-70">Navigation</p>
 
           {navItems.map((item) => (
             <NavLink
@@ -86,7 +94,7 @@ const BusinessHub = ({ onLogout }) => {
               to={item.path}
               className={({ isActive }) => `
                 group relative w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all duration-300
-                ${isActive ? 'bg-blue-50 text-[#007ACC] shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+                ${isActive ? 'bg-blue-50 text-[#007ACC] ' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
               `}
             >
               {({ isActive }) => (
@@ -111,15 +119,7 @@ const BusinessHub = ({ onLogout }) => {
         </nav>
 
         <div className="p-6 border-t border-slate-100 bg-slate-50/40">
-           <div className="flex items-center gap-3 p-3.5 bg-white border border-slate-200 rounded-2xl mb-4 shadow-sm group transition-all hover:border-blue-200">
-              <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center text-xs font-black text-[#007ACC] border border-blue-100 uppercase group-hover:scale-105 transition-transform">
-                {businessName[0]}
-              </div>
-              <div className="overflow-hidden">
-                <p className="text-[8px] font-bold text-slate-400 uppercase leading-none mb-1">Manager Access</p>
-                <p className="text-[11px] font-black text-slate-900 truncate tracking-tight uppercase">{businessName}</p>
-              </div>
-           </div>
+         
            <button 
              onClick={() => setShowLogoutConfirm(true)} 
              className="w-full flex items-center justify-center gap-3 p-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all rounded-xl text-[11px] font-bold uppercase tracking-widest active:scale-95"
@@ -131,49 +131,14 @@ const BusinessHub = ({ onLogout }) => {
 
       {/* 2. MAIN WORKSPACE */}
       <main className="flex-1 flex flex-col min-w-0 relative h-screen overflow-y-auto">
-        <header className="h-16 border-b border-slate-200 flex items-center justify-between px-8 py-3 lg:px-12 sticky top-0 bg-white/80 backdrop-blur-xl z-20">
+        <header className="h-16 border-b border-slate-200 flex items-center justify-between px-8 py-4 lg:px-12 sticky top-0 bg-white/80 backdrop-blur-xl z-20">
           <div className="flex items-center gap-4">
               <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                <span className="text-blue-600 font-extrabold uppercase ">{currentTabName}</span>
               </h2>
           </div>
 
-          <div className="flex items-center gap-4">
-             {/* Notification Bell */}
-             <div className="relative" ref={notificationRef}>
-                <motion.button 
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className={`p-2.5 rounded-xl border transition-all ${showNotifications ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-white text-slate-400 border-slate-200 hover:border-[#007ACC] hover:text-[#007ACC] shadow-sm'}`}
-                >
-                  <Bell size={18} />
-                  {notificationCount > 0 && <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-600 rounded-full border-2 border-white text-[8px] flex items-center justify-center text-white font-bold">{notificationCount}</span>}
-                </motion.button>
-
-                <AnimatePresence>
-                  {showNotifications && (
-                    <motion.div initial={{ opacity: 0, y: 15, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 15, scale: 0.95 }} className="absolute top-14 right-0 w-80 bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-50">
-                       <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Active Alerts</span>
-                          <span className="text-[9px] bg-blue-100 text-[#007ACC] px-2 py-0.5 rounded font-bold uppercase">{notificationCount} New</span>
-                       </div>
-                       <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
-                          {notificationLeads.map((note) => (
-                             <button key={note.id} onClick={() => { navigate('/business/leads'); setShowNotifications(false); }} className="w-full p-4 flex gap-4 hover:bg-slate-50 text-left transition-all group">
-                                <div className="h-10 w-10 bg-blue-50 text-[#007ACC] flex items-center justify-center shrink-0 rounded-xl border border-blue-100 group-hover:bg-[#007ACC] group-hover:text-white transition-colors"><Clock size={18} /></div>
-                                <div className="overflow-hidden">
-                                   <p className="text-[11px] font-black text-slate-900 uppercase truncate">{note.clientName}</p>
-                                   <p className="text-[9px] text-slate-500 font-medium uppercase tracking-tight truncate mt-0.5">{note.service}</p>
-                                </div>
-                             </button>
-                          ))}
-                          {notificationCount === 0 && <div className="p-12 text-center text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Zero New Notifications</div>}
-                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-             </div>
-          </div>
+         
         </header>
 
         <div className="py-3 lg:px-2  max-w-[1400px] w-full mx-auto ">
@@ -190,17 +155,7 @@ const BusinessHub = ({ onLogout }) => {
           </AnimatePresence>
         </div>
 
-        <footer className="hidden lg:flex fixed bottom-0 right-0 left-[280px] h-8 bg-white border-t border-slate-200 text-slate-400 px-6 items-center justify-between z-30">
-           <div className="flex items-center gap-8">
-              <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
-                <ShieldCheck size={14} className="text-emerald-500" /> Account Secure
-              </span>
-              <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
-                <Activity size={14} className="text-blue-500" /> Network Sync Active
-              </span>
-           </div>
-           <span className="text-[10px] font-bold uppercase tracking-widest opacity-50 italic">Enterprise v1.0.2</span>
-        </footer>
+       
       </main>
 
       {/* 3. MOBILE NAVIGATION - FIXED BOTTOM BAR */}

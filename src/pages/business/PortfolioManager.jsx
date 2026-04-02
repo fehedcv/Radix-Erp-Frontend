@@ -15,12 +15,14 @@ import {
   Globe,
   Camera,
   X,
-  UploadCloud
+  UploadCloud,
+  Image,
+  Upload
 } from "lucide-react";
 
 import frappeApi from "../../api/frappeApi";
 
-const SITE_URL = import.meta.env.VITE_FRAPPE_URL || "http://localhost:8000";
+const SITE_URL = "http://16.171.38.6:8000";
 
 const EMPTY_UNIT = {
   id: "",
@@ -43,6 +45,7 @@ const PortfolioManager = () => {
   const [showPreview, setShowPreview] = useState(false);
 
   const fileInputRef = useRef(null);
+  const logoInputRef = useRef(null);
 
   /* =======================
      FETCH BUSINESS UNIT
@@ -78,6 +81,23 @@ const PortfolioManager = () => {
     load();
   }, []);
 
+  // --- ADD THIS REF FOR LOGO ---
+
+  /* =======================
+     MOCK LOGO UPLOAD (FRONTEND ONLY)
+  ======================= */
+  const handleLocalLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Create a temporary local URL for the image so it shows up instantly
+    const localUrl = URL.createObjectURL(file);
+    
+    setUnit((prev) => ({
+      ...prev,
+      logo: localUrl // Saves the local dummy URL into state
+    }));
+  };
   /* =======================
      SAVE PROFILE
   ======================= */
@@ -154,21 +174,50 @@ const PortfolioManager = () => {
   };
 
   if (loading) {
-    return (
-      <div className="h-96 flex items-center justify-center text-slate-400">
-        <Loader2 className="animate-spin" />
-      </div>
-    );
-  }
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] font-['Plus_Jakarta_Sans',sans-serif]">
+          <Loader2 className="h-10 w-10 text-[#007ACC] animate-spin mb-4" />
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] animate-pulse">
+            Loading Profile...
+          </p>
+        </div>
+      );
+    }
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-16 space-y-6 font-['Plus_Jakarta_Sans']">
+    <div className="max-w-[1400px] mx-auto pb-16 space-y-6 font-['Plus_Jakarta_Sans'] px-2 sm:px-0">
 
       {/* HEADER */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col md:flex-row justify-between md:items-center gap-4 shadow-sm">
         <div className="flex items-center gap-4">
-          <div className="h-12 w-12 bg-blue-50 text-blue-600 flex items-center justify-center rounded-xl border border-blue-100">
-            <Layout size={20} />
+          <div 
+            onClick={() => logoInputRef.current.click()}
+            className="relative h-14 w-14 bg-blue-50 border border-blue-100 flex items-center justify-center rounded-xl overflow-hidden cursor-pointer group shadow-sm shrink-0"
+          >
+            {unit.logo ? (
+              <img 
+                src={unit.logo} 
+                alt="Business Logo" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              
+              <Upload size={20} className="text-black" />
+            )}
+            
+            {/* Hover Overlay */}
+            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <Upload size={20} className="text-white" />
+            </div>
+            
+            <input 
+              type="file" 
+              ref={logoInputRef} 
+              hidden 
+              accept="image/*" 
+              onChange={handleLocalLogoUpload} 
+            />
+            
           </div>
           <div>
             <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">Business Profile</h2>
@@ -179,12 +228,12 @@ const PortfolioManager = () => {
         </div>
 
         <div className="flex gap-3">
-          <button 
+          {/* <button 
             onClick={() => setShowPreview(true)} 
             className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all"
           >
             <Eye size={14} /> Preview
-          </button>
+          </button> */}
           <button 
             onClick={saveProfile} 
             disabled={saving}

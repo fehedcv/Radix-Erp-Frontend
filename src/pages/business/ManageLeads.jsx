@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { 
   CheckCircle2, Calendar, Briefcase, FileText, 
   ShieldCheck, Inbox, Search, XCircle, FilterX, 
-  Play, Check, LayoutGrid 
+  User,ArrowRight,
+  Loader2,
+  Activity
 } from 'lucide-react';
 
 import frappeApi from '../../api/frappeApi';
@@ -51,7 +53,12 @@ const ManageLeads = () => {
   };
 
   useEffect(() => {
-    fetchLeads();
+    const delayDebounceFn = setTimeout(() => {
+      fetchLeads();
+    }, 500);
+
+    // 2. Clear the timer if the user types another letter before 500ms is up
+    return () => clearTimeout(delayDebounceFn);
   }, [statusFilter, searchQuery]);
 
   const updateStatus = async (leadId, status) => {
@@ -86,7 +93,7 @@ const ManageLeads = () => {
   };
 
   return (
-    <div className="space-y-5 font-sans pb-16 max-w-[1400px] mx-auto px-2">
+    <div className="space-y-5 font-sans pb-16 max-w-[1400px] mx-auto px-2 sm:px-0">
       
       {/* 1. HEADER & STATS */}
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-5">
@@ -95,9 +102,9 @@ const ManageLeads = () => {
               <Inbox size={24} />
            </div>
            <div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-none">Lead Registry</h2>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-none">Leads Details</h2>
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                <ShieldCheck size={10} className="text-emerald-500" /> Business / Active Queue
+                {/* <ShieldCheck size={10} className="text-emerald-500" />  */}
               </p>
            </div>
         </div>
@@ -148,94 +155,148 @@ const ManageLeads = () => {
       </div>
 
       {/* 3. REQUEST LISTING */}
-      <div className="grid grid-cols-1 gap-3">
+    {/* 3. REQUEST LISTING */}
+      {/* Changed to grid-cols-2 for mobile, and scaling up to 4 on large screens */}
+     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
         <AnimatePresence mode="popLayout">
-          {!loading && leads.length === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24 bg-white border border-dashed border-slate-200 rounded-xl">
-              <FilterX size={32} className="text-slate-200 mx-auto mb-4" />
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">No Leads Found</h3>
-              <p className="text-[9px] font-bold text-slate-300 uppercase mt-1">Try adjusting your search or filters.</p>
+
+          {/* --- NEW LOADING SPINNER STATE --- */}
+          {loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="col-span-full flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-lg"
+            >
+              <Loader2 className="h-10 w-10 text-[#007ACC] animate-spin mb-4" />
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] animate-pulse">
+                Loading Leads...
+              </p>
             </motion.div>
           )}
 
-          {leads.map((lead) => (
-            <motion.div 
-              layout
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              key={lead.id} 
-              className="bg-white rounded-xl border border-slate-200 p-5 md:p-6 hover:border-[#007ACC] transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-5 group shadow-sm relative overflow-hidden"
+          {/* --- EMPTY STATE (Only shows if NOT loading and NO leads) --- */}
+          {!loading && leads.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="col-span-full text-center py-20 bg-white border border-slate-200 rounded-lg"
             >
-              {/* Colored Status Strip */}
-              <div className={`absolute left-0 top-0 bottom-0 w-1 ${getStatusColor(lead.status)}`} />
-
-              {/* Content */}
-              <div className="flex-1 space-y-3 relative z-10 pl-2">
-                <div className="flex items-center gap-3">
-                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${getStatusBadgeStyles(lead.status)}`}>
-                    {lead.status}
-                  </span>
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">ID: {lead.id}</span>
-                </div>
-                
-                <div>
-                    <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight group-hover:text-[#007ACC] transition-colors leading-none">
-                      {lead.customer_name}
-                    </h4>
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-2">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight flex items-center gap-1.5">
-                           <Calendar size={12} className="text-[#007ACC]"/> {lead.date}
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight flex items-center gap-1.5">
-                           <Briefcase size={12} className="text-[#007ACC]" /> {lead.service}
-                        </p>
-                    </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 relative z-10 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-50">
-                <button 
-                  onClick={() => navigate(`/business/leads/${lead.id}`)}
-                  className="flex-1 lg:flex-none px-5 py-2.5 bg-slate-50 text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-[#0F172A] hover:text-white rounded-lg transition-all flex items-center justify-center gap-2 border border-slate-100"
-                >
-                  <FileText size={14} /> View
-                </button>
-                
-                {/* Dynamic Action Button based on Status */}
-                {lead.status === 'Pending' && (
-                  <ActionButton 
-                    onClick={() => updateStatus(lead.id, 'Verified')}
-                    icon={<CheckCircle2 size={14} />}
-                    label="Verify"
-                    color="bg-[#007ACC] shadow-blue-500/10"
-                  />
-                )}
-
-                {lead.status === 'Verified' && (
-                  <ActionButton 
-                    onClick={() => updateStatus(lead.id, 'In Progress')}
-                    icon={<Play size={14} />}
-                    label="Start"
-                    color="bg-indigo-600 shadow-indigo-500/10"
-                  />
-                )}
-
-                {lead.status === 'In Progress' && (
-                  <ActionButton 
-                    onClick={() => updateStatus(lead.id, 'Completed')}
-                    icon={<Check size={14} />}
-                    label="Complete"
-                    color="bg-emerald-600 shadow-emerald-500/10"
-                  />
-                )}
-              </div>
+              <FilterX size={28} className="text-slate-300 mx-auto mb-3" />
+              <h3 className="text-sm font-semibold text-slate-500">
+                No Leads Found
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Try adjusting your search or filters
+              </p>
             </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+          )}
+
+          {/* --- LEADS CARDS --- */}
+          {!loading && leads.map((lead) => (
+            <motion.div
+              layout
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              key={lead.id}
+              className="bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition flex flex-col"
+            >
+
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-100">
+          <span
+            className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${getStatusBadgeStyles(lead.status)}`}
+          >
+            {lead.status}
+          </span>
+
+          <User size={16} className="text-slate-400" />
+        </div>
+
+        {/* Body */}
+        <div className="p-4 flex flex-col gap-3 text-xs">
+
+          {/* Client */}
+          <div className="flex justify-between gap-2">
+            <span className="text-slate-400 font-medium">Client</span>
+            <span className="text-slate-700 font-medium text-right truncate">
+              {lead.customer_name || "Unknown"}
+            </span>
+          </div>
+
+          {/* Date */}
+          <div className="flex justify-between gap-2">
+  <span className="text-slate-400 font-medium">Date</span>
+  <span className="text-slate-700 text-right truncate">
+    {lead.date 
+      ? new Date(lead.date).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        }) 
+      : 'N/A'
+    }
+  </span>
+</div>
+
+          {/* Service */}
+          <div className="flex justify-between gap-2">
+            <span className="text-slate-400 font-medium">Service</span>
+            <span className="text-slate-700 text-right truncate">
+              {lead.service}
+            </span>
+          </div>
+
+          {/* Agent */}
+          <div className="flex justify-between gap-2">
+            <span className="text-slate-400 font-medium">Agent</span>
+            <span className="text-slate-700 text-right truncate">
+              {lead.agentId || "Unassigned"}
+            </span>
+          </div>
+
+          {/* Payment */}
+          <div className="flex justify-between items-center gap-2 pt-1">
+            <span className="text-slate-400 font-medium">Payment</span>
+            <div className="flex items-center gap-1.5">
+              {lead.status === "Completed" ? (
+                <>
+                  <CheckCircle2 size={14} className="text-green-600" />
+                  <span className="text-green-600 font-medium text-right">
+                    Settled
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Activity size={14} className="text-amber-500" />
+                  <span className="text-amber-500 font-medium text-right">
+                    Not Settled
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Footer */}
+        <div className="p-3 border-t border-slate-100">
+          <button
+            onClick={() => navigate(`/business/leads/${lead.id}`)}
+            className="w-full py-2 text-xs font-medium text-slate-600 border border-slate-300 rounded-md hover:bg-slate-50 transition flex items-center justify-center gap-2"
+          >
+            Details
+            <ArrowRight size={14} />
+          </button>
+        </div>
+
+      </motion.div>
+    ))}
+
+  </AnimatePresence>
+</div>
     </div>
   );
 };
