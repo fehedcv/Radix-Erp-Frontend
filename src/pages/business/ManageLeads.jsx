@@ -253,7 +253,7 @@ const ManageLeads = () => {
             <span className="text-slate-700 text-right truncate">
               {lead.agentId || "Unassigned"}
             </span>
-          </div>
+          </div> 
 
           {/* Payment */}
           <div className="flex justify-between items-center gap-2 pt-1">

@@ -147,14 +147,7 @@ const AuthGateway = ({ onLoginSuccess }) => {
           }}
         />
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
-              <Layers size={24} />
-            </div>
-            <span className="text-xl font-bold uppercase">
-              Radix<span className="text-indigo-400">Chain</span>
-            </span>
-          </div>
+          
           <h1 className="text-5xl font-bold leading-tight mb-6">
             The Business Chain <br />
             <span className="text-indigo-400 italic">Infrastructure.</span>
@@ -232,7 +225,7 @@ const AuthGateway = ({ onLoginSuccess }) => {
               <p className="text-center text-xs text-slate-400">
                 Don't have an account?{' '}
                 <button onClick={() => setTab('signup')} className="text-indigo-600 font-bold hover:underline">
-                  Sign up as Agent
+                  Create an account
                 </button>
               </p>
             </div>
@@ -242,8 +235,8 @@ const AuthGateway = ({ onLoginSuccess }) => {
           {tab === 'signup' && (
             <div className="space-y-6">
               <header>
-                <h2 className="text-3xl font-bold text-[#0F172A]">Agent Sign Up</h2>
-                <p className="text-slate-500 text-sm mt-1">Create your agent account to start submitting referrals.</p>
+                <h2 className="text-3xl font-bold text-[#0F172A]">Partner Sign Up</h2>
+                <p className="text-slate-500 text-sm mt-1">Create your partner account to start submitting referrals.</p>
               </header>
 
               {signupSuccess ? (
@@ -278,7 +271,7 @@ const AuthGateway = ({ onLoginSuccess }) => {
                     <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Email *</label>
                     <AuthInput
                       type="email" value={signupForm.email} onChange={setField('email')}
-                      placeholder="name@company.com" required
+                      placeholder="username@example.com" required
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -313,13 +306,9 @@ const AuthGateway = ({ onLoginSuccess }) => {
 
                   {signupError && <ErrorMsg msg={signupError} />}
 
-                  <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
-                    <p className="text-[9px] text-indigo-700 font-bold uppercase tracking-wide">
-                      Your account will be created with the Agent role. Contact an admin if you need elevated access.
-                    </p>
-                  </div>
+                 
 
-                  <SubmitBtn loading={signupLoading} label="Create Agent Account" />
+                  <SubmitBtn loading={signupLoading} label="Create Account" />
                 </form>
               )}
 

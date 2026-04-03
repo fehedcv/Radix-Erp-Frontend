@@ -4,23 +4,26 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import { 
-  Layers, ArrowRight, Wallet, CheckCircle, 
-  Terminal, Filter, MessageCircle, Globe, Plus, Bell
+  ArrowRight, Wallet, CheckCircle, 
+  Send, MessageCircle, Globe, Plus,
+  ShieldCheck, TrendingUp, Zap, Clock, Lock, ArrowUpRight
 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import AppHomePage from './AppHomePage';
+import AppHomePage from './AppHomePage'; 
 
 gsap.registerPlugin(ScrollTrigger);
 
-// 1. Rename this to WebLandingPage. This holds ALL the web logic and hooks.
 const WebLandingPage = ({ onEnterPortal }) => {
   const containerRef = useRef(null);
+  const flowLineRef = useRef(null);
 
   useEffect(() => {
+    // 1. Smooth scrolling setup
     const lenis = new Lenis({ 
       duration: 1.2,
       smoothWheel: true,
       wheelMultiplier: 1,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     });
 
     const raf = (time) => {
@@ -29,341 +32,487 @@ const WebLandingPage = ({ onEnterPortal }) => {
     };
     requestAnimationFrame(raf);
 
-    // Parallax effect for the dashboard mockups
-    gsap.utils.toArray('.parallax-image').forEach((el) => {
-      gsap.to(el, {
-        y: -30,
+    // 2. Responsive GSAP Animations (Desktop only for complex parallax)
+    let mm = gsap.matchMedia();
+
+    mm.add("(min-width: 768px)", () => {
+      // General Parallax Elements
+      gsap.utils.toArray('.parallax-element').forEach((el) => {
+        gsap.to(el, {
+          y: -50,
+          ease: "none",
+          scrollTrigger: {
+            trigger: el,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1 
+          }
+        });
+      });
+
+      // How It Works Cards
+      gsap.utils.toArray('.parallax-card').forEach((el) => {
+        gsap.fromTo(el, 
+          { y: 80 },
+          { 
+            y: -80, 
+            ease: "none",
+            scrollTrigger: {
+              trigger: el.parentElement,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: 1
+            }
+          }
+        );
+      });
+
+      // Dashboard Screenshot Stack Effect
+      gsap.to('.screen-2', {
+        y: -180, // Slides up over the first screenshot
+        ease: "power1.out",
         scrollTrigger: {
-          trigger: el,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: 1
+          trigger: '.screenshot-section',
+          start: "top center",
+          end: "bottom center",
+          scrub: 1.5
         }
       });
     });
 
-    // Reveal animations
+    // 3. Animations for ALL devices (Mobile + Desktop)
+    
+    // Fade up animations
     gsap.utils.toArray('.reveal-up').forEach((el) => {
       gsap.fromTo(el, 
-        { opacity: 0, y: 20 },
+        { opacity: 0, y: 30 },
         { 
-          opacity: 1, y: 0, duration: 0.8, ease: "power2.out", 
-          scrollTrigger: { trigger: el, start: "top 90%" }
+          opacity: 1, y: 0, duration: 1, ease: "power3.out", 
+          scrollTrigger: { trigger: el, start: "top 85%" }
         }
       );
     });
 
-    return () => lenis.destroy();
+    // Approvals Animated Flow Line
+    if (flowLineRef.current) {
+      gsap.to(flowLineRef.current, {
+        x: "300%",
+        duration: 2.5,
+        repeat: -1,
+        ease: "linear"
+      });
+    }
+
+    return () => {
+      lenis.destroy();
+      mm.revert(); // Clean up matchMedia
+    };
   }, []);
 
   return (
-    <div ref={containerRef} className="relative min-h-screen bg-[#F8FAFC] text-[#1E1E1E] font-['Plus_Jakarta_Sans',sans-serif] selection:bg-blue-100 overflow-x-clip">
+    <div ref={containerRef} className="relative min-h-screen bg-[#07070A] text-white font-['Plus_Jakarta_Sans',sans-serif] selection:bg-[#B282FE]/30 overflow-x-clip">
       
-   {/* --- NAVBAR --- */}
-<nav className="fixed top-0 w-full z-[100] border-b border-slate-200 bg-white/80 backdrop-blur-md">
-  <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-    <div className="flex items-center gap-4 md:gap-10">
-      
-      {/* LOGO + NAME SECTION */}
-      <motion.div 
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="flex items-center gap-3.5 group cursor-pointer"
-      >
-        <motion.div
-          whileHover={{ rotate: 8, scale: 1.1 }}
-          transition={{ type: "spring", stiffness: 400, damping: 10 }}
-          className="w-9 h-9 bg-[#007ACC] rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-500/20"
-        >
-          <Layers size={20} strokeWidth={2.5} />
-        </motion.div>
-        <span className="text-base font-extrabold tracking-tight text-slate-900">
-          Radix Holdings
-        </span>
-      </motion.div>
+      {/* Google Fonts Import for Syne (Headings) and Plus Jakarta Sans (Body) */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@400;500;600;700;800&display=swap');
+      `}} />
 
-      {/* NAV LINKS WITH HOVER ANIMATIONS */}
-      <div className="hidden md:flex items-center gap-8">
-        {[
-          { name: 'How to Earn', href: '#earn' },
-          { name: 'Payouts', href: '#payouts' },
-          { name: 'Support', href: '#support' }
-        ].map((link) => (
-          <motion.a
-            key={link.name}
-            href={link.href}
-            whileHover={{ y: -2 }}
-            className="relative text-[11px] text-slate-500 font-bold uppercase tracking-[0.12em] hover:text-[#007ACC] transition-colors duration-300"
-          >
-            {link.name}
-            <motion.span 
-              className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#007ACC] rounded-full"
-              whileHover={{ width: '100%' }}
-              transition={{ duration: 0.3 }}
-            />
-          </motion.a>
-        ))}
-      </div>
-    </div>
-    
-    {/* ENHANCED CTA BUTTON */}
-    <motion.button 
-      onClick={onEnterPortal}
-      whileHover={{ 
-        scale: 1.03, 
-        backgroundColor: '#005fb8',
-        boxShadow: "0 10px 20px -10px rgba(0, 122, 204, 0.4)" 
-      }}
-      whileTap={{ scale: 0.97 }}
-      className="bg-[#007ACC] text-white px-6 py-2.5 rounded-full text-[12px] font-bold transition-all whitespace-nowrap"
-    >
-      Access Portal
-    </motion.button>
+      {/* Background Glowing Effects */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1200px] h-[800px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#9D4EDD]/25 via-[#2A0A4A]/20 to-transparent blur-[120px] -z-10 pointer-events-none"></div>
 
-  </div>
-</nav>
+      {/* --- NEW MODERN FLOATING NAVBAR --- */}
+     {/* --- STANDARD FULL-WIDTH NAVBAR --- */}
+      <header className="fixed top-0 left-0 w-full z-[100] bg-[#07070A]/80 backdrop-blur-xl border-b border-white/5">
+        <nav className="max-w-[1400px] mx-auto px-6 sm:px-16 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4 md:gap-12">
+            
+            {/* LOGO */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3 group cursor-pointer"
+            >
+             
+              <span className="text-lg font-medium tracking-tight text-white">
+                Radix Holdings
+              </span>
+            </motion.div>
 
-      {/* --- HERO SECTION --- */}
-      <section className="relative pt-32 md:pt-48 pb-16 md:pb-24 px-4 sm:px-6 max-w-[1400px] mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          <div className="reveal-up z-10 text-center lg:text-left">
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6">
-              Share deals. <br />
-              <span className="text-blue-600">Earn money.</span>
-            </h1>
-            <p className="text-slate-500 text-base sm:text-lg lg:text-xl max-w-lg mx-auto lg:mx-0 mb-8 md:mb-10 leading-relaxed font-medium">
-              The simplest platform for agents to submit business leads and get paid instantly. Verified by headquarters, built for your growth.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-              <button onClick={onEnterPortal} className="w-full sm:w-auto bg-[#007ACC] text-white px-8 py-4 rounded-xl text-[14px] font-bold flex items-center justify-center gap-2 hover:bg-[#005fb8] transition-all shadow-lg shadow-blue-100">
-                Start Submitting Leads <ArrowRight size={18} />
-              </button>
-              <div className="w-full sm:w-auto px-5 py-4 bg-white border border-slate-200 rounded-xl flex items-center justify-center gap-3">
-                <Wallet size={18} className="text-emerald-500" />
-                <span className="text-[13px] font-bold text-slate-600">Rate: 1.00 INR Per Credit</span>
-              </div>
+            {/* NAV LINKS */}
+            <div className="hidden md:flex items-center gap-8">
+              {['How it Works', 'Dashboard', 'Contact Us'].map((item) => (
+                <a
+                  key={item}
+                  href={`#${item.split(' ').pop().toLowerCase()}`}
+                  className="text-xs font-medium text-white/50 hover:text-white transition-colors duration-300 uppercase tracking-widest"
+                >
+                  {item}
+                </a>
+              ))}
             </div>
           </div>
-
-          {/* PARALLAX HERO MOCKUP */}
-          <div className="parallax-image relative w-full max-w-2xl mx-auto lg:mx-0">
-            <div className="absolute -inset-10 bg-blue-500/10 blur-3xl rounded-full"></div>
-            <div className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden aspect-[16/10] flex flex-col">
-               <div className="bg-slate-50 border-b border-slate-200 p-3 flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
-               </div>
-               <div className="flex-1 p-4 md:p-6 flex gap-4 md:gap-6 overflow-hidden">
-                  <div className="w-1/4 space-y-4 hidden sm:block">
-                    <div className="h-8 w-full bg-blue-50 rounded-lg"></div>
-                    <div className="h-3 w-3/4 bg-slate-100 rounded"></div>
-                    <div className="h-3 w-1/2 bg-slate-100 rounded"></div>
-                  </div>
-                  <div className="flex-1 space-y-4 md:space-y-6">
-                    <div className="grid grid-cols-2 gap-3 md:gap-4">
-                      <div className="h-16 md:h-20 bg-blue-600 rounded-xl p-3 md:p-4 text-white">
-                        <div className="h-2 w-1/2 bg-white/20 rounded mb-2"></div>
-                        <div className="h-4 md:h-6 w-3/4 bg-white/40 rounded"></div>
-                      </div>
-                      <div className="h-16 md:h-20 bg-slate-900 rounded-xl p-3 md:p-4 text-white">
-                        <div className="h-2 w-1/2 bg-white/20 rounded mb-2"></div>
-                        <div className="h-4 md:h-6 w-1/3 bg-white/40 rounded"></div>
-                      </div>
-                    </div>
-                    <div className="space-y-2 md:space-y-3">
-                      {[1,2,3].map(i => <div key={i} className="h-10 md:h-12 w-full border border-slate-100 rounded-lg flex items-center px-4 gap-4">
-                        <div className="h-5 w-5 bg-slate-100 rounded-full shrink-0"></div>
-                        <div className="h-2 w-1/2 bg-slate-100 rounded"></div>
-                      </div>)}
-                    </div>
-                  </div>
-               </div>
-            </div>
-            {/* Floating Label */}
-            <div className="absolute -bottom-4 -right-4 sm:-bottom-6 sm:-right-6 bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xl flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white"><CheckCircle size={18}/></div>
-              <div>
-                <p className="text-[9px] font-bold text-slate-400 uppercase">Success</p>
-                <p className="text-xs sm:text-sm font-bold text-slate-900">+₹5,400 Earned</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* --- QUICK EXPLANATION GRID --- */}
-      <section className="bg-white border-y border-slate-200 py-16 md:py-24 px-4 sm:px-6">
-        <div className="max-w-[1400px] mx-auto text-center mb-12 md:mb-16">
-          <h2 className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-3">How it works</h2>
-          <h3 className="text-3xl md:text-4xl font-bold tracking-tight">One simple dashboard. <br className="sm:hidden" /> Infinite opportunities.</h3>
-        </div>
-        <div className="max-w-[1100px] mx-auto grid sm:grid-cols-2 md:grid-cols-3 gap-8 md:gap-12 lg:gap-20">
-          <BenefitItem 
-            icon={<Plus className="text-blue-600" />}
-            title="Share Any Deal"
-            desc="Submit clients, suppliers, or manpower needs. Everything is tracked in your personal portal."
-          />
-          <BenefitItem 
-            icon={<Bell className="text-blue-600" />}
-            title="Get Notified"
-            desc="Know the moment your lead is accepted by a unit manager. No more guessing or calling for updates."
-          />
-          <BenefitItem 
-            icon={<Wallet className="text-emerald-600" />}
-            title="Secure Wallet"
-            desc="Track every rupee you earn. Once the deal is done, the money is added to your credit balance."
-          />
-        </div>
-      </section>
-
-      {/* --- AGENT VIEW SHOWCASE --- */}
-      <section id="earn" className="py-16 md:py-32 px-4 sm:px-6 max-w-[1400px] mx-auto overflow-hidden">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          <div className="reveal-up order-2 lg:order-1 text-center lg:text-left">
-            <h4 className="text-blue-600 font-bold text-sm uppercase tracking-widest mb-4">Agent Terminal</h4>
-            <h3 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 md:mb-8 leading-tight">Sharing is as easy as <br className="hidden md:block" /> sending a message.</h3>
-            <p className="text-slate-500 text-base md:text-lg leading-relaxed mb-8 md:mb-10 font-medium">
-              We built a clean interface that lets you focus on what matters: finding business. Just fill in the details, click submit, and we handle the rest.
-            </p>
-            <div className="flex flex-col items-center lg:items-start gap-4">
-               <div className="flex items-center gap-3 font-bold text-slate-700 text-sm">
-                  <CheckCircle size={18} className="text-emerald-500 shrink-0" /> Real-time status tracking
-               </div>
-               <div className="flex items-center gap-3 font-bold text-slate-700 text-sm">
-                  <CheckCircle size={18} className="text-emerald-500 shrink-0" /> Instant credit approvals
-               </div>
-            </div>
-          </div>
-
-          <div className="parallax-image order-1 lg:order-2 w-full max-w-xl mx-auto">
-             <div className="bg-[#1E1E1E] rounded-2xl shadow-2xl p-6 sm:p-10 border border-slate-800">
-                <div className="flex items-center justify-between mb-8 text-white/40 text-[10px] font-mono tracking-widest">
-                   <span>// SUBMISSION_FORM.JS</span>
-                   <Terminal size={14} />
-                </div>
-                <div className="space-y-4">
-                   <div className="h-12 w-full bg-white/5 rounded-lg border border-white/10 px-4 flex items-center text-white/30 text-sm italic">Company Name...</div>
-                   <div className="grid grid-cols-2 gap-4">
-                      <div className="h-12 bg-white/5 rounded-lg border border-white/10 px-4 flex items-center text-white/30 text-sm italic">Type</div>
-                      <div className="h-12 bg-white/5 rounded-lg border border-white/10 px-4 flex items-center text-white/30 text-sm italic">Potential CR</div>
-                   </div>
-                   <button className="w-full py-4 bg-blue-600 text-white font-bold rounded-lg uppercase tracking-[0.15em] text-xs hover:bg-blue-500 transition-colors">SUBMIT TO HQ</button>
-                </div>
-             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* --- MANAGER HUB SHOWCASE --- */}
-      <section id="payouts" className="py-16 md:py-32 px-4 sm:px-6 bg-slate-50/50 border-t border-slate-200 overflow-hidden">
-        <div className="max-w-[1400px] mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          <div className="parallax-image w-full max-w-xl mx-auto">
-             <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-                <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
-                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Incoming Deals</p>
-                   <Filter size={14} className="text-slate-300" />
-                </div>
-                <div className="p-3 md:p-5 space-y-3">
-                   {[1,2,3].map(i => (
-                     <div key={i} className="flex items-center justify-between p-3 md:p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 font-bold text-xs">L</div>
-                          <div>
-                            <p className="text-[11px] font-bold text-slate-900">Logistics Lead</p>
-                            <p className="text-[9px] text-slate-400">2m ago</p>
-                          </div>
-                        </div>
-                        <button className="bg-emerald-500 text-white text-[9px] font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-600 transition-colors">ACCEPT</button>
-                     </div>
-                   ))}
-                </div>
-             </div>
-          </div>
-          <div className="reveal-up text-center lg:text-left">
-            <h4 className="text-blue-600 font-bold text-sm uppercase tracking-widest mb-4">Manager Suite</h4>
-            <h3 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 md:mb-8 leading-tight">Review and Verify. <br />Keep the chain moving.</h3>
-            <p className="text-slate-500 text-base md:text-lg leading-relaxed mb-8 md:mb-10 font-medium">
-              Unit managers get notified instantly when a new lead is submitted. Accept projects, add details, and mark them as successful to release payouts.
-            </p>
-            <div className="grid grid-cols-2 gap-3 md:gap-4">
-               <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Lead Auditing</p>
-                  <p className="text-xs md:text-sm font-bold text-slate-900">Fast Approval</p>
-               </div>
-               <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Team Sync</p>
-                  <p className="text-xs md:text-sm font-bold text-slate-900">Shared Dashboard</p>
-               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* --- WHATSAPP & SUPPORT --- */}
-      <section id="support" className="py-20 md:py-32 px-4 sm:px-6 max-w-4xl mx-auto text-center">
-        <div className="reveal-up">
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 md:mb-8 leading-tight text-[#0F172A]">Need help <br className="sm:hidden" /> getting started?</h2>
-          <p className="text-slate-500 text-base md:text-lg mb-10 md:mb-12 font-medium max-w-xl mx-auto">Talk to our headquarters support team. We're here to help you register and start sharing leads today.</p>
           
-          <div className="grid sm:grid-cols-2 gap-4 md:gap-6 mb-12">
-            <a href="https://wa.me/yournumber" className="flex items-center gap-4 p-5 md:p-6 bg-emerald-50 border border-emerald-100 rounded-2xl hover:bg-emerald-100 transition-all group">
-              <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg shrink-0"><MessageCircle size={24}/></div>
-              <div className="text-left">
-                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Direct Line</p>
-                <p className="text-sm font-bold text-emerald-900">WhatsApp Now</p>
-              </div>
-            </a>
-            <div className="flex items-center gap-4 p-5 md:p-6 bg-white border border-slate-200 rounded-2xl">
-              <div className="w-12 h-12 bg-slate-900 rounded-full flex items-center justify-center text-white shrink-0"><Globe size={24}/></div>
-              <div className="text-left">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Support</p>
-                <p className="text-sm font-bold text-slate-900">hq@radixchain.com</p>
-              </div>
+          {/* CTA BUTTON WITH BORDER FILL HOVER */}
+          <button 
+            onClick={onEnterPortal}
+            className="group relative px-6 py-2.5 rounded-full overflow-hidden text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap text-white"
+          >
+            <span className="absolute inset-0 border border-white/20 rounded-full transition-colors duration-300 group-hover:border-transparent"></span>
+            <span className="absolute inset-0 bg-white transition-transform duration-500 ease-out translate-y-full group-hover:translate-y-0 rounded-full"></span>
+            <span className="relative z-10 transition-colors duration-300 group-hover:text-black">Let's Earn</span>
+          </button>
+        </nav>
+      </header>
+
+      <main className="pt-20">
+        {/* --- HERO SECTION --- */}
+        <section className="relative pt-24 md:pt-24 pb-20 md:pb-32 px-4 sm:px-6 max-w-[1200px] mx-auto min-h-[85vh] flex flex-col">
+          
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-12 z-20 relative w-full">
+            <div className="reveal-up lg:w-[60%] mt-8 lg:mt-0">
+              <h1 className="font-['Syne',sans-serif] text-6xl sm:text-7xl lg:text-[5.5rem] font-medium tracking-tighter leading-[1.05] text-white">
+                Share Deals. <br />
+                Earn Cash.
+              </h1>
+            </div>
+            
+            <div className="reveal-up lg:w-[40%] flex flex-col items-start lg:pl-10 text-left relative">
+              <p className="text-white/60 text-sm md:text-base leading-relaxed font-light mb-8 max-w-sm">
+                Join our new partner program. Send us high-quality business leads, track them easily, and get paid fast when deals close.
+              </p>
+
+              <button 
+                onClick={onEnterPortal} 
+                className="group relative px-8 py-4 rounded-full overflow-hidden text-[11px] font-bold uppercase tracking-[0.2em] text-white shadow-2xl"
+              >
+                <span className="absolute inset-0 border border-white/20 rounded-full transition-colors duration-300 group-hover:border-transparent"></span>
+                <span className="absolute inset-x-0 bottom-0 h-0 bg-gradient-to-t from-[#B282FE] to-[#7038FF] transition-all duration-500 ease-out group-hover:h-full rounded-full"></span>
+                <span className="relative flex items-center justify-center gap-3 z-10">
+                   Start Earning Today <ArrowRight size={16} />
+                </span>
+              </button>
             </div>
           </div>
 
-          <button onClick={onEnterPortal} className="w-full sm:w-auto bg-[#1E1E1E] text-white px-10 md:px-12 py-5 rounded-full text-[13px] font-bold uppercase tracking-[0.2em] hover:bg-[#007ACC] transition-all shadow-2xl active:scale-95">
-              Get Started
-          </button>
-        </div>
-      </section>
+          {/* Value Proposition Cards (Replaced numbers with product value) */}
+          <div className="parallax-element relative mt-24 lg:mt-32 w-full flex flex-col md:flex-row items-center lg:items-end justify-center lg:justify-end gap-6 z-10">
+             
+             <svg className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[200%] -z-10 pointer-events-none opacity-20 hidden lg:block" viewBox="0 0 1000 500" fill="none">
+                <path d="M-100,250 C200,250 300,50 500,250 C700,450 900,250 1100,250" stroke="white" strokeWidth="1" />
+                <path d="M500,250 C500,100 800,0 1100,100" stroke="white" strokeWidth="1" strokeDasharray="4 4"/>
+             </svg>
 
-      {/* --- FOOTER --- */}
-      <footer className="py-12 px-4 sm:px-6 border-t border-slate-200 bg-white">
-        <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
-          <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8 text-[12px] text-slate-400 font-medium">
-              <span className="text-slate-900 font-bold">RadixChain ERP</span>
-              <div className="flex gap-4">
-                <a href="#" className="hover:text-blue-600">Privacy</a>
-                <a href="#" className="hover:text-blue-600">Terms</a>
+             {/* Left Card - Earning Potential */}
+             <div className="bg-[#12121A]/90 backdrop-blur-md border border-white/5 rounded-[2.5rem] p-8 md:p-10 shadow-2xl shadow-black/80 w-full md:w-auto relative group transition-transform duration-500 hover:-translate-y-2">
+                <div className="absolute left-0 top-[60%] -translate-x-full w-12 h-[1px] bg-white/20 hidden md:block group-hover:bg-[#B282FE]/50 transition-colors">
+                   <div className="absolute left-0 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/20 group-hover:bg-[#B282FE]/50 transition-colors"></div>
+                </div>
+                
+                <h2 className="font-['Syne',sans-serif] text-white/40 text-[10px] font-medium tracking-[0.2em] uppercase mb-4 flex items-center gap-2">
+                  <Wallet size={14} className="text-[#B282FE]" /> Registered Businesses
+                </h2>
+                <p className="text-6xl md:text-7xl font-light tracking-tighter text-white mb-2">Seven</p>
+                <p className="text-white/40 text-xs font-light tracking-wide">Verified Business Units.</p>
+             </div>
+
+             {/* Right Card - Easy Setup */}
+             <div className="bg-[#12121A]/90 backdrop-blur-md border border-white/5 rounded-[2.5rem] p-8 md:p-10 shadow-xl shadow-black/80 w-full md:w-auto relative group transition-transform duration-500 hover:-translate-y-2 lg:mb-8">
+                <div className="absolute left-0 top-[40%] -translate-x-full w-12 h-[1px] bg-white/20 hidden md:block group-hover:bg-[#B282FE]/50 transition-colors"></div>
+
+                <h2 className="font-['Syne',sans-serif] text-white/40 text-[10px] font-medium tracking-[0.2em] uppercase mb-4 text-left flex items-center gap-2">
+                  <Lock size={14} className="text-[#B282FE]" /> Platform Access
+                </h2>
+                <p className="text-5xl md:text-6xl font-light tracking-tighter text-white text-left mb-2">Free</p>
+                <p className="text-white/40 text-xs font-light tracking-wide mb-6">Zero hidden fees. Start submitting instantly.</p>
+                
+                <div className="absolute -bottom-4 right-10 flex items-center">
+                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7038FF] to-[#B282FE] flex items-center justify-center text-[10px] font-bold border-4 border-[#07070A] shadow-lg z-30">HQ</div>
+                   <div className="w-10 h-10 rounded-full bg-[#1A1A24] flex items-center justify-center text-emerald-400 text-[12px] border-4 border-[#07070A] -ml-4 shadow-lg z-20"><CheckCircle size={16}/></div>
+                   <div className="w-10 h-10 rounded-full bg-[#2A2A3A] flex items-center justify-center text-white/50 border-4 border-[#07070A] -ml-4 shadow-lg hover:bg-white/10 transition-colors cursor-pointer z-10"><Plus size={14}/></div>
+                </div>
+             </div>
+          </div>
+        </section>
+
+        {/* --- HOW IT WORKS --- */}
+        <section id="works" className="py-24 md:py-32 px-4 sm:px-6 relative border-t border-white/5">
+          <div className="max-w-[1400px] mx-auto grid lg:grid-cols-12 gap-12 lg:gap-20 relative">
+            
+            <div className="lg:col-span-5 lg:sticky lg:top-40 self-start reveal-up">
+              
+               <h3 className="font-['Syne',sans-serif] text-4xl md:text-6xl font-light tracking-tight text-white mb-6 leading-tight">
+                 Built for speed. <br/> Designed for you.
+               </h3>
+               <p className="text-white/50 text-lg leading-relaxed font-light mb-8 max-w-md">
+                 Transform your professional network into a steady stream of income. Our streamlined process ensures you spend less time submitting, and more time earning.
+               </p>
+            </div>
+
+            <div className="lg:col-span-7 flex flex-col gap-8 md:gap-12 lg:pt-10">
+               
+               <div className="parallax-card bg-[#12121A] border border-white/5 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden group">
+                  {/* <div className="absolute top-0 right-0 p-8 text-white/5 font-bold text-8xl pointer-events-none">1</div> */}
+                  <div className="w-14 h-14 bg-[#1A1A24] border border-white/10 rounded-2xl flex items-center justify-center mb-8 relative z-10">
+                     <Send className="text-[#B282FE]" size={24} />
+                  </div>
+                  <h4 className="font-['Syne',sans-serif] text-2xl font-medium mb-4 text-white relative z-10">Send us the details</h4>
+                  <p className="text-white/50 leading-relaxed font-light text-lg relative z-10">
+                     Know a company that needs specific services? Simply log into your dashboard and fill out a quick, one-minute form to register your lead in our secure system.
+                  </p>
+               </div>
+
+               <div className="parallax-card bg-[#12121A] border border-white/5 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden group">
+                  {/* <div className="absolute top-0 right-0 p-8 text-white/5 font-bold text-8xl pointer-events-none">2</div> */}
+                  <div className="w-14 h-14 bg-[#1A1A24] border border-white/10 rounded-2xl flex items-center justify-center mb-8 relative z-10">
+                     <ShieldCheck className="text-[#B282FE]" size={24} />
+                  </div>
+                  <h4 className="font-['Syne',sans-serif] text-2xl font-medium mb-4 text-white relative z-10">We close the deal</h4>
+                  <p className="text-white/50 leading-relaxed font-light text-lg relative z-10">
+                     Our professional sales team takes over immediately. They contact the business and negotiate the contract. You get live status updates directly in your dashboard.
+                  </p>
+               </div>
+
+               <div className="parallax-card bg-[#12121A] border border-white/5 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden group">
+                  {/* <div className="absolute top-0 right-0 p-8 text-white/5 font-bold text-8xl pointer-events-none">3</div> */}
+                  <div className="w-14 h-14 bg-[#1A1A24] border border-white/10 rounded-2xl flex items-center justify-center mb-8 relative z-10">
+                     <Wallet className="text-[#B282FE]" size={24} />
+                  </div>
+                  <h4 className="font-['Syne',sans-serif] text-2xl font-medium mb-4 text-white relative z-10">You get paid</h4>
+                  <p className="text-white/50 leading-relaxed font-light text-lg relative z-10">
+                     The moment the deal is signed and verified by headquarters, your commission is automatically calculated and deposited straight into your secure platform wallet.
+                  </p>
+               </div>
+
+            </div>
+          </div>
+        </section>
+
+        {/* --- DASHBOARD SCREENSHOTS (Desktop + Mobile Stack Parallax) --- */}
+        <section id="dashboard" className="screenshot-section py-24 md:py-32 px-4 sm:px-6 relative border-t border-white/5 overflow-hidden">
+           <div className="max-w-[1200px] mx-auto">
+              
+              <div className="text-center mb-16 md:mb-24 reveal-up">
+                 {/* <h2 className="font-['Syne',sans-serif] text-xs font-medium text-[#B282FE] uppercase tracking-[0.2em] mb-4">Inside the Platform</h2> */}
+                 <h3 className="font-['Syne',sans-serif] text-4xl md:text-6xl font-light tracking-tight text-white mb-6 leading-tight">
+                   Manage your business <br className="hidden md:block" />from anywhere.
+                 </h3>
+                 <p className="text-white/50 text-lg leading-relaxed font-light max-w-2xl mx-auto">
+                   Track your submissions, monitor approval status, and watch your earnings grow from a clean, intuitive interface that works flawlessly on your computer and right from your pocket.
+                 </p>
               </div>
+
+              {/* Stacked Images Layout */}
+              <div className="relative h-auto md:h-[550px] lg:h-[700px] w-full flex flex-col md:block gap-12 md:gap-0">
+                 
+                 {/* Desktop Screenshot (Base Layer) */}
+                 <div className="screen-1 relative md:absolute md:top-0 md:left-0 md:w-[80%] w-full h-auto rounded-[2rem] border border-white/10 bg-[#12121A] shadow-2xl overflow-hidden z-10">
+                    {/* Simulated Browser/App Header */}
+                    <div className="w-full h-10 bg-white/5 flex items-center px-6 border-b border-white/5">
+                       <div className="flex gap-2">
+                          <div className="w-3 h-3 rounded-full bg-white/20 hover:bg-[#ff5f56] transition-colors"></div>
+                          <div className="w-3 h-3 rounded-full bg-white/20 hover:bg-[#ffbd2e] transition-colors"></div>
+                          <div className="w-3 h-3 rounded-full bg-white/20 hover:bg-[#27c93f] transition-colors"></div>
+                       </div>
+                    </div>
+                    
+                    {/* DESKTOP IMAGE PLACEHOLDER: Put your <img> here */}
+                    <div className="w-full aspect-[16/9] flex items-center justify-center bg-[#1A1A24] relative overflow-hidden">
+                       {/* <img src="/your-desktop-screenshot.png" alt="Desktop Dashboard" className="w-full h-full object-cover" /> */}
+                       <span className="text-white/20 font-medium tracking-widest uppercase text-sm">Desktop Dashboard (16:9)</span>
+                    </div>
+                 </div>
+
+                 {/* Mobile Screenshot (Overlay Layer - Slides up on scroll via GSAP on Desktop) */}
+                 <div className="screen-2 relative md:absolute md:top-[120px] lg:top-[150px] md:right-[5%] w-[65%] sm:w-[50%] md:w-[26%] mx-auto md:mx-0 h-auto rounded-[2.5rem] border-[6px] lg:border-[8px] border-[#1A1A24] bg-[#12121A] shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden z-20">
+                    
+                    {/* Simulated Phone Notch */}
+                    <div className="absolute top-0 inset-x-0 h-5 flex justify-center z-30">
+                       <div className="w-[40%] h-full bg-[#1A1A24] rounded-b-xl"></div>
+                    </div>
+
+                    {/* MOBILE IMAGE PLACEHOLDER: Put your <img> here */}
+                    <div className="w-full aspect-[9/16] flex items-center justify-center bg-gradient-to-br from-[#1A1A24] to-[#0A0A0F] pt-6 relative overflow-hidden">
+                       {/* <img src="/your-mobile-screenshot.png" alt="Mobile Dashboard" className="w-full h-full object-cover" /> */}
+                       <span className="text-white/20 font-medium tracking-widest uppercase text-[10px] text-center px-4 leading-relaxed">
+                          Mobile App <br/> (9:16)
+                       </span>
+                    </div>
+                    
+                    {/* Simulated Home Indicator */}
+                    <div className="absolute bottom-2 inset-x-0 flex justify-center z-30">
+                       <div className="w-1/3 h-1 bg-white/20 rounded-full"></div>
+                    </div>
+                 </div>
+
+              </div>
+           </div>
+        </section>
+
+        {/* --- FAST APPROVALS (Animated Flow Pipeline) --- */}
+        <section id="approvals" className="py-24 md:py-32 px-4 sm:px-6 relative border-t border-white/5 bg-gradient-to-b from-[#07070A] to-[#0A0A0F]">
+           <div className="max-w-[1200px] mx-auto text-center reveal-up mb-16 md:mb-24">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#1A1A24] border border-white/10 mb-6 shadow-[0_0_20px_rgba(178,130,254,0.15)]">
+                 <Clock className="text-[#B282FE]" size={20} />
+              </div>
+              <h2 className="font-['Syne',sans-serif] text-4xl md:text-6xl font-light tracking-tight text-white mb-6 leading-tight">
+                 Approvals at the speed of light.
+              </h2>
+              <p className="text-white/50 text-lg max-w-2xl mx-auto font-light leading-relaxed">
+                 We hate waiting just as much as you do. Our automated pipeline ensures your leads are processed smoothly and transparently.
+              </p>
+           </div>
+
+           {/* Pipeline Visual Container */}
+           <div className="max-w-[1000px] mx-auto relative reveal-up">
+              
+              {/* The Track (Horizontal on md, vertical on mobile) */}
+              <div className="absolute top-1/2 left-0 w-full h-1 bg-white/5 hidden md:block -translate-y-1/2 rounded-full overflow-hidden">
+                 {/* The Glowing Flow Line animated by GSAP */}
+                 <div ref={flowLineRef} className="h-full w-1/3 bg-gradient-to-r from-transparent via-[#B282FE] to-transparent opacity-80 filter blur-[1px]"></div>
+              </div>
+
+              {/* Mobile Track (Vertical) */}
+              <div className="absolute left-[39px] top-0 bottom-0 w-1 bg-white/5 block md:hidden rounded-full overflow-hidden">
+                 <div className="w-full h-1/3 bg-gradient-to-b from-transparent via-[#B282FE] to-transparent animate-[slideDown_3s_linear_infinite]"></div>
+              </div>
+              
+              {/* Note: Inline style for mobile animation since GSAP is handling desktop */}
+              <style>{`
+                @keyframes slideDown {
+                  0% { transform: translateY(-100%); }
+                  100% { transform: translateY(300%); }
+                }
+              `}</style>
+
+              {/* Nodes */}
+              <div className="flex flex-col md:flex-row justify-between gap-12 md:gap-4 relative z-10">
+                 
+                 {/* Node 1 */}
+                 <div className="flex flex-row md:flex-col items-center md:text-center gap-6 md:gap-4 md:w-1/3">
+                    <div className="w-20 h-20 shrink-0 rounded-2xl bg-[#12121A] border border-[#B282FE]/50 shadow-[0_0_30px_rgba(178,130,254,0.2)] flex items-center justify-center relative">
+                       <div className="absolute inset-2 border border-white/10 rounded-xl"></div>
+                       <span className="text-2xl font-light text-white">01</span>
+                    </div>
+                    <div>
+                       <h4 className="font-['Syne',sans-serif] text-lg font-medium text-white mb-2">System Check</h4>
+                       <p className="text-sm text-white/40 font-light">Instant automated scan for lead validity.</p>
+                    </div>
+                 </div>
+
+                 {/* Node 2 */}
+                 <div className="flex flex-row md:flex-col items-center md:text-center gap-6 md:gap-4 md:w-1/3">
+                    <div className="w-20 h-20 shrink-0 rounded-2xl bg-[#12121A] border border-white/10 flex items-center justify-center relative">
+                       <div className="absolute inset-2 border border-white/5 rounded-xl"></div>
+                       <span className="text-2xl font-light text-white">02</span>
+                    </div>
+                    <div>
+                       <h4 className="font-['Syne',sans-serif] text-lg font-medium text-white mb-2">Manager Review</h4>
+                       <p className="text-sm text-white/40 font-light">Fast-tracked approval by operational teams.</p>
+                    </div>
+                 </div>
+
+                 {/* Node 3 */}
+                 <div className="flex flex-row md:flex-col items-center md:text-center gap-6 md:gap-4 md:w-1/3">
+                    <div className="w-20 h-20 shrink-0 rounded-2xl bg-[#12121A] border border-white/10 flex items-center justify-center relative">
+                       <div className="absolute inset-2 border border-white/5 rounded-xl"></div>
+                       <span className="text-2xl font-light text-white">03</span>
+                    </div>
+                    <div>
+                       <h4 className="font-['Syne',sans-serif] text-lg font-medium text-white mb-2">Instant Credit</h4>
+                       <p className="text-sm text-white/40 font-light">Wallet funded immediately upon clearance.</p>
+                    </div>
+                 </div>
+
+              </div>
+           </div>
+        </section>
+
+        {/* --- MODERN SAAS CTA BANNER --- */}
+        <section id="contact" className="py-24 px-4 sm:px-6 relative">
+          <div className="max-w-[1200px] mx-auto reveal-up">
+            <div className="bg-gradient-to-br from-[#161622] to-[#0A0A0F] border border-white/10 rounded-[3rem] p-10 md:p-16 lg:p-20 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12 shadow-2xl shadow-black/50">
+               
+               {/* Background Orb */}
+               <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#B282FE]/20 blur-[100px] rounded-full pointer-events-none"></div>
+
+               <div className="md:w-3/5 relative z-10 text-center md:text-left">
+                  <h2 className="font-['Syne',sans-serif] text-4xl md:text-5xl lg:text-6xl font-light tracking-tight text-white mb-6 leading-tight">
+                    Ready to start earning?
+                  </h2>
+                  <p className="text-white/50 text-lg font-light max-w-md mx-auto md:mx-0">
+                    Create your free account today and turn your professional network into a revenue stream in minutes.
+                  </p>
+               </div>
+
+               <div className="md:w-2/5 relative z-10 flex flex-col items-center md:items-end gap-4 w-full">
+                  <button 
+                    onClick={onEnterPortal} 
+                    className="w-full sm:w-auto group relative px-10 py-5 rounded-full overflow-hidden text-xs font-bold uppercase tracking-[0.2em] text-black bg-white shadow-2xl transition-transform hover:scale-105"
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-2">Create Free Account <ArrowUpRight size={16}/></span>
+                  </button>
+                  
+                  <a href="https://wa.me/yournumber" className="w-full sm:w-auto px-10 py-4 rounded-full border border-white/10 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2">
+                     <MessageCircle size={16}/> Ask a Question
+                  </a>
+               </div>
+
+            </div>
           </div>
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-loose">
-              © 2025 Radix Holdings • Developed by Vynx Webworks
+        </section>
+      </main>
+
+      {/* --- NEW MODERN FOOTER --- */}
+     <footer className="pt-24 pb-8 px-6 border-t border-white/5 bg-[#07070A] relative overflow-hidden flex flex-col items-center">
+        
+        {/* Giant Watermark Text */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full text-center overflow-hidden pointer-events-none select-none z-0 opacity-40">
+           <h1 className="font-['Syne',sans-serif] text-[20vw] md:text-[15vw] font-bold text-white/[0.02] leading-none tracking-tighter">
+             RADIX
+           </h1>
+        </div>
+
+        <div className="max-w-[1400px] w-full mx-auto relative z-10 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left mt-20 md:mt-32">
+          
+          <div className="flex flex-col items-center md:items-start gap-4">
+             <div className="flex items-center gap-3">
+               <div className="w-8 h-8 rounded-lg border border-white/10 bg-[#1A1A24] flex items-center justify-center shadow-lg">
+                   <TrendingUp size={14} className="text-[#B282FE]" />
+               </div>
+               <span className="text-white/80 font-medium text-base tracking-wide">Radix Holdings</span>
+             </div>
+             <p className="text-white/40 text-xs font-light max-w-xs">
+               The premier platform for business lead generation and professional networking payouts.
+             </p>
           </div>
+
+          <div className="flex flex-col items-center md:items-end gap-6">
+             <nav className="flex flex-wrap justify-center gap-6 text-xs font-bold text-white/50 tracking-widest uppercase">
+               <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+               <a href="mailto:hq@radixchain.com" className="hover:text-white transition-colors">Contact Support</a>
+             </nav>
+             
+             {/* Updated Copyright & Developer Credit */}
+             <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3 text-[10px] text-white/30 font-medium tracking-[0.2em] uppercase">
+                 <span>© {new Date().getFullYear()} Radix Holdings. All rights reserved.</span>
+                 <span className="hidden md:block w-1 h-1 rounded-full bg-white/20"></span>
+                 <span className="flex items-center gap-1.5">
+                    Developed by 
+                    <a href="https://vynxwebworks.com" target="_blank" rel="noopener noreferrer" className="text-transparent bg-clip-text bg-gradient-to-r from-[#7038FF] to-[#B282FE] font-bold tracking-[0.25em] hover:opacity-80 transition-opacity drop-shadow-[0_0_10px_rgba(178,130,254,0.3)]">
+                        Vynx Webworks
+                    </a>
+                 </span>
+             </div>
+          </div>
+
         </div>
       </footer>
     </div>
   );
 };
 
-// --- HELPER COMPONENT ---
-
-const BenefitItem = ({ icon, title, desc }) => (
-  <div className="reveal-up group text-center sm:text-left">
-    <div className="mb-6 flex justify-center sm:justify-start">
-      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group-hover:bg-white group-hover:shadow-md transition-all duration-300">
-        {icon}
-      </div>
-    </div>
-    <h4 className="text-lg font-bold mb-3 uppercase tracking-tight text-[#1E1E1E]">{title}</h4>
-    <p className="text-slate-500 text-sm leading-relaxed font-medium">{desc}</p>
-  </div>
-);
-
-// 2. The Default Export: This is the ONLY thing your router sees. 
-// It safely chooses whether to load the Heavy Web UI or the Fast Mobile UI without running any hooks!
+// --- MAIN APP EXPORT ---
 export default function LandingPage({ onEnterPortal }) {
   const isApp = Capacitor.isNativePlatform();
 
