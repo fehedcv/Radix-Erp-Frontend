@@ -170,7 +170,7 @@ const AgentHub = ({ onLogout }) => {
         </header>
 
         {/* CONTENT */}
-        <div className="px-3 py-3 lg:p-4 max-w-[1600px] w-full mx-auto pb-24">
+        <div className="px-3 py-3 lg:px-2 max-w-[1600px] w-full mx-auto pb-24">
           <motion.div key={location.pathname} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
             <Outlet context={{ myLeads, setIsModalOpen, setSelectedBusiness, currentUser }} />
           </motion.div>

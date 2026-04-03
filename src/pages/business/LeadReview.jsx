@@ -201,7 +201,7 @@ const LeadReview = () => {
                 </div>
               </div>
 
-              {/* Client Location */}
+              {/* Client Location
               {lead.location && (
                 <div className="flex items-start gap-3 pt-4 border-t border-slate-50">
                   <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 shrink-0 mt-1">
@@ -209,10 +209,20 @@ const LeadReview = () => {
                   </div>
                   <div>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Service Location</p>
-                    <p className="text-sm font-bold text-slate-700 leading-relaxed">{lead.location}</p>
+                    <p className="text-sm font-bold text-slate-700 leading-relaxed">{lead.location} || "Tirur"</p>
                   </div>
                 </div>
-              )}
+              )} */}
+              {/* Client Location (Hardcoded to Tirur) */}
+              <div className="flex items-start gap-3 pt-4 border-t border-slate-50">
+                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 shrink-0 mt-1">
+                  <MapPin size={16} />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Service Location</p>
+                  <p className="text-sm font-bold text-slate-700 leading-relaxed">Tirur</p>
+                </div>
+              </div>
 
               {/* Agent Info */}
               <div className="flex items-start gap-3 pt-4 border-t border-slate-50">

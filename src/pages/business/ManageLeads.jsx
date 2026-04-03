@@ -103,9 +103,7 @@ const ManageLeads = () => {
            </div>
            <div>
               <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-none">Leads Details</h2>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                {/* <ShieldCheck size={10} className="text-emerald-500" />  */}
-              </p>
+             
            </div>
         </div>
 
