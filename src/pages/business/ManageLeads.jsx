@@ -41,7 +41,9 @@ const ManageLeads = () => {
             status: statusFilter,
             search: searchQuery || undefined
           }
-        }
+        },
+        
+        
       );
       setLeads(res.data.message.leads);
       setSummary(res.data.message.summary);
@@ -192,6 +194,7 @@ const ManageLeads = () => {
 
           {/* --- LEADS CARDS --- */}
           {!loading && leads.map((lead) => (
+            
             <motion.div
               layout
               initial={{ opacity: 0, y: 8 }}
@@ -256,26 +259,46 @@ const ManageLeads = () => {
           </div> 
 
           {/* Payment */}
-          <div className="flex justify-between items-center gap-2 pt-1">
-            <span className="text-slate-400 font-medium">Payment</span>
-            <div className="flex items-center gap-1.5">
-              {lead.status === "Completed" ? (
-                <>
-                  <CheckCircle2 size={14} className="text-green-600" />
-                  <span className="text-green-600 font-medium text-right">
-                    Settled
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Activity size={14} className="text-amber-500" />
-                  <span className="text-amber-500 font-medium text-right">
-                    Not Settled
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
+         <div className="flex justify-between items-center gap-2 pt-1">
+  <span className="text-slate-400 font-medium">Payment</span>
+  <div className="flex items-center gap-1.5">
+
+    {lead.paymentStatus === "Settled" ? (
+      <>
+        <CheckCircle2 size={14} className="text-green-600" />
+        <span className="text-green-600 font-medium">
+          Settled
+        </span>
+      </>
+    ) : lead.paymentStatus === "Pending" ? (
+      <>
+        <Activity size={14} className="text-amber-500" />
+        <span className="text-amber-500 font-medium">
+          Pending
+        </span>
+      </>
+    ) : (
+      <>
+        <Activity size={14} className="text-slate-400" />
+        <span className="text-slate-400 font-medium">
+          Not Settled
+        </span>
+      </>
+    )}
+
+  </div>
+</div>
+{/* Credit */}
+<div className="flex justify-between items-center gap-2 pt-1">
+  <span className="text-slate-400 font-medium">Credit</span>
+
+  <div className="flex items-center gap-1.5">
+    <Activity size={14} className="text-slate-400" />
+        <span className="text-slate-400 font-medium">
+          Not Credited
+        </span>
+  </div>
+</div>
 
         </div>
 

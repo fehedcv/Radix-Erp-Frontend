@@ -22,7 +22,7 @@ import {
 
 import frappeApi from "../../api/frappeApi";
 
-const SITE_URL = "http://16.171.38.6:8000";
+const SITE_URL = "http://16.171.38.6:8000/";
 
 const EMPTY_UNIT = {
   id: "",
@@ -220,9 +220,9 @@ const PortfolioManager = () => {
             
           </div>
           <div>
-            <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">Business Profile</h2>
+            <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">{unit.name || "Untitled Unit"}</h2>
             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              {unit.name || "Untitled Unit"}
+              Business Profile
             </p>
           </div>
         </div>
@@ -258,6 +258,7 @@ const PortfolioManager = () => {
                 value={unit.name} 
                 onChange={v => setUnit({ ...unit, name: v })} 
                 placeholder="e.g. FudyGo Headquarters"
+                disabled
               />
               <Input 
                 label="Website URL" 
@@ -283,6 +284,7 @@ const PortfolioManager = () => {
                   value={unit.email} 
                   icon={<Mail size={14} />} 
                   onChange={v => setUnit({ ...unit, email: v })} 
+                  disabled
                 />
                 <Input 
                   label="Phone Number" 
@@ -501,14 +503,17 @@ const Input = ({ label, value, onChange, icon, className, ...props }) => (
           {icon}
         </div>
       )}
-      <input
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all ${
-          icon ? "pl-10" : ""
-        } ${className}`}
-        {...props}
-      />
+    <input
+  value={value ?? ""}
+  onChange={(e) => onChange(e.target.value)}
+  disabled={props.disabled}
+  className={`w-full border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all ${
+    icon ? "pl-10" : ""
+  } ${className} ${
+    props.disabled ? "bg-slate-100 cursor-not-allowed text-slate-400" : ""
+  }`}
+  {...props}
+/>
     </div>
   </div>
 );

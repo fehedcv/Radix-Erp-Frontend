@@ -76,6 +76,12 @@ const LeadReview = () => {
           total_sale_amount: settleData.totalAmount
         }
       );
+      setLead(prev=>({
+        ...prev,
+        paymentStatus: "Settled",
+        commission: settleData.credits,
+        totalSaleAmount: settleData.totalAmount
+      }))
       setSettleModal({ show: false, step: 1 });
       setSettleData({ totalAmount: '', credits: '' });
       // Optional: Refresh lead data or show a success message here
@@ -169,9 +175,9 @@ const LeadReview = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 mt-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+            {/* <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
               <ShieldCheck size={12} className="text-[#007ACC]" /> Lead #{lead.id}
-            </span>
+            </span> */}
             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
               <Calendar size={12} /> {formatDate(lead.date)}
             </span>
@@ -196,7 +202,7 @@ const LeadReview = () => {
 
             <div className="flex justify-between items-start mb-4">
               <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                <User size={12} /> Contact Information
+                <User size={12} /> Contact Client
               </p>
             </div>
 

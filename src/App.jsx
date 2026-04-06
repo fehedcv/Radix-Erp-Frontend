@@ -34,7 +34,6 @@ const App = () => {
   const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. സെഷൻ പരിശോധിക്കുന്നു (LocalStorage Sync)
   useEffect(() => {
     const checkSession = () => {
       const savedUser = localStorage.getItem('vynx_user');
@@ -50,7 +49,6 @@ const App = () => {
     };
     checkSession();
 
-    // ടാബുകൾ തമ്മിലുള്ള സിങ്ക്രണൈസേഷനായി
     window.addEventListener('storage', checkSession);
     return () => window.removeEventListener('storage', checkSession);
   }, []);

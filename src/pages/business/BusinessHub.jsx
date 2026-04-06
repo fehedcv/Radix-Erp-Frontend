@@ -50,11 +50,14 @@ const BusinessHub = ({ onLogout }) => {
   const navItems = [
     { id: 'dashboard', label: 'OVERVIEW', icon: LayoutDashboard, path: '/business/dashboard' },
     { id: 'leads', label: 'LEADS', icon: Users, path: '/business/leads' },
-    { id: 'portfolio', label: 'PORFILE', icon: FolderEdit, path: '/business/portfolio' },
+    { id: 'portfolio', label: 'PROFILE', icon: FolderEdit, path: '/business/portfolio' },
   ];
 
-  const currentTabName = location.pathname.split('/').pop().replace('-', ' ');
+const currentTab = navItems.find(item =>
+  location.pathname.startsWith(item.path)
+);
 
+const currentTabName = currentTab?.label || "DASHBOARD";
   return (
     <div className="flex h-screen bg-[#F8FAFC] text-[#1E1E1E] font-['Plus_Jakarta_Sans',sans-serif] selection:bg-blue-100 overflow-hidden">
       

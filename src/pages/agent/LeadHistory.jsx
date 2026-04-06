@@ -100,12 +100,15 @@ const LeadHistory = () => {
     }
   };
 
-  const getStatusStyle = (status) => {
-    if (status === 'Successful')
-      return 'bg-emerald-50 text-emerald-600 border-emerald-100';
-    if (status === 'Rejected')
-      return 'bg-rose-50 text-rose-600 border-rose-100';
-    return 'bg-amber-50 text-amber-600 border-amber-100';
+   const getStatusStyle = (status) => {
+    switch (status) {
+      case 'Pending':     return 'text-amber-600 bg-amber-50 border-amber-100';
+      case 'Verified':    return 'text-blue-600 bg-blue-50 border-blue-100';
+      case 'In Progress': return 'text-indigo-600 bg-indigo-50 border-indigo-100';
+      case 'Completed':   return 'text-emerald-600 bg-emerald-50 border-emerald-100';
+      case 'Rejected':    return 'text-rose-600 bg-rose-50 border-rose-100';
+      default:            return 'text-slate-500 bg-slate-50 border-slate-100';
+    }
   };
 
   // ---------------- RENDER ----------------
@@ -229,6 +232,22 @@ const LeadHistory = () => {
                  {lead.status}
               </span>
             </div>
+            <div className="flex justify-between items-center">
+        <span className="text-slate-400">Payment</span>
+
+        {lead.paymentStatus === "Settled" ? (
+          <span className="text-green-600 font-medium">Settled</span>
+        ) : (
+          <span className="text-amber-500 font-medium">Not Settled</span>
+        )}
+      </div>
+       {/* ✅ DUMMY Credit Status */}
+      <div className="flex justify-between items-center">
+        <span className="text-slate-400">Credit</span>
+
+                 <span className="text-slate-400 font-medium">Not Credited</span>
+
+      </div>
           </motion.div>
         )) : (
           /* Empty State - spans full width of the grid */
