@@ -71,10 +71,9 @@ const LeadReview = () => {
       await frappeApi.post(
         '/method/business_chain.api.leads.settle_agent_credit',
         { 
-          lead_id: lead.id, 
-          total_amount: settleData.totalAmount, 
-          credits: settleData.credits,
-          admin_commission: parseFloat(settleData.totalAmount || 0) * 0.10
+          ledger_id: lead.ledger_id || lead.id, 
+          commission: settleData.credits,
+          total_sale_amount: settleData.totalAmount
         }
       );
       setSettleModal({ show: false, step: 1 });
@@ -238,7 +237,7 @@ const LeadReview = () => {
                 </div>
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Service Location</p>
-                  <p className="text-sm font-bold text-slate-700 leading-tight">Tirur</p>
+                  <p className="text-sm font-bold text-slate-700 leading-tight">{lead.location || 'Not specified'}</p>
                 </div>
               </div>
 
@@ -433,14 +432,41 @@ const LeadReview = () => {
                 </button>
               )}
 
-              {lead.status === 'Completed' && (
+              {lead.status === 'Completed' && lead.paymentStatus === 'Settled' ? (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle2 size={14} className="text-emerald-600" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-800">Settlement Details</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Commission</span>
+                      <span className="text-sm font-black text-slate-800 flex items-center gap-1">
+                        <IndianRupee size={12} />
+                        {lead.commission}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Total Sale Amount</span>
+                      <span className="text-sm font-black text-slate-800 flex items-center gap-1">
+                        <IndianRupee size={12} />
+                        {lead.totalSaleAmount}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Payment Status</span>
+                      <span className="text-sm font-black text-emerald-600">{lead.paymentStatus}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : lead.status === 'Completed' ? (
                 <button
                   onClick={() => setSettleModal({ show: true, step: 1 })}
                   className="w-full py-3 bg-purple-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-purple-500/20 hover:bg-purple-700 active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                   <Wallet size={16} /> Settle Agent Credit
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
