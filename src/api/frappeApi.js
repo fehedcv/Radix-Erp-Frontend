@@ -23,6 +23,13 @@ frappeApi.interceptors.request.use((config) => {
 frappeApi.interceptors.response.use(
   (response) => response,
   (error) => {
+    const url = error.config?.url
+    if (
+      (url && url.includes("mobile_login")) ||
+      (url && url.includes("agent_signup"))
+    ) {
+      return Promise.reject(error);
+    }
     if (error.response?.status === 401 || error.response?.status === 403) {
       console.warn("AUTH ERROR", error.response.data);
       // Optionally clear tokens and redirect
