@@ -170,17 +170,18 @@ const BusinessHub = () => {
     setSubmitting(true);
     try {
       await frappeApi.post('/resource/Business Unit', {
-        business_name:   formData.name,
-        category:        formData.category,
-        status:          'Active',
-        manager_name:    formData.manager,
-        primary_phone:   formData.phone,
-        whatsapp_number: formData.whatsapp,
-        email:           formData.email,
-        website:         formData.website,
-        location:        formData.cityArea,
-        address:         formData.address,
-        description:     formData.description,
+        business_name:         formData.name,
+        category:              formData.category,
+        status:                'Active',
+        manager_name:          formData.manager,
+        primary_phone:         formData.phone,
+        whatsapp_number:       formData.whatsapp,
+        email:                 formData.email,
+        website:               formData.website,
+        location:              formData.cityArea,
+        address:               formData.address,
+        description:           formData.description,
+        commission_percentage: formData.commission // Passed the new commission value to API
       });
       setShowAddModal(false);
       await fetchUnits();
@@ -389,12 +390,12 @@ const BusinessHub = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <EditField label="Business Name *" value={editForm.name}        onChange={setField('name')}        placeholder="e.g. SKYLINE TECH" />
                     <EditField label="Market Category" value={editForm.category}    onChange={setField('category')}    />
-                    <EditField label="Status"          value={editForm.status}      onChange={setField('status')}     isSelect options={STATUSES} />
-                    <EditField label="Unit Manager"    value={editForm.manager}     onChange={setField('manager')}    placeholder="Manager name" />
-                    <EditField label="Primary Phone"   value={editForm.phone}       onChange={setField('phone')}      placeholder="+971 50 000 0000" />
+                    <EditField label="Status"          value={editForm.status}      onChange={setField('status')}      isSelect options={STATUSES} />
+                    <EditField label="Unit Manager"    value={editForm.manager}     onChange={setField('manager')}     placeholder="Manager name" />
+                    <EditField label="Primary Phone"   value={editForm.phone}       onChange={setField('phone')}       placeholder="+971 50 000 0000" />
                     <EditField label="WhatsApp Number" value={editForm.whatsapp}    onChange={setField('whatsapp')}   placeholder="+971 50 000 0000" />
-                    <EditField label="Email"           value={editForm.email}       onChange={setField('email')}      placeholder="unit@example.com" type="email" />
-                    <EditField label="Website"         value={editForm.website}     onChange={setField('website')}    placeholder="https://example.com" />
+                    <EditField label="Email"           value={editForm.email}       onChange={setField('email')}       placeholder="unit@example.com" type="email" />
+                    <EditField label="Website"         value={editForm.website}     onChange={setField('website')}     placeholder="https://example.com" />
                     <EditField label="City / Area"     value={editForm.cityArea}    onChange={setField('cityArea')}   placeholder="e.g. Business Bay" />
                   </div>
                   <EditField label="Address"     value={editForm.address}     onChange={setField('address')}     placeholder="Full address..." isTextarea />
@@ -614,7 +615,7 @@ const BusinessHub = () => {
 const AddUnitForm = ({ onSubmit, onCancel, submitting }) => {
   const [form, setForm] = useState({
     name: '', category: '', manager: '', phone: '',
-    whatsapp: '', email: '', website: '', cityArea: '', address: '', description: '',
+    whatsapp: '', email: '', website: '', cityArea: '', address: '', description: '', commission: 10
   });
   const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
   const handleSubmit = (e) => { e.preventDefault(); onSubmit(form); };
@@ -624,6 +625,7 @@ const AddUnitForm = ({ onSubmit, onCancel, submitting }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput label="Business Name *"   value={form.name}      onChange={set('name')}      placeholder="e.g. SKYLINE TECH"        required />
         <FormInput label="Market Category *" value={form.category}  onChange={set('category')}  placeholder="Enter Category"                required  />
+        <FormInput label="Commission Percentage (%) *" type="number" value={form.commission} onChange={set('commission')} placeholder="e.g. 10" required />
         <FormInput label="Unit Manager *"    value={form.manager}   onChange={set('manager')}   placeholder="e.g. ZAID AL-FARSI"       required />
         <FormInput label="Primary Phone *"   value={form.phone}     onChange={set('phone')}     placeholder="+971 50 000 0000"          required />
         <FormInput label="WhatsApp Number *" value={form.whatsapp}  onChange={set('whatsapp')}  placeholder="+971 50 000 0000"          required />
@@ -631,7 +633,7 @@ const AddUnitForm = ({ onSubmit, onCancel, submitting }) => {
         <FormInput label="Website"           value={form.website}   onChange={set('website')}   placeholder="https://example.com"       type="url" />
         <FormInput label="City / Area"       value={form.cityArea}  onChange={set('cityArea')}  placeholder="e.g. Business Bay, Dubai" />
       </div>
-      <FormInput label="Address *"     value={form.address}     onChange={set('address')}     placeholder="Full address..."                          required isTextarea />
+      <FormInput label="Address *"     value={form.address}     onChange={set('address')}     placeholder="Full address..."                                  required isTextarea />
       <FormInput label="Description *" value={form.description} onChange={set('description')} placeholder="Brief overview of this business unit..." required isTextarea />
       <div className="flex gap-3 pt-2">
         <button type="button" onClick={onCancel} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase">Cancel</button>
