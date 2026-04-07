@@ -76,7 +76,7 @@ const LeadReview = () => {
           ledger_id: lead.ledger_id || lead.id, 
           commission: settleData.credits,
           total_sale_amount: settleData.totalAmount
-        }
+        } 
       );
       setLead(prev=>({
         ...prev,

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import gsap from 'gsap';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Loader2, AlertCircle, Eye, EyeOff,
-  ChevronLeft, ShieldCheck, Layers, Wallet, CheckCircle2
+  ChevronLeft, Wallet, CheckCircle2, Lock
 } from 'lucide-react';
 import frappeApi from '../../api/frappeApi';
 
@@ -26,68 +27,65 @@ const AuthGateway = ({ onLoginSuccess }) => {
     full_name: '', email: '', phone: '', password: '', confirm: '',
   });
 
-  // Floating GSAP animation
+  // Floating GSAP animation (Mobile only background elements)
   useEffect(() => {
-    if (infoSideRef.current) {
+    if (infoSideRef.current && window.innerWidth < 1024) {
       gsap.to('.floating-node', {
-        y: -15, duration: 2, repeat: -1, yoyo: true,
-        ease: 'power1.inOut', stagger: 0.2,
+        y: -20, duration: 3, repeat: -1, yoyo: true,
+        ease: 'power1.inOut', stagger: 0.3,
       });
     }
   }, []);
 
   // ── Login ─────────────────────────────────────────────────────────────────
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setLoginLoading(true);
-  setLoginError('');
-  const formData = new FormData(e.target);
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError('');
+    const formData = new FormData(e.target);
 
-  try {
-    // 1. Get tokens via custom login endpoint
-    const tokenRes = await frappeApi.post(
-      '/method/business_chain.api.auth.mobile_login',
-      {
-        usr: formData.get('email'),
-        pwd: formData.get('password'),
-      }
-    );
-    const { api_key, api_secret } = tokenRes.data.message;
+    try {
+      const tokenRes = await frappeApi.post(
+        '/method/business_chain.api.auth.mobile_login',
+        {
+          usr: formData.get('email'),
+          pwd: formData.get('password'),
+        }
+      );
+      const { api_key, api_secret } = tokenRes.data.message;
 
-    // 2. Persist tokens
-    localStorage.setItem('bc_api_key',    api_key);
-    localStorage.setItem('bc_api_secret', api_secret);
+      localStorage.setItem('bc_api_key',    api_key);
+      localStorage.setItem('bc_api_secret', api_secret);
 
-    // 3. Now fetch role — interceptor will auto-attach the token
-    const res = await frappeApi.get('/method/business_chain.api.api.whoami');
-    const { user, primary_role, roles } = res.data.message;
+      const res = await frappeApi.get('/method/business_chain.api.api.whoami');
+      const { user, primary_role, roles } = res.data.message;
 
-    if (!primary_role) throw new Error('ROLE_NOT_ASSIGNED');
+      if (!primary_role) throw new Error('ROLE_NOT_ASSIGNED');
 
-    localStorage.setItem('vynx_user', JSON.stringify({ email: user, role: primary_role, roles }));
-    onLoginSuccess(primary_role);
+      localStorage.setItem('vynx_user', JSON.stringify({ email: user, role: primary_role, roles }));
+      onLoginSuccess(primary_role);
 
-    if      (primary_role === 'agent')    navigate('/agent');
-    else if (primary_role === 'business') navigate('/business');
-    else if (primary_role === 'admin')    navigate('/admin');
-    else                                  navigate('/unauthorized');
+      if      (primary_role === 'agent')    navigate('/agent');
+      else if (primary_role === 'business') navigate('/business');
+      else if (primary_role === 'admin')    navigate('/admin');
+      else                                  navigate('/unauthorized');
 
-  } catch (err) {
-    const serverMsg = err?.response?.data?._server_messages;
-    if (serverMsg) {
-      try {
-        const parsed = JSON.parse(JSON.parse(serverMsg)[0]);
-        setLoginError(parsed.message || 'Login failed.');
-      } catch {
+    } catch (err) {
+      const serverMsg = err?.response?.data?._server_messages;
+      if (serverMsg) {
+        try {
+          const parsed = JSON.parse(JSON.parse(serverMsg)[0]);
+          setLoginError(parsed.message || 'Login failed.');
+        } catch {
+          setLoginError('Invalid credentials or role not assigned.');
+        }
+      } else {
         setLoginError('Invalid credentials or role not assigned.');
       }
-    } else {
-      setLoginError('Invalid credentials or role not assigned.');
+    } finally {
+      setLoginLoading(false);
     }
-  } finally {
-    setLoginLoading(false);
-  }
-};
+  };
 
   // ── Signup ────────────────────────────────────────────────────────────────
   const setField = (k) => (e) => setSignupForm(prev => ({ ...prev, [k]: e.target.value }));
@@ -131,197 +129,200 @@ const AuthGateway = ({ onLoginSuccess }) => {
     }
   };
 
-  return (
-    <div className="min-h-svh bg-[#F8FAFC] flex font-['Plus_Jakarta_Sans',sans-serif] overflow-x-hidden">
+  // Framer Motion variants
+  const formVariants = {
+    hidden: { opacity: 0, x: 20 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: "easeOut" } },
+    exit: { opacity: 0, x: -20, transition: { duration: 0.3 } }
+  };
 
-      {/* ── LEFT PANEL ── */}
-      <div
-        ref={infoSideRef}
-        className="hidden lg:flex w-1/2 bg-[#0F172A] relative flex-col justify-center px-20 text-white overflow-hidden"
-      >
-        <div
-          className="absolute inset-0 opacity-10 pointer-events-none"
-          style={{
-            backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`,
-            backgroundSize: '40px 40px',
-          }}
-        />
-        <div className="relative z-10">
-          
-          <h1 className="text-5xl font-bold leading-tight mb-6">
-            The Business Chain <br />
-            <span className="text-indigo-400 italic">Infrastructure.</span>
-          </h1>
-          <p className="text-slate-400 text-lg max-w-md mb-12">
-            Authorized access to the unified ledger for agents, business units, and headquarters.
-          </p>
-          <div className="space-y-4">
-            <div className="floating-node w-64 bg-white/5 border border-white/10 p-4 rounded-xl flex items-center gap-4">
-              <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                <Wallet size={20} />
-              </div>
-              <div>
-                <p className="text-[10px] uppercase text-slate-500">Standard Rate</p>
-                <p className="text-sm font-bold">1.00 INR / Credit</p>
-              </div>
-            </div>
-            <div className="floating-node w-72 bg-white/5 border border-white/10 p-4 rounded-xl flex items-center gap-4 ml-12">
-              <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center">
-                <ShieldCheck size={20} />
-              </div>
-              <div>
-                <p className="text-[10px] uppercase text-slate-500">Security</p>
-                <p className="text-sm font-bold">Frappe Session Auth</p>
-              </div>
-            </div>
-          </div>
-        </div>
+  return (
+    // Outer Wrapper: Locks to strictly 100dvh, disables all scrolling
+    <div ref={infoSideRef} className="h-[100dvh] w-full bg-[#05050A] lg:bg-black flex flex-col lg:flex-row items-center justify-center font-['Plus_Jakarta_Sans',sans-serif] overflow-hidden selection:bg-white/30 relative">
+
+      {/* --- MOBILE AMBIENT ORBS (Hidden on Desktop) --- */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 lg:hidden">
+        <div className="absolute top-[10%] left-[10%] w-[60vw] h-[60vw] rounded-full bg-[#7038FF] mix-blend-screen filter blur-[120px] opacity-30 floating-node" />
+        <div className="absolute bottom-[10%] right-[10%] w-[70vw] h-[70vw] rounded-full bg-[#9D4EDD] mix-blend-screen filter blur-[130px] opacity-20 floating-node" style={{ animationDelay: '-2s' }} />
       </div>
 
-      {/* ── RIGHT PANEL ── */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-[420px] space-y-7">
+      {/* --- DESKTOP DECORATIVE LINES (Hidden on Mobile) --- */}
+      <div className="hidden lg:block absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <svg className="absolute w-[150vw] h-[150vh] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20" viewBox="0 0 1000 1000" fill="none">
+          <path d="M0,800 Q300,500 500,800 T1000,400" stroke="white" strokeWidth="0.5" strokeDasharray="4 4" />
+          <path d="M-200,200 Q400,800 800,200" stroke="white" strokeWidth="0.5" />
+        </svg>
+      </div>
 
-          <Link to="/" className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-slate-400">
-            <ChevronLeft size={14} /> Back
+      {/* --- DESKTOP LEFT PANEL (Welcome Text) --- */}
+      <div className="hidden lg:flex w-1/2 h-full flex-col justify-center px-16 xl:px-24 z-10 relative">
+        <h1 className="text-6xl xl:text-7xl font-medium tracking-tighter leading-[1.05] mb-6 text-white">
+          Access your <br/> Dashboard.
+        </h1>
+        <p className="text-white/60 text-lg max-w-md font-light leading-relaxed">
+Submit referrals, monitor approvals, and withdraw your commissions through our agent portal.        </p>
+      </div>
+
+      {/* --- RIGHT PANEL (Mobile Full Width / Desktop Right Half) --- */}
+      <div className="w-full lg:w-1/2 h-full flex flex-col items-center justify-center px-4 relative z-10">
+        
+        {/* Mobile Header / Back Button */}
+        <div className="absolute top-0 left-0 w-full p-6 z-40 flex justify-between items-center lg:hidden">
+          <Link to="/" className="w-10 h-10 rounded-full bg-white/[0.05] border border-white/[0.1] backdrop-blur-md flex items-center justify-center text-white/70 hover:text-white transition-all active:scale-95">
+            <ChevronLeft size={20} />
           </Link>
+        </div>
 
-          {/* Tab switcher */}
-          <div className="flex bg-slate-100 p-1 rounded-xl">
-            <button
-              onClick={() => { setTab('login'); setLoginError(''); }}
-              className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${tab === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
-            >
-              Login
-            </button>
-            <button
-              onClick={() => { setTab('signup'); setSignupError(''); setSignupSuccess(false); }}
-              className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${tab === 'signup' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
-            >
-              Sign Up
-            </button>
+        {/* AUTH CARD WRAPPER */}
+        <div className="w-full max-w-[400px]">
+
+          {/* CARD CONTAINER
+            Mobile: Liquid Glassmorphism
+            Desktop: Minimalist Dark Box 
+          */}
+          <div className="bg-white/[0.03] lg:bg-[#0a0a0a] backdrop-blur-[60px] lg:backdrop-blur-none border border-white/[0.08] lg:border-[#222] rounded-[2rem] lg:rounded-3xl p-5 sm:p-6 shadow-[0_20px_40px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)] lg:shadow-none relative overflow-hidden">
+            
+            {/* Mobile Glossy Highlight (Hidden on Desktop) */}
+            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none lg:hidden"></div>
+
+            {/* Tab Switcher */}
+            <div className="relative flex bg-[#12121A]/80 lg:bg-[#111] backdrop-blur-md lg:backdrop-blur-none p-1.5 rounded-full mb-6 border border-white/[0.05] lg:border-[#222] z-10">
+              <div 
+                className="absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-white/[0.1] lg:bg-[#222] border border-white/[0.1] lg:border-[#333] rounded-full shadow-sm transition-all duration-300 ease-out"
+                style={{ left: tab === 'login' ? '6px' : 'calc(50%)' }}
+              />
+              <button
+                onClick={() => { setTab('login'); setLoginError(''); }}
+                className={`relative z-10 flex-1 py-2.5 text-[11px] font-bold uppercase tracking-widest rounded-full transition-colors ${tab === 'login' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
+              >
+                Login
+              </button>
+              <button
+                onClick={() => { setTab('signup'); setSignupError(''); setSignupSuccess(false); }}
+                className={`relative z-10 flex-1 py-2.5 text-[11px] font-bold uppercase tracking-widest rounded-full transition-colors ${tab === 'signup' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
+              >
+                Sign Up
+              </button>
+            </div>
+
+            <div className="relative z-10">
+              <AnimatePresence mode="wait">
+                
+                {/* ── LOGIN FORM ── */}
+                {tab === 'login' && (
+                  <motion.div key="login" variants={formVariants} initial="hidden" animate="visible" exit="exit" className="space-y-4">
+                    <header className="hidden lg:block mb-4 text-center">
+                      <h2 className="text-2xl font-medium text-white">Welcome Back</h2>
+                    </header>
+                    <form onSubmit={handleLogin} className="space-y-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Email Address</label>
+                        <AuthInput name="email" type="email" placeholder="name@company.com" required />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Password</label>
+                        <div className="relative">
+                          <AuthInput name="password" type={showLoginPass ? 'text' : 'password'} placeholder="••••••••" required />
+                          <button type="button" onClick={() => setShowLoginPass(p => !p)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-[#B282FE] lg:hover:text-white transition-colors"
+                          >
+                            {showLoginPass ? <EyeOff size={18}/> : <Eye size={18}/>}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="pt-1">
+                        {loginError && <ErrorMsg msg={loginError} />}
+                      </div>
+                      
+                      <div className="pt-2">
+                        <SubmitBtn loading={loginLoading} label="Secure Login" icon={<Lock size={16}/>} />
+                      </div>
+                    </form>
+                  </motion.div>
+                )}
+
+                {/* ── SIGNUP FORM ── */}
+                {tab === 'signup' && (
+                  <motion.div key="signup" variants={formVariants} initial="hidden" animate="visible" exit="exit" className="space-y-4">
+                    
+                    {signupSuccess ? (
+                      <div className="flex flex-col items-center text-center gap-3 py-4">
+                        <div className="w-16 h-16 bg-emerald-500/10 lg:bg-[#111] border border-emerald-500/20 lg:border-emerald-500/50 rounded-full flex items-center justify-center shadow-[inset_0_0_20px_rgba(16,185,129,0.2)] lg:shadow-none">
+                          <CheckCircle2 size={32} className="text-emerald-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-light lg:font-medium text-white tracking-tight">Welcome Aboard</h3>
+                          <p className="text-xs text-white/50 mt-1 font-light leading-relaxed">
+                            Your agent account is verified and ready.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => { setTab('login'); setSignupSuccess(false); setSignupForm({ full_name:'', email:'', phone:'', password:'', confirm:'' }); }}
+                          className="w-full mt-2 bg-white/10 lg:bg-white lg:text-black hover:bg-white/20 border border-white/10 lg:border-transparent text-white py-3.5 rounded-full font-bold text-xs uppercase tracking-widest transition-all active:scale-95"
+                        >
+                          Proceed to Login
+                        </button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleSignup} className="space-y-3">
+                        <header className="hidden lg:block mb-4 text-center">
+                          <h2 className="text-2xl font-medium text-white">Create Account</h2>
+                        </header>
+                        
+                        {/* TWO FIELDS IN ONE LINE: Name & Email */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Full Name</label>
+                            <AuthInput value={signupForm.full_name} onChange={setField('full_name')} placeholder="John Doe" required />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Email</label>
+                            <AuthInput type="email" value={signupForm.email} onChange={setField('email')} placeholder="john@mail.com" required />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Phone Number</label>
+                          <AuthInput type="tel" value={signupForm.phone} onChange={setField('phone')} placeholder="+91 98765 43210" required />
+                        </div>
+                        
+                        {/* TWO FIELDS IN ONE LINE: Passwords */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Password</label>
+                            <div className="relative">
+                              <AuthInput type={showSignupPass ? 'text' : 'password'} value={signupForm.password} onChange={setField('password')} placeholder="Min 8 chars" required />
+                              <button type="button" onClick={() => setShowSignupPass(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-[#B282FE] lg:hover:text-white transition-colors">
+                                {showSignupPass ? <EyeOff size={16}/> : <Eye size={16}/>}
+                              </button>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Confirm Pwd</label>
+                            <AuthInput type="password" value={signupForm.confirm} onChange={setField('confirm')} placeholder="Re-enter" required />
+                          </div>
+                        </div>
+
+                        <div className="pt-1">
+                          {signupError && <ErrorMsg msg={signupError} />}
+                        </div>
+
+                        <div className="pt-2">
+                          <SubmitBtn loading={signupLoading} label="Create Account" icon={<Wallet size={16}/>} />
+                        </div>
+                      </form>
+                    )}
+                  </motion.div>
+                )}
+
+              </AnimatePresence>
+            </div>
           </div>
 
-          {/* ── LOGIN FORM ── */}
-          {tab === 'login' && (
-            <div className="space-y-6">
-              <header>
-                <h2 className="text-3xl font-bold text-[#0F172A]">Partner Login</h2>
-                <p className="text-slate-500 text-sm mt-1">Enter your credentials to access your dashboard.</p>
-              </header>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <AuthInput name="email" type="email" placeholder="name@company.com" required />
-                <div className="relative">
-                  <AuthInput name="password" type={showLoginPass ? 'text' : 'password'} placeholder="••••••••" required />
-                  <button type="button" onClick={() => setShowLoginPass(p => !p)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
-                  >
-                    {showLoginPass ? <EyeOff size={18}/> : <Eye size={18}/>}
-                  </button>
-                </div>
-                {loginError && <ErrorMsg msg={loginError} />}
-                <SubmitBtn loading={loginLoading} label="Login" />
-              </form>
-              <p className="text-center text-xs text-slate-400">
-                Don't have an account?{' '}
-                <button onClick={() => setTab('signup')} className="text-indigo-600 font-bold hover:underline">
-                  Create an account
-                </button>
-              </p>
-            </div>
-          )}
-
-          {/* ── SIGNUP FORM ── */}
-          {tab === 'signup' && (
-            <div className="space-y-6">
-              <header>
-                <h2 className="text-3xl font-bold text-[#0F172A]">Partner Sign Up</h2>
-                <p className="text-slate-500 text-sm mt-1">Create your partner account to start submitting referrals.</p>
-              </header>
-
-              {signupSuccess ? (
-                /* Success state */
-                <div className="flex flex-col items-center text-center gap-4 py-8">
-                  <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center">
-                    <CheckCircle2 size={36} className="text-emerald-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Account Created!</h3>
-                    <p className="text-sm text-slate-500 mt-1 max-w-xs">
-                      Your agent account is ready. Log in to access your dashboard.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => { setTab('login'); setSignupSuccess(false); setSignupForm({ full_name:'', email:'', phone:'', password:'', confirm:'' }); }}
-                    className="w-full bg-[#0F172A] text-white py-3.5 rounded-xl font-bold text-sm"
-                  >
-                    Go to Login
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Full Name *</label>
-                    <AuthInput
-                      value={signupForm.full_name} onChange={setField('full_name')}
-                      placeholder="e.g. Zaid Al-Farsi" required
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Email *</label>
-                    <AuthInput
-                      type="email" value={signupForm.email} onChange={setField('email')}
-                      placeholder="username@example.com" required
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Phone *</label>
-                    <AuthInput
-                      type="tel" value={signupForm.phone} onChange={setField('phone')}
-                      placeholder="+91 98765 43210" required
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Password *</label>
-                    <div className="relative">
-                      <AuthInput
-                        type={showSignupPass ? 'text' : 'password'}
-                        value={signupForm.password} onChange={setField('password')}
-                        placeholder="Min. 8 characters" required
-                      />
-                      <button type="button" onClick={() => setShowSignupPass(p => !p)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
-                      >
-                        {showSignupPass ? <EyeOff size={18}/> : <Eye size={18}/>}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Confirm Password *</label>
-                    <AuthInput
-                      type="password" value={signupForm.confirm} onChange={setField('confirm')}
-                      placeholder="Re-enter password" required
-                    />
-                  </div>
-
-                  {signupError && <ErrorMsg msg={signupError} />}
-
-                 
-
-                  <SubmitBtn loading={signupLoading} label="Create Account" />
-                </form>
-              )}
-
-              {!signupSuccess && (
-                <p className="text-center text-xs text-slate-400">
-                  Already have an account?{' '}
-                  <button onClick={() => setTab('login')} className="text-indigo-600 font-bold hover:underline">
-                    Log in
-                  </button>
-                </p>
-              )}
-            </div>
-          )}
+          <p className="text-center text-[10px] text-white/20 uppercase tracking-widest mt-6 font-medium">
+            Protected by Frappe Session Auth
+          </p>
 
         </div>
       </div>
@@ -329,27 +330,46 @@ const AuthGateway = ({ onLoginSuccess }) => {
   );
 };
 
-// ─── Shared sub-components ────────────────────────────────────────────────────
+// ─── Shared Sub-components ───────────────────────────────────────────────────
+
 const AuthInput = ({ ...props }) => (
   <input
     {...props}
-    className="w-full border border-slate-200 bg-white px-4 py-3 rounded-xl text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-slate-300"
+    className="w-full text-sm text-white font-light outline-none transition-all placeholder:text-white/20 lg:placeholder:text-white/30
+      /* Mobile: Glassmorphism */
+      bg-black/20 backdrop-blur-md border border-white/[0.08] px-5 py-3.5 rounded-2xl focus:border-[#B282FE]/50 focus:bg-white/[0.02] focus:ring-4 focus:ring-[#B282FE]/10
+      /* Desktop: Minimalist Website Theme */
+      lg:bg-[#111] lg:backdrop-blur-none lg:border-[#333] lg:rounded-xl lg:px-4 lg:py-3 lg:focus:border-white lg:focus:bg-[#151515] lg:focus:ring-0
+    "
   />
 );
 
 const ErrorMsg = ({ msg }) => (
-  <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 border border-red-100 px-3 py-2 rounded-lg">
-    <AlertCircle size={14} className="shrink-0" /> {msg}
-  </div>
+  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 text-red-400 text-xs bg-red-500/10 lg:bg-[#111] border border-red-500/20 lg:border-red-500/40 px-4 py-3 lg:py-2.5 rounded-xl lg:rounded-lg font-medium">
+    <AlertCircle size={16} className="shrink-0" /> {msg}
+  </motion.div>
 );
 
-const SubmitBtn = ({ loading, label }) => (
+const SubmitBtn = ({ loading, label, icon }) => (
   <button
     type="submit"
     disabled={loading}
-    className="w-full bg-[#0F172A] hover:bg-indigo-700 text-white py-4 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition-all active:scale-95 disabled:opacity-60"
+    className="group relative w-full overflow-hidden flex justify-center items-center gap-2 font-bold text-xs uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100
+      /* Mobile: Glassmorphism Gradient Button */
+      bg-white text-black py-3.5 rounded-2xl shadow-[0_10px_30px_rgba(178,130,254,0.2)] lg:shadow-none
+      /* Desktop: Minimalist Outline Button */
+      lg:bg-transparent lg:text-white lg:py-3.5 lg:rounded-full lg:border lg:border-white
+    "
   >
-    {loading ? <><Loader2 size={18} className="animate-spin"/> Processing...</> : label}
+    {/* Mobile: Gradient Fill on Press */}
+    <span className="absolute inset-0 bg-gradient-to-r from-[#B282FE] to-[#7038FF] opacity-0 group-active:opacity-100 transition-opacity duration-300 lg:hidden"></span>
+    
+    {/* Desktop: Solid White Fill on Hover */}
+    <span className="hidden lg:block absolute inset-0 bg-white translate-y-[101%] group-hover:translate-y-0 transition-transform duration-300 ease-out"></span>
+
+    <span className="relative z-10 flex items-center gap-2 group-active:text-white lg:group-hover:text-black transition-colors duration-300">
+      {loading ? <><Loader2 size={16} className="animate-spin"/> Processing</> : <>{icon} {label}</>}
+    </span>
   </button>
 );
 
