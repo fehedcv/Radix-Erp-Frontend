@@ -16,6 +16,7 @@ const mapDoc = (doc) => ({
   name:        doc.business_name   || doc.name,
   category:    doc.category        || '—',
   status:      doc.status          || 'Active',
+  commision:  doc.commision      || 0,
   managerName: doc.manager_name    || '—',
   phone:       doc.primary_phone   || '',
   whatsapp:    doc.whatsapp_number || '',
@@ -32,7 +33,8 @@ const mapDoc = (doc) => ({
 const BU_LIST_FIELDS = [
   'name','business_name','category','status','manager_name',
   'primary_phone','whatsapp_number','email','website',
-  'location','address','description','creation'
+  'location','address','description','creation',
+  'commision'
 ];
 
 const CATEGORIES = ['Technology','Real Estate','Finance','Healthcare','Retail','Construction','Other'];
@@ -87,6 +89,7 @@ const BusinessHub = () => {
       name:        selectedUnit.name,
       category:    selectedUnit.category === '—' ? '' : selectedUnit.category,
       status:      selectedUnit.status,
+      commision:  selectedUnit.commision,
       manager:     selectedUnit.managerName === '—' ? '' : selectedUnit.managerName,
       phone:       selectedUnit.phone,
       whatsapp:    selectedUnit.whatsapp,
@@ -109,6 +112,7 @@ const BusinessHub = () => {
         business_name:   editForm.name,
         category:        editForm.category,
         status:          editForm.status,
+        commision:      editForm.commision,
         manager_name:    editForm.manager,
         primary_phone:   editForm.phone,
         whatsapp_number: editForm.whatsapp,
@@ -173,6 +177,7 @@ const BusinessHub = () => {
         business_name:         formData.name,
         category:              formData.category,
         status:                'Active',
+        commision:            formData.commision,
         manager_name:          formData.manager,
         primary_phone:         formData.phone,
         whatsapp_number:       formData.whatsapp,
@@ -181,7 +186,7 @@ const BusinessHub = () => {
         location:              formData.cityArea,
         address:               formData.address,
         description:           formData.description,
-        commission_percentage: formData.commission // Passed the new commission value to API
+        // commission_percentage: formData.commission // Passed the new commission value to API
       });
       setShowAddModal(false);
       await fetchUnits();
@@ -615,7 +620,7 @@ const BusinessHub = () => {
 const AddUnitForm = ({ onSubmit, onCancel, submitting }) => {
   const [form, setForm] = useState({
     name: '', category: '', manager: '', phone: '',
-    whatsapp: '', email: '', website: '', cityArea: '', address: '', description: '', commission: 10
+    whatsapp: '', email: '', website: '', cityArea: '', address: '', description: '', commision: 10
   });
   const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
   const handleSubmit = (e) => { e.preventDefault(); onSubmit(form); };
@@ -625,7 +630,7 @@ const AddUnitForm = ({ onSubmit, onCancel, submitting }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput label="Business Name *"   value={form.name}      onChange={set('name')}      placeholder="e.g. SKYLINE TECH"        required />
         <FormInput label="Market Category *" value={form.category}  onChange={set('category')}  placeholder="Enter Category"                required  />
-        <FormInput label="Commission Percentage (%) *" type="number" value={form.commission} onChange={set('commission')} placeholder="e.g. 10" required />
+        <FormInput label="Commission Percentage (%) *" type="number" value={form.commision} onChange={set('commision')} placeholder="e.g. 10" required />
         <FormInput label="Unit Manager *"    value={form.manager}   onChange={set('manager')}   placeholder="e.g. ZAID AL-FARSI"       required />
         <FormInput label="Primary Phone *"   value={form.phone}     onChange={set('phone')}     placeholder="+971 50 000 0000"          required />
         <FormInput label="WhatsApp Number *" value={form.whatsapp}  onChange={set('whatsapp')}  placeholder="+971 50 000 0000"          required />

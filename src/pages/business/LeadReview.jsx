@@ -35,6 +35,8 @@ const LeadReview = () => {
           '/method/business_chain.api.leads.get_business_lead_detail',
           { params: { lead_id: id } }
         );
+        console.log(res.data.message);
+        
         setLead(res.data.message);
       } catch (err) {
         console.error(err);
@@ -444,26 +446,38 @@ const LeadReview = () => {
                     <CheckCircle2 size={14} className="text-emerald-600" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-emerald-800">Settlement Details</span>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Commission</span>
-                      <span className="text-sm font-black text-slate-800 flex items-center gap-1">
-                        <IndianRupee size={12} />
-                        {lead.commission}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Total Sale Amount</span>
-                      <span className="text-sm font-black text-slate-800 flex items-center gap-1">
-                        <IndianRupee size={12} />
-                        {lead.totalSaleAmount}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Payment Status</span>
-                      <span className="text-sm font-black text-emerald-600">{lead.paymentStatus}</span>
-                    </div>
-                  </div>
+               <div className="space-y-2">
+  <div className="flex justify-between items-center">
+    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
+      {/* Show the percentage in brackets (e.g., 10%) */}
+      Commission ({lead.commision || 0}%)
+    </span>
+    <span className="text-sm font-black text-slate-800 flex items-center gap-1">
+      <IndianRupee size={12} />
+      {/* Show the actual money amount saved during settlement */}
+      {lead.commission}
+    </span>
+  </div>
+
+  <div className="flex justify-between items-center">
+    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
+      Total Sale Amount
+    </span>
+    <span className="text-sm font-black text-slate-800 flex items-center gap-1">
+      <IndianRupee size={12} />
+      {lead.totalSaleAmount}
+    </span>
+  </div>
+
+  <div className="flex justify-between items-center">
+    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
+      Payment Status
+    </span>
+    <span className="text-sm font-black text-emerald-600">
+      {lead.paymentStatus}
+    </span>
+  </div>
+</div>
                 </div>
               ) : lead.status === 'Completed' ? (
                 <button
@@ -604,13 +618,18 @@ const LeadReview = () => {
                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Agent Credits</span>
                       <span className="text-sm font-black text-slate-800">{settleData.credits}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Admin Commission (10%)</span>
-                      <span className="text-sm font-black text-emerald-600 flex items-center gap-1">
-                        <IndianRupee size={12} />
-                        {(parseFloat(settleData.totalAmount || 0) * 0.10).toFixed(2)}
-                      </span>
-                    </div>
+                   <div className="flex justify-between items-center">
+  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+    Admin Commission ({lead.commision || 0}%)
+  </span>
+  <span className="text-sm font-black text-emerald-600 flex items-center gap-1">
+    <IndianRupee size={12} />
+    {/* Assuming 'commission' from backend is the percentage value, e.g., 15 */}
+    {(
+      (parseFloat(settleData.totalAmount || 0) * (parseFloat(lead.commision || 0) / 100))
+    ).toFixed(2)}
+  </span>
+</div>
                   </div>
 
                   {/* Informational Section */}
@@ -622,13 +641,13 @@ const LeadReview = () => {
                         These credits will be passed to the admin for review. The admin decides and finalizes the exact approved credit amount, which may be modified.
                       </p>
                     </div>
-                    <div className="flex gap-2.5 pt-2.5 border-t border-blue-100/50">
-                      <Info size={14} className="text-blue-600 shrink-0 mt-0.5" />
-                      <p>
-                        <strong className="text-slate-800 block mb-0.5">Commission Details</strong>
-                        The 10% commission is deducted to cover system running, platform maintenance, and other ongoing operational costs.
-                      </p>
-                    </div>
+                   <div className="flex gap-2.5 pt-2.5 border-t border-blue-100/50">
+  <Info size={14} className="text-blue-600 shrink-0 mt-0.5" />
+  <p>
+    <strong className="text-slate-800 block mb-0.5">Commission Details</strong>
+    The {lead.commision}% commission is deducted to cover system running, platform maintenance, and other ongoing operational costs.
+  </p>
+</div>
                   </div>
 
                   <div className="flex gap-3">

@@ -22,6 +22,7 @@ const LeadHistory = () => {
         const res = await frappeApi.get(
           '/method/business_chain.api.api.get_my_lead_history'
         );
+        console.log(res.data.message);
         setLeads(res.data.message || []);
       } catch (err) {
         console.error(err);
@@ -42,27 +43,57 @@ const LeadHistory = () => {
         ((lead.id || '').toString()).toLowerCase().includes(search);
 
       const matchesStatus =
-        filterStatus === "All" || lead.status === filterStatus;
+        filterStatus === "All" || normalizeStatus(lead.status) === filterStatus;
 
       return matchesSearch && matchesStatus;
     });
   }, [leads, searchTerm, filterStatus]);
 
   // ---------------- CHARTS ----------------
+  const normalizeStatus = (status) => {
+  if (!status) return "";
+
+  const s = status.toLowerCase().trim();
+
+  if (s === "pending") return "Pending";
+  if (s === "verified") return "Verified";
+  if (s === "in progress") return "In Progress";
+  if (s === "completed") return "Completed";
+  if (s === "rejected") return "Rejected";
+
+    if (s === "successful") return "Completed";
+
+
+  return status; // fallback
+};
   const statusCounts = useMemo(() => {
-    const counts = { Pending: 0, Successful: 0, Rejected: 0 };
-    leads.forEach(l => counts[l.status]++);
+const counts = { 
+  Pending: 0, 
+  Verified: 0, 
+  "In Progress": 0, 
+  Completed: 0, 
+  Rejected: 0 
+};
+leads.forEach(l => {
+  const status = normalizeStatus(l.status);
+
+  if (counts[status] !== undefined) {
+    counts[status]++;
+  }
+});
     return counts;
   }, [leads]);
 
   const barChartConfig = {
     series: [{
       name: 'Deals',
-      data: [
-        statusCounts.Successful,
-        statusCounts.Pending,
-        statusCounts.Rejected
-      ]
+     data: [
+  statusCounts.Pending,
+  statusCounts.Verified,
+  statusCounts["In Progress"],
+  statusCounts.Completed,
+  statusCounts.Rejected
+]
     }],
     options: {
       chart: { type: 'bar', toolbar: { show: false } },
@@ -71,7 +102,7 @@ const LeadHistory = () => {
         bar: { borderRadius: 6, distributed: true, columnWidth: '40%' }
       },
       xaxis: {
-        categories: ['Successful', 'Pending', 'Rejected'],
+categories: ['Pending', 'Verified', 'In Progress', 'Completed', 'Rejected'],
         labels: { style: { fontWeight: 700, fontSize: '10px' } }
       },
       legend: { show: false },
@@ -79,27 +110,28 @@ const LeadHistory = () => {
     }
   };
 
-  const donutChartConfig = {
-    series: [
-      statusCounts.Successful,
-      statusCounts.Pending,
-      statusCounts.Rejected
-    ],
-    options: {
-      chart: { type: 'donut' },
-      labels: ['Successful', 'Pending', 'Rejected'],
-      colors: ['#10b981', '#f59e0b', '#ef4444'],
-      stroke: { show: false },
-      legend: {
-        position: 'bottom',
-        fontSize: '10px',
-        fontWeight: 600
-      },
-      dataLabels: { enabled: false },
-      plotOptions: { pie: { donut: { size: '72%' } } }
-    }
-  };
-
+const donutChartConfig = {
+  series: [
+    statusCounts.Pending,
+    statusCounts.Verified,
+    statusCounts["In Progress"],
+    statusCounts.Completed,
+    statusCounts.Rejected
+  ],
+  options: {
+    chart: { type: 'donut' },
+    labels: ['Pending', 'Verified', 'In Progress', 'Completed', 'Rejected'],
+    colors: ['#f59e0b', '#3b82f6', '#6366f1', '#10b981', '#ef4444'],
+    stroke: { show: false },
+    legend: {
+      position: 'bottom',
+      fontSize: '10px',
+      fontWeight: 600
+    },
+    dataLabels: { enabled: false },
+    plotOptions: { pie: { donut: { size: '72%' } } }
+  }
+};
    const getStatusStyle = (status) => {
     switch (status) {
       case 'Pending':     return 'text-amber-600 bg-amber-50 border-amber-100';
@@ -166,10 +198,13 @@ const LeadHistory = () => {
             onChange={(e) => setFilterStatus(e.target.value)}
             className="w-full sm:w-48 pl-4 pr-8 py-3 rounded-xl border border-gray-200 text-[10px] font-bold uppercase"
           >
-            <option  value="All">All Status</option>
-            <option  value="Successful">Successful</option>
-            <option  value="Pending">Pending</option>
-            <option  value="Rejected">Rejected</option>
+            <option value="All">All Status</option>
+
+            <option value="Pending">Pending</option>
+<option value="Verified">Verified</option>
+<option value="In Progress">In Progress</option>
+<option value="Completed">Completed</option>
+<option value="Rejected">Rejected</option>
           </select>
         </div>
       </div>
@@ -228,8 +263,8 @@ const LeadHistory = () => {
 
             {/* Bottom Row: Action Link (Matches the "View Portfolio" style in the image) */}
             <div className="mt-6 pt-4 border-t text-center border-slate-100 flex items-center justify-between text-slate-400 group-hover:text-blue-600 transition-colors cursor-pointer">
-              Lead Status <ArrowRight size={12} /><span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md ${getStatusStyle(lead.status)}`}>
-                 {lead.status}
+              Lead Status <ArrowRight size={12} /><span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md ${getStatusStyle(normalizeStatus(lead.status))}`}>
+                 {normalizeStatus(lead.status)}
               </span>
             </div>
             <div className="flex justify-between items-center">
