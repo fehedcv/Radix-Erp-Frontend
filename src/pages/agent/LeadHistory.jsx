@@ -279,20 +279,7 @@ const donutChartConfig = {
         </div>
 
         {/* Payment Status */}
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            <CreditCard size={14} className="text-emerald-400" /> Payment
-          </span>
-          {lead.paymentStatus === "Settled" ? (
-            <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-1 rounded-md">
-              <CheckCircle2 size={12} /> Approved
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-[11px] font-bold text-amber-500 uppercase tracking-wider bg-amber-50 px-2 py-1 rounded-md">
-              <Clock size={12} /> Not Approved
-            </span>
-          )}
-        </div>
+      
 
         {/* Credit Status */}
         <div className="flex items-center justify-between">

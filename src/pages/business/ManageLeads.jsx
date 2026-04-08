@@ -245,7 +245,7 @@ const ManageLeads = () => {
 
                 {/* Payment */}
                 <div className="flex justify-between items-center gap-2">
-                  <span className="text-slate-400 font-medium shrink-0">Payment</span>
+                  <span className="text-slate-400 font-medium shrink-0">Setttlement Status</span>
                   <div className="flex items-center gap-1.5">
                     {lead.paymentStatus === "Settled" ? (
                       <>
