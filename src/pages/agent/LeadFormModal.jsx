@@ -169,7 +169,7 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
                             type="tel" name="client_phone" required
                             value={formData.client_phone} onChange={handleInputChange}
                             className="w-full pl-11 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold focus:border-[#007ACC]"
-                            placeholder="12345 67895"
+                            placeholder="98475 12028"
                           />
                         </div>
                       </div>

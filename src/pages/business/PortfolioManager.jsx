@@ -17,7 +17,12 @@ import {
   X,
   UploadCloud,
   Image,
-  Upload
+  Upload,
+  Instagram,
+  Facebook,
+  Linkedin,
+  Share2,
+  AlertTriangle
 } from "lucide-react";
 
 import frappeApi from "../../api/frappeApi";
@@ -35,7 +40,11 @@ const EMPTY_UNIT = {
   description: "",
   services: [],
   gallery: [],
-  logo: ""   // ← added
+  logo: "",
+  // Dummy fields for social media (Ready for API update)
+  instagram: "",
+  facebook: "",
+  linkedin: ""
 };
 
 const resolveUrl = (url) => {
@@ -77,7 +86,11 @@ const PortfolioManager = () => {
           description: d.description ?? "",
           services: d.services ?? [],
           gallery: d.gallery ?? [],
-          logo: d.logo ?? ""   // ← now mapped from API response
+          logo: d.logo ?? "",
+          // Map API response later, falling back to empty string for now
+          instagram: d.instagram ?? "",
+          facebook: d.facebook ?? "",
+          linkedin: d.linkedin ?? ""
         });
       } catch (e) {
         console.error("Failed to load business unit", e);
@@ -197,54 +210,64 @@ const PortfolioManager = () => {
 
       {/* HEADER */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col md:flex-row justify-between md:items-center gap-4 shadow-sm">
-        <div className="flex items-center gap-4">
+      <div className="flex items-start sm:items-center gap-4">
 
-          {/* LOGO UPLOAD BUTTON */}
-          <div
-            onClick={() => logoInputRef.current.click()}
-            className="relative h-14 w-14 bg-blue-50 border border-blue-100 flex items-center justify-center rounded-xl overflow-hidden cursor-pointer group shadow-sm shrink-0"
-          >
-            {logoUploading ? (
-              <Loader2 size={20} className="text-blue-500 animate-spin" />
-            ) : unit.logo ? (
-              <img
-                src={resolveUrl(unit.logo)}
-                alt="Business Logo"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <Upload size={20} className="text-slate-400" />
-            )}
+  {/* LOGO UPLOAD BUTTON */}
+  <div
+    onClick={() => logoInputRef.current.click()}
+    className="relative h-14 w-14 bg-blue-50 border border-blue-100 flex items-center justify-center rounded-xl overflow-hidden cursor-pointer group shadow-sm shrink-0"
+  >
+    {logoUploading ? (
+      <Loader2 size={20} className="text-blue-500 animate-spin" />
+    ) : unit.logo ? (
+      <img
+        src={resolveUrl(unit.logo)}
+        alt="Business Logo"
+        className="w-full h-full object-cover"
+      />
+    ) : (
+      <Upload size={20} className="text-slate-400" />
+    )}
 
-            {/* Hover overlay — always shown so logo is always re-uploadable */}
-            {!logoUploading && (
-              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Upload size={16} className="text-white" />
-                <span className="text-white text-[8px] font-bold mt-1 tracking-wider">
-                  {unit.logo ? "CHANGE" : "UPLOAD"}
-                </span>
-              </div>
-            )}
+    {/* Hover overlay — always shown so logo is always re-uploadable */}
+    {!logoUploading && (
+      <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <Upload size={16} className="text-white" />
+        <span className="text-white text-[8px] font-bold mt-1 tracking-wider">
+          {unit.logo ? "CHANGE" : "UPLOAD"}
+        </span>
+      </div>
+    )}
 
-            <input
-              type="file"
-              ref={logoInputRef}
-              hidden
-              accept="image/*"
-              onChange={handleLogoUpload}
-            />
-          </div>
+    <input
+      type="file"
+      ref={logoInputRef}
+      hidden
+      accept="image/*"
+      onChange={handleLogoUpload}
+    />
+  </div>
 
-          <div>
-            <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">
-              {unit.name || "Untitled Unit"}
-            </h2>
-            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              Business Profile
-            </p>
-          </div>
-        </div>
+  <div className="flex flex-col gap-2">
+    <div>
+      <h2 className="text-xl font-black uppercase tracking-tight text-slate-900 leading-none mb-1">
+        {unit.name || "Untitled Unit"}
+      </h2>
+      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+        Business Profile
+      </p>
+    </div>
 
+    {/* PROPER ALERT BOX */}
+    <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg shadow-sm w-fit">
+      <AlertTriangle size={12} className="text-amber-500 animate-pulse shrink-0" />
+      <span className="text-[9px] font-black uppercase tracking-widest text-amber-700">
+        Please remember to save any changes made
+      </span>
+    </div>
+  </div>
+  
+</div>
         <div className="flex gap-3">
           <button
             onClick={saveProfile}
@@ -316,6 +339,35 @@ const PortfolioManager = () => {
                 value={unit.address}
                 onChange={v => setUnit({ ...unit, address: v })}
               />
+            </Section>
+          </div>
+
+          {/* SOCIAL MEDIA LINKS (NEW) */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <Section title="Social Media Links" icon={<Share2 size={14} />}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Instagram URL"
+                  value={unit.instagram}
+                  icon={<Instagram size={14} />}
+                  onChange={v => setUnit({ ...unit, instagram: v })}
+                  placeholder="https://instagram.com/..."
+                />
+                <Input
+                  label="Facebook URL"
+                  value={unit.facebook}
+                  icon={<Facebook size={14} />}
+                  onChange={v => setUnit({ ...unit, facebook: v })}
+                  placeholder="https://facebook.com/..."
+                />
+                <Input
+                  label="LinkedIn URL"
+                  value={unit.linkedin}
+                  icon={<Linkedin size={14} />}
+                  onChange={v => setUnit({ ...unit, linkedin: v })}
+                  placeholder="https://linkedin.com/in/..."
+                />
+              </div>
             </Section>
           </div>
 

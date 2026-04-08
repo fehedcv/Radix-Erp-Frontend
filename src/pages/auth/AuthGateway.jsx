@@ -217,7 +217,7 @@ Submit referrals, monitor approvals, and withdraw your commissions through our a
                     <form onSubmit={handleLogin} className="space-y-3">
                       <div className="space-y-1">
                         <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Email Address</label>
-                        <AuthInput name="email" type="email" placeholder="name@company.com" required />
+                        <AuthInput name="email" type="text" placeholder="name@company.com" required />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Password</label>

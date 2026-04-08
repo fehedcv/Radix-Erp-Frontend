@@ -258,7 +258,7 @@ const ProfilePage = () => {
               <ProfileField isEditing={isEditing} label="Full Legal Name" value={profile.name} onChange={(v) => setProfile({...profile, name: v})} icon={<User size={16} />} />
               <ProfileField isEditing={isEditing} label="Direct Contact" value={profile.phone} onChange={(v) => setProfile({...profile, phone: v})} icon={<Phone size={16} />} />
               <div className="md:col-span-2">
-                <ProfileField isEditing={false} label="Primary Network Email" value={profile.email} onChange={(v) => setProfile({...profile, email: v})} icon={<Mail size={16} />} />
+                <ProfileField  isEditing={false} label="Primary Network Email (cannot edit)" value={profile.email} onChange={(v) => setProfile({...profile, email: v})} icon={<Mail size={16} />} />
               </div>
             </div>
           </div>

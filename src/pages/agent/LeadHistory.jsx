@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, Filter, Calendar, Building2,
-  ChevronRight, BarChart3, PieChart,
+  CreditCard,CheckCircle2,Wallet,Clock, BarChart3, PieChart,
   Activity,User,ArrowRight,AlertCircle
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
@@ -225,78 +225,103 @@ const donutChartConfig = {
       {/* LIST */}
       {/* Grid Container instead of a single background box */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredLeads.length ? filteredLeads.map((lead, i) => (
-          <motion.div
-            key={lead.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col hover:border-blue-300 hover:shadow-md transition-all group"
-          >
-            {/* Top Row: Icon & Status */}
-            <div className="flex justify-between items-start mb-5">
-              <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-slate-500">
-                <User size={24} />
-              </div>
-              
-            </div>
-
-            {/* Middle Row: Content */}
-            <div className="flex-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                Lead ID: {lead.id}
-              </p>
-              
-               <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-4">
-                {lead.clientName}
-              </h3>
-              
-              <div className="space-y-2">
-                <p className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                  <Building2 size={14} className="text-slate-400" />Business <ArrowRight size={12} /> {lead.businessUnit}
-                </p>
-                <p className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                  <Calendar size={14} className="text-slate-400" />Lead Date <ArrowRight size={12} /> {lead.date}
-                </p>
-              </div>
-            </div>
-
-            {/* Bottom Row: Action Link (Matches the "View Portfolio" style in the image) */}
-            <div className="mt-6 pt-4 border-t text-center border-slate-100 flex items-center justify-between text-slate-400 group-hover:text-blue-600 transition-colors cursor-pointer">
-              Lead Status <ArrowRight size={12} /><span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md ${getStatusStyle(normalizeStatus(lead.status))}`}>
-                 {normalizeStatus(lead.status)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-        <span className="text-slate-400">Payment</span>
-
-        {lead.paymentStatus === "Settled" ? (
-          <span className="text-green-600 font-medium">Approved</span>
-        ) : (
-          <span className="text-amber-500 font-medium">Not Approved</span>
-        )}
+  {filteredLeads.length ? filteredLeads.map((lead, i) => (
+    <motion.div
+      key={lead.id}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: i * 0.05 }}
+      className="bg-white rounded-xl border border-slate-200 p-5 sm:p-6 flex flex-col hover:border-blue-300 hover:shadow-lg transition-all duration-300 group"
+    >
+      {/* --- Top Section: ID, Name & Icon --- */}
+      <div className="flex justify-between items-start mb-5 gap-4">
+        <div className="flex-1 overflow-hidden">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+            Lead ID: {lead.id}
+          </p>
+          <h3 className="text-lg sm:text-xl font-black text-slate-900 uppercase tracking-tight truncate">
+            {lead.clientName}
+          </h3>
+        </div>
+        <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 shrink-0 group-hover:bg-blue-50 group-hover:text-blue-500 group-hover:border-blue-100 transition-colors">
+          <User size={22} strokeWidth={2.5} />
+        </div>
       </div>
-       {/* ✅ DUMMY Credit Status */}
-      <div className="flex justify-between items-center">
-        <span className="text-slate-400">Credit</span>
 
-                 {lead.creditStatus === "Credited" ? (
-          <span className="text-green-600 font-medium">Credited</span>
-        ) : (
-          <span className="text-amber-500 font-medium">Not Credited</span>
-        )}
+      {/* --- Middle Section: Lead Details --- */}
+      <div className="flex-1 space-y-3 mb-6">
+        <div className="flex items-center gap-2.5 text-xs font-medium text-slate-500 bg-slate-50/50 p-2 rounded-lg border border-slate-50">
+          <Building2 size={14} className="text-slate-400 shrink-0" />
+          <span className="text-slate-400">Business</span> 
+          <ArrowRight size={12} className="text-slate-300 shrink-0" /> 
+          <span className="text-slate-700 truncate">{lead.businessUnit}</span>
+        </div>
+        
+        <div className="flex items-center gap-2.5 text-xs font-medium text-slate-500 bg-slate-50/50 p-2 rounded-lg border border-slate-50">
+          <Calendar size={14} className="text-slate-400 shrink-0" />
+          <span className="text-slate-400">Lead Date</span> 
+          <ArrowRight size={12} className="text-slate-300 shrink-0" /> 
+          <span className="text-slate-700">{lead.date}</span>
+        </div>
       </div>
-          </motion.div>
-        )) : (
-          /* Empty State - spans full width of the grid */
-          <div className="col-span-full py-24 text-center bg-white border border-slate-200 rounded-xl">
-            <Activity size={32} className="mx-auto text-slate-300 mb-4" />
-            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">
-              No records found
-            </p>
-          </div>
-        )}
+
+      {/* --- Bottom Section: Statuses & Tags --- */}
+      <div className="mt-auto pt-5 border-t border-slate-100 space-y-3.5">
+        
+        {/* Lead Status */}
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <Activity size={14} className="text-blue-400" /> Lead Status
+          </span>
+          <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md ${getStatusStyle(normalizeStatus(lead.status))}`}>
+            {normalizeStatus(lead.status)}
+          </span>
+        </div>
+
+        {/* Payment Status */}
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <CreditCard size={14} className="text-emerald-400" /> Payment
+          </span>
+          {lead.paymentStatus === "Settled" ? (
+            <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-1 rounded-md">
+              <CheckCircle2 size={12} /> Approved
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-[11px] font-bold text-amber-500 uppercase tracking-wider bg-amber-50 px-2 py-1 rounded-md">
+              <Clock size={12} /> Not Approved
+            </span>
+          )}
+        </div>
+
+        {/* Credit Status */}
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <Wallet size={14} className="text-indigo-400" /> Credit
+          </span>
+          {lead.creditStatus === "Credited" ? (
+            <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-1 rounded-md">
+              <CheckCircle2 size={12} /> Credited
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-[11px] font-bold text-amber-500 uppercase tracking-wider bg-amber-50 px-2 py-1 rounded-md">
+              <Clock size={12} /> Not Credited
+            </span>
+          )}
+        </div>
+
       </div>
+    </motion.div>
+  )) : (
+    /* --- Empty State --- */
+    <div className="col-span-full py-24 text-center bg-white border border-slate-200 rounded-xl shadow-sm">
+      <Activity size={32} className="mx-auto text-slate-300 mb-4" />
+      <p className="text-slate-400 font-bold uppercase text-[11px] tracking-widest">
+        No records found
+      </p>
+    </div>
+  )}
+</div>
     </div>
   );
 };

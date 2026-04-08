@@ -4,9 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   CheckCircle2, Calendar, Briefcase, FileText, 
   ShieldCheck, Inbox, Search, XCircle, FilterX, 
-  User,ArrowRight,
-  Loader2,
-  Activity
+  User, ArrowRight, Loader2, Activity, CreditCard, Wallet, Clock
 } from 'lucide-react';
 
 import frappeApi from '../../api/frappeApi';
@@ -23,7 +21,7 @@ const STATUSES = [
 const ManageLeads = () => {
   const navigate = useNavigate();
 
-  // --- STATE MANAGEMENT (Kept from your original code) ---
+  // --- STATE MANAGEMENT ---
   const [leads, setLeads] = useState([]);
   const [summary, setSummary] = useState({});
   const [statusFilter, setStatusFilter] = useState('All');
@@ -39,11 +37,9 @@ const ManageLeads = () => {
         {
           params: {
             status: statusFilter,
-            search: searchQuery || undefined
+            // Removed 'search' from here. The backend only handles status now.
           }
-        },
-        
-        
+        }
       );
       setLeads(res.data.message.leads);
       setSummary(res.data.message.summary);
@@ -54,35 +50,25 @@ const ManageLeads = () => {
     }
   };
 
+  // Only refetch when the status filter changes, NO delay needed anymore.
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      fetchLeads();
-    }, 500);
-
-    // 2. Clear the timer if the user types another letter before 500ms is up
-    return () => clearTimeout(delayDebounceFn);
-  }, [statusFilter, searchQuery]);
-
-  const updateStatus = async (leadId, status) => {
-    await frappeApi.post(
-      '/method/business_chain.api.leads.update_lead_status',
-      { lead_id: leadId, status }
-    );
     fetchLeads();
-  };
+  }, [statusFilter]);
+
+  // --- FRONTEND SEARCH FILTER ---
+  // This runs instantly every time you type in the search box
+  const filteredLeads = leads.filter((lead) => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    const clientName = lead.customer_name ? lead.customer_name.toLowerCase() : "";
+    const leadId = lead.id ? lead.id.toLowerCase() : "";
+    const agentId = lead.agentId ? lead.agentId.toLowerCase() : "";
+
+    return clientName.includes(query) || leadId.includes(query) || agentId.includes(query);
+  });
 
   // --- UI HELPERS ---
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Pending': return 'bg-amber-400';
-      case 'Verified': return 'bg-blue-500';
-      case 'In Progress': return 'bg-indigo-500';
-      case 'Completed': return 'bg-emerald-500';
-      case 'Rejected': return 'bg-rose-400';
-      default: return 'bg-slate-300';
-    }
-  };
-
   const getStatusBadgeStyles = (status) => {
     switch (status) {
       case 'Pending': return 'bg-amber-50 text-amber-600 border-amber-100';
@@ -105,7 +91,6 @@ const ManageLeads = () => {
            </div>
            <div>
               <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-none">Leads Details</h2>
-             
            </div>
         </div>
 
@@ -126,7 +111,7 @@ const ManageLeads = () => {
               type="text" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by customer name or ID..." 
+              placeholder="Search by client name, Lead ID, or Agent ID..." 
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold focus:border-[#007ACC] transition-all shadow-sm"
             />
             {searchQuery && (
@@ -155,18 +140,16 @@ const ManageLeads = () => {
       </div>
 
       {/* 3. REQUEST LISTING */}
-    {/* 3. REQUEST LISTING */}
-      {/* Changed to grid-cols-2 for mobile, and scaling up to 4 on large screens */}
-     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
         <AnimatePresence mode="popLayout">
 
-          {/* --- NEW LOADING SPINNER STATE --- */}
+          {/* --- LOADING SPINNER STATE --- */}
           {loading && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="col-span-full flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-lg"
+              className="col-span-full flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-xl shadow-sm"
             >
               <Loader2 className="h-10 w-10 text-[#007ACC] animate-spin mb-4" />
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] animate-pulse">
@@ -175,15 +158,15 @@ const ManageLeads = () => {
             </motion.div>
           )}
 
-          {/* --- EMPTY STATE (Only shows if NOT loading and NO leads) --- */}
-          {!loading && leads.length === 0 && (
+          {/* --- EMPTY STATE (Checks filteredLeads instead of leads) --- */}
+          {!loading && filteredLeads.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="col-span-full text-center py-20 bg-white border border-slate-200 rounded-lg"
+              className="col-span-full flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-xl shadow-sm"
             >
-              <FilterX size={28} className="text-slate-300 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-slate-500">
+              <FilterX size={32} className="text-slate-300 mb-3" />
+              <h3 className="text-sm font-semibold text-slate-600">
                 No Leads Found
               </h3>
               <p className="text-xs text-slate-400 mt-1">
@@ -192,168 +175,148 @@ const ManageLeads = () => {
             </motion.div>
           )}
 
-          {/* --- LEADS CARDS --- */}
-          {!loading && leads.map((lead) => (
+          {/* --- LEADS CARDS (Maps over filteredLeads) --- */}
+          {!loading && filteredLeads.map((lead) => (
             
             <motion.div
               layout
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
               key={lead.id}
-              className="bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition flex flex-col"
+              className="bg-white rounded-xl border border-slate-200 hover:border-blue-200 hover:shadow-md transition-all duration-300 flex flex-col overflow-hidden"
             >
 
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-100">
-          <span
-            className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${getStatusBadgeStyles(lead.status)}`}
-          >
-            {lead.status}
-          </span>
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 bg-slate-50/50 border-b border-slate-100">
+                <span
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeStyles(lead.status)}`}
+                >
+                  {lead.status}
+                </span>
+                <User size={16} className="text-slate-400" />
+              </div>
 
-          <User size={16} className="text-slate-400" />
-        </div>
+              {/* Body */}
+              <div className="p-4 flex flex-col gap-3.5 text-xs flex-1">
 
-        {/* Body */}
-        <div className="p-4 flex flex-col gap-3 text-xs">
+                {/* Client */}
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-slate-400 font-medium shrink-0">Client</span>
+                  <span className="text-slate-800 font-semibold text-right truncate">
+                    {lead.customer_name || "Unknown"}
+                  </span>
+                </div>
 
-          {/* Client */}
-          <div className="flex justify-between gap-2">
-            <span className="text-slate-400 font-medium">Client</span>
-            <span className="text-slate-700 font-medium text-right truncate">
-              {lead.customer_name || "Unknown"}
-            </span>
-          </div>
+                {/* Date */}
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-slate-400 font-medium shrink-0">Date</span>
+                  <span className="text-slate-700 text-right truncate">
+                    {lead.date 
+                      ? new Date(lead.date).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric' 
+                        }) 
+                      : 'N/A'
+                    }
+                  </span>
+                </div>
 
-          {/* Date */}
-          <div className="flex justify-between gap-2">
-  <span className="text-slate-400 font-medium">Date</span>
-  <span className="text-slate-700 text-right truncate">
-    {lead.date 
-      ? new Date(lead.date).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
-        }) 
-      : 'N/A'
-    }
-  </span>
-</div>
+                {/* Service */}
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-slate-400 font-medium shrink-0">Service</span>
+                  <span className="text-slate-700 text-right truncate">
+                    {lead.service}
+                  </span>
+                </div>
 
-          {/* Service */}
-          <div className="flex justify-between gap-2">
-            <span className="text-slate-400 font-medium">Service</span>
-            <span className="text-slate-700 text-right truncate">
-              {lead.service}
-            </span>
-          </div>
+                {/* Agent */}
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-slate-400 font-medium shrink-0">Agent</span>
+                  <span className="text-slate-700 text-right truncate">
+                    {lead.agentId || "Unassigned"}
+                  </span>
+                </div> 
 
-          {/* Agent */}
-          <div className="flex justify-between gap-2">
-            <span className="text-slate-400 font-medium">Agent</span>
-            <span className="text-slate-700 text-right truncate">
-              {lead.agentId || "Unassigned"}
-            </span>
-          </div> 
+                {/* Divider before statuses */}
+                <div className="h-px w-full bg-slate-100 my-1"></div>
 
-          {/* Payment */}
-         <div className="flex justify-between items-center gap-2 pt-1">
-  <span className="text-slate-400 font-medium">Payment</span>
-  <div className="flex items-center gap-1.5">
+                {/* Payment */}
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-slate-400 font-medium shrink-0">Payment</span>
+                  <div className="flex items-center gap-1.5">
+                    {lead.paymentStatus === "Settled" ? (
+                      <>
+                        <CheckCircle2 size={14} className="text-emerald-500" />
+                        <span className="text-emerald-600 font-medium">Settled</span>
+                      </>
+                    ) : lead.paymentStatus === "Pending" ? (
+                      <>
+                        <Activity size={14} className="text-amber-500" />
+                        <span className="text-amber-600 font-medium">Pending</span>
+                      </>
+                    ) : (
+                      <>
+                        <Activity size={14} className="text-slate-400" />
+                        <span className="text-slate-500 font-medium">Not Settled</span>
+                      </>
+                    )}
+                  </div>
+                </div>
 
-    {lead.paymentStatus === "Settled" ? (
-      <>
-        <CheckCircle2 size={14} className="text-green-600" />
-        <span className="text-green-600 font-medium">
-          Settled
-        </span>
-      </>
-    ) : lead.paymentStatus === "Pending" ? (
-      <>
-        <Activity size={14} className="text-amber-500" />
-        <span className="text-amber-500 font-medium">
-          Pending
-        </span>
-      </>
-    ) : (
-      <>
-        <Activity size={14} className="text-slate-400" />
-        <span className="text-slate-400 font-medium">
-          Not Settled
-        </span>
-      </>
-    )}
+                {/* Credit */}
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-slate-400 font-medium shrink-0">Credit</span>
+                  <div className="flex items-center gap-1.5">
+                    {lead.creditStatus === "Credited" ? (
+                      <>
+                        <CheckCircle2 size={14} className="text-emerald-500" />
+                        <span className="text-emerald-600 font-medium">Credited</span>
+                      </>
+                    ) : lead.paymentStatus === "Pending" ? (
+                      <>
+                        <Activity size={14} className="text-amber-500" />
+                        <span className="text-amber-600 font-medium">Pending</span>
+                      </>
+                    ) : (
+                      <>
+                        <Activity size={14} className="text-slate-400" />
+                        <span className="text-slate-500 font-medium">Not Credited</span>
+                      </>
+                    )}
+                  </div>
+                </div>
 
-  </div>
-</div>
-{/* Credit */}
-<div className="flex justify-between items-center gap-2 pt-1">
-  <span className="text-slate-400 font-medium">Credit</span>
+              </div>
 
-  {lead.creditStatus === "Credited" ? (
-      <>
-        <CheckCircle2 size={14} className="text-green-600" />
-        <span className="text-green-600 font-medium">
-          Credited
-        </span>
-      </>
-    ) : lead.paymentStatus === "Pending" ? (
-      <>
-        <Activity size={14} className="text-amber-500" />
-        <span className="text-amber-500 font-medium">
-          Pending
-        </span>
-      </>
-    ) : (
-      <>
-        <Activity size={14} className="text-slate-400" />
-        <span className="text-slate-400 font-medium">
-          Not Credited
-        </span>
-      </>
-    )}
-</div>
+              {/* Footer */}
+              <div className="p-3 border-t border-slate-100 bg-slate-50/50 mt-auto">
+                <button
+                  onClick={() => navigate(`/business/leads/${lead.id}`)}
+                  className="w-full py-2.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:border-[#007ACC] hover:text-[#007ACC] hover:shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
+                >
+                  Details
+                  <ArrowRight size={14} />
+                </button>
+              </div>
 
-        </div>
+            </motion.div>
+          ))}
 
-        {/* Footer */}
-        <div className="p-3 border-t border-slate-100">
-          <button
-            onClick={() => navigate(`/business/leads/${lead.id}`)}
-            className="w-full py-2 text-xs font-medium text-slate-600 border border-slate-300 rounded-md hover:bg-slate-50 transition flex items-center justify-center gap-2"
-          >
-            Details
-            <ArrowRight size={14} />
-          </button>
-        </div>
-
-      </motion.div>
-    ))}
-
-  </AnimatePresence>
-</div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
 
 // --- HELPER COMPONENTS ---
-
 const QuickStat = ({ label, count, color }) => (
   <div className={`px-4 py-2 border border-slate-100 rounded-xl text-center min-w-[70px] ${color}`}>
     <p className="text-[7px] font-black uppercase opacity-60 leading-none mb-1">{label}</p>
     <p className="text-sm font-black leading-none">{count}</p>
   </div>
-);
-
-const ActionButton = ({ onClick, icon, label, color }) => (
-  <button 
-    onClick={(e) => { e.stopPropagation(); onClick(); }}
-    className={`flex-1 lg:flex-none px-5 py-2.5 text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#0F172A] rounded-lg transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95 ${color}`}
-  >
-    {icon} {label}
-  </button>
 );
 
 export default ManageLeads;

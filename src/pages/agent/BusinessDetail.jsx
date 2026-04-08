@@ -5,7 +5,8 @@ import {
   MapPin, Star, Phone, Globe,
   CheckCircle2, Briefcase, ExternalLink,
   Info, Mail, Zap, ChevronRight, MessageCircle,
-  Loader2, X, User, Image as ImageIcon
+  Loader2, X, User, ChevronDown, Image as ImageIcon,
+  Instagram, Facebook, Linkedin // <-- Added Social Icons here
 } from 'lucide-react';
 
 import frappeApi from '../../api/frappeApi';
@@ -313,6 +314,34 @@ const BusinessDetail = () => {
               )}
             </div>
 
+            {/* --- NEW: HARDCODED SOCIAL MEDIA LINKS --- */}
+            <div className="mt-6 pt-5 border-t border-slate-100 flex justify-center gap-4">
+              <a 
+                href="https://instagram.com" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="w-10 h-10 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center text-pink-600 hover:bg-pink-500 hover:text-white hover:scale-110 transition-all shadow-sm"
+              >
+                <Instagram size={18} />
+              </a>
+              <a 
+                href="https://facebook.com" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white hover:scale-110 transition-all shadow-sm"
+              >
+                <Facebook size={18} />
+              </a>
+              <a 
+                href="https://linkedin.com" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="w-10 h-10 rounded-full bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 hover:bg-sky-600 hover:text-white hover:scale-110 transition-all shadow-sm"
+              >
+                <Linkedin size={18} />
+              </a>
+            </div>
+
             <div className="mt-6 pt-5 border-t border-slate-100">
               <p className="text-xs text-slate-500 text-center">
                 Need help? Contact +91 94009 87747.
@@ -325,119 +354,141 @@ const BusinessDetail = () => {
       {/* 3. REFERRAL FORM MODAL */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6">
             <motion.div
-              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white rounded-lg w-full max-w-md border border-slate-200 shadow-xl overflow-hidden"
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+              className="bg-white rounded-[1.5rem] w-full max-w-md border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                <h3 className="text-base font-semibold text-slate-900">
-                  New Referral Submission
+              {/* --- Header --- */}
+              <div className="bg-slate-50/50 px-6 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                  New Referral
                 </h3>
-                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
-                  <X size={20} />
+                <button 
+                  onClick={() => setShowModal(false)} 
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all active:scale-95"
+                >
+                  <X size={16} strokeWidth={2.5} />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmitReferral} className="p-6 space-y-5">
+              {/* --- Form --- */}
+              <form onSubmit={handleSubmitReferral} className="p-6 space-y-4 overflow-y-auto scrollbar-hide">
 
                 {/* Client Name */}
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Client Name</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block ml-1">
+                    Client Name *
+                  </label>
                   <div className="relative">
-                    <User size={16} className="absolute left-3.5 top-2.5 text-slate-400" />
+                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       required
                       name="client_name"
                       value={formData.client_name}
                       onChange={handleInputChange}
-                      className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
-                      placeholder="Enter client name"
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl text-sm text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
+                      placeholder="e.g. John Doe"
                     />
                   </div>
                 </div>
 
                 {/* Client Phone */}
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Client Phone</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block ml-1">
+                    Client Phone *
+                  </label>
                   <div className="relative">
-                    <Phone size={16} className="absolute left-3.5 top-2.5 text-slate-400" />
+                    <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       required
+                      type="tel"
                       name="client_phone"
                       value={formData.client_phone}
                       onChange={handleInputChange}
-                      className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
-                      placeholder="Enter phone number"
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl text-sm text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
+                      placeholder="+91 98765 43210"
                     />
                   </div>
                 </div>
 
                 {/* Customer Location */}
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Customer Location</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block ml-1">
+                    Customer Location
+                  </label>
                   <div className="relative">
-                    <MapPin size={16} className="absolute left-3.5 top-2.5 text-slate-400" />
+                    <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       name="customer_location"
                       value={formData.customer_location}
                       onChange={handleInputChange}
-                      className="w-full pl-10 pr-4 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
-                      placeholder="Enter customer location"
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl text-sm text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
+                      placeholder="City or Area"
                     />
                   </div>
                 </div>
 
-                {/* Services */}
+                {/* Services Provided */}
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Services Provided</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block ml-1">
+                    Services Required *
+                  </label>
                   <div className="relative">
                     <select
                       required
                       name="service"
                       value={formData.service}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all appearance-none shadow-sm"
+                      className="w-full pl-4 pr-10 py-3 bg-slate-50/50 border border-slate-200 rounded-xl text-sm text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all appearance-none cursor-pointer"
                     >
-                      <option value="" disabled>Select a service</option>
+                      <option value="" disabled className="text-slate-400">Select a service</option>
                       {unit.services && unit.services.map((s, i) => (
                         <option key={i} value={s.name || s}>{s.name || s}</option>
                       ))}
                     </select>
-                    <ChevronRight size={16} className="absolute right-3.5 top-2.5 text-slate-400 rotate-90 pointer-events-none" />
+                    {/* Note: I swapped ChevronRight for ChevronDown for the select dropdown icon */}
+                    <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   </div>
                 </div>
 
                 {/* Notes */}
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Notes (Optional)</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block ml-1">
+                    Notes (Optional)
+                  </label>
                   <textarea
                     name="notes"
                     value={formData.notes}
                     onChange={handleInputChange}
                     rows={3}
-                    className="w-full px-4 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all resize-none shadow-sm"
-                    placeholder="Any specific details..."
+                    className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl text-sm text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all resize-none"
+                    placeholder="Any specific details or requirements..."
                   />
                 </div>
 
-                <div className="pt-3 flex gap-3">
+                {/* --- Action Buttons --- */}
+                <div className="pt-4 flex gap-3">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="flex-1 py-2.5 bg-white border border-slate-300 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+                    className="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-colors active:scale-95"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 py-2.5 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="flex-1 py-3.5 bg-[#007ACC] text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-[#005fb8] transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {submitting ? <Loader2 size={16} className="animate-spin" /> : <>Submit Referral <ChevronRight size={14} /></>}
+                    {submitting ? (
+                      <><Loader2 size={16} className="animate-spin" /> Processing</>
+                    ) : (
+                      <>Submit <ChevronRight size={16} /></>
+                    )}
                   </button>
                 </div>
 

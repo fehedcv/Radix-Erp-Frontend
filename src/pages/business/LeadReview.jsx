@@ -8,7 +8,8 @@ import {
   ShieldCheck, Info, Activity,
   MessageSquare, ClipboardCheck,
   Play, Check, Briefcase, Layers,
-  IndianRupee, ArrowRight, Wallet, X
+  IndianRupee, ArrowRight, Wallet, X,
+  CreditCard
 } from 'lucide-react';
 
 import frappeApi from '../../api/frappeApi';
@@ -450,12 +451,24 @@ const LeadReview = () => {
   <div className="flex justify-between items-center">
     <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
       {/* Show the percentage in brackets (e.g., 10%) */}
-      Commission ({lead.commision || 0}%)
+      Agent Credit
     </span>
     <span className="text-sm font-black text-slate-800 flex items-center gap-1">
-      <IndianRupee size={12} />
+      <CreditCard size={12} />
       {/* Show the actual money amount saved during settlement */}
       {lead.commission}
+    </span>
+  </div>
+   <div className="flex justify-between items-center">
+    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
+      {/* Show the percentage in brackets (e.g., 10%) */}
+      System Commission ({lead.commision}%)
+    </span>
+    <span className="text-sm font-black text-slate-800 flex items-center gap-1">
+      
+      {/* Show the actual money amount saved during settlement */}
+      ₹{(parseFloat(lead.totalSaleAmount || 0) * (parseFloat(lead.commision || 0) / 100)).toLocaleString()}
+      
     </span>
   </div>
 
@@ -464,8 +477,8 @@ const LeadReview = () => {
       Total Sale Amount
     </span>
     <span className="text-sm font-black text-slate-800 flex items-center gap-1">
-      <IndianRupee size={12} />
-      {lead.totalSaleAmount}
+      
+      ₹{lead.totalSaleAmount}
     </span>
   </div>
 
