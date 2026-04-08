@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Users, Building2, Zap, TrendingUp, 
   ShieldCheck, ArrowRight, BarChart3, 
-  Plus, UserPlus, Clock, Database, Sparkles, Activity, ChevronRight
+  Plus, UserPlus, Clock, Database, Sparkles, Activity, ChevronRight,
+  UserCog,
+  BriefcaseBusinessIcon,
+  Building2Icon
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 
@@ -178,7 +181,7 @@ const AdminOverview = () => {
   const dashboardAgents = dashboard.allAgents && dashboard.allAgents.length ? dashboard.allAgents.slice(0, 4) : latestAgents;
 
   return (
-    <div className="font-['Plus_Jakarta_Sans',sans-serif] space-y-6 max-w-[1600px] mx-auto">
+    <div className="font-[sans-serif] space-y-6 max-w-[1600px] mx-auto">
       
       {/* 1. COMPACT HEADER */}
       <motion.div 
@@ -188,13 +191,11 @@ const AdminOverview = () => {
       >
         <div className="flex items-center gap-4">
            <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center text-[#007ACC] border border-blue-100 shrink-0">
-              <Sparkles size={24} />
+              <UserCog size={24} />
            </div>
            <div>
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Management Center</h2>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                <ShieldCheck size={12} className="text-emerald-500" /> Active System Pulse
-              </p>
+              <h2 className="text-[20px] font-black text-slate-900 uppercase tracking leading-none">System Analaytics</h2>
+            
            </div>
         </div>
         <button 
@@ -278,7 +279,7 @@ const AdminOverview = () => {
         <div className="lg:col-span-4 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col">
           <div className="px-6 py-4 border-b border-slate-50 bg-slate-50/50">
             <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-              <Plus size={16} className="text-[#007ACC]" /> Key Partners
+              <Building2Icon size={16} className="text-[#007ACC]" /> Key Partners
             </h4>
           </div>
           <div className="p-3 space-y-2 flex-1">

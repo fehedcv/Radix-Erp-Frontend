@@ -5,7 +5,11 @@ import {
   MapPin, User, BarChart3, CheckCircle2,
   Info, TrendingUp, LayoutGrid, Package,
   Activity, Loader2, AlertCircle, Globe, Image,
-  Pencil, Save, XCircle
+  Pencil, Save, XCircle,
+  RefreshCcw,
+  LucideRefreshCcw,
+  Rotate3D,
+  RotateCcw
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import frappeApi from '../../api/frappeApi';
@@ -236,7 +240,7 @@ const BusinessHub = () => {
         </div>
         <div className="flex gap-3">
           <button onClick={fetchUnits} className="p-3 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all shadow-sm" title="Refresh">
-            <BarChart3 size={18} />
+            <RotateCcw size={18} />
           </button>
           <button
             onClick={() => setShowAddModal(true)}

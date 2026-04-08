@@ -3,7 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Filter, Download, User, Building2, Calendar, 
   X, Activity, Phone, MapPin, 
-  Sparkles, BarChart3, LayoutGrid, Globe, Info, Briefcase, Mail, ChevronRight, CheckCircle, FileText, AlertCircle, Loader2
+  Sparkles, BarChart3, LayoutGrid, Globe, Info, Briefcase, Mail, ChevronRight, CheckCircle, FileText, AlertCircle, Loader2,
+  TrainTrack,
+  AlignVerticalJustifyStartIcon,
+  VenusAndMarsIcon,
+  TrendingUp
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import frappeApi from '../../api/frappeApi';
@@ -31,6 +35,9 @@ const MasterLeadTracker = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedLead, setSelectedLead] = useState(null);
   const [showAgentContact, setShowAgentContact] = useState(false);
+  const [unitFilter, setUnitFilter] = useState("All");
+const [agentFilter, setAgentFilter] = useState("All");
+const [customerSearch, setCustomerSearch] = useState("");
 
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -89,19 +96,28 @@ const MasterLeadTracker = () => {
   useEffect(() => {
     setShowAgentContact(false);
   }, [selectedLead]);
-
-  const filteredLeads = useMemo(() => {
+const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
-      const s = searchTerm.toLowerCase();
-      const matchesSearch =
-        lead.clientName.toLowerCase().includes(s) ||
-        (lead.displayId || lead.id).toLowerCase().includes(s) ||
-        lead.agentName.toLowerCase().includes(s) ||
-        lead.businessUnit.toLowerCase().includes(s);
+      // 1. Status Filter
       const matchesStatus = statusFilter === 'All' || lead.status === statusFilter;
-      return matchesSearch && matchesStatus;
+
+      // 2. Business Unit Filter
+      const matchesUnit = unitFilter === 'All' || lead.businessUnit === unitFilter;
+
+      // 3. Agent Filter
+      const matchesAgent = agentFilter === 'All' || lead.agentName === agentFilter;
+
+      // 4. Customer / Global Search Filter
+      const search = customerSearch.toLowerCase().trim();
+      const matchesSearch = !search || (
+        (lead.clientName && lead.clientName.toLowerCase().includes(search)) ||
+        ((lead.displayId || lead.id) && (lead.displayId || lead.id).toLowerCase().includes(search))
+      );
+
+      // Return true only if ALL conditions are met
+      return matchesStatus && matchesUnit && matchesAgent && matchesSearch;
     });
-  }, [leads, searchTerm, statusFilter]);
+  }, [leads, statusFilter, unitFilter, agentFilter, customerSearch]);
 
   const chartConfigs = useMemo(() => {
     const statusCounts = filteredLeads.reduce((acc, l) => { acc[l.status] = (acc[l.status] || 0) + 1; return acc; }, {});
@@ -148,7 +164,7 @@ const MasterLeadTracker = () => {
     const blob = new Blob([[headers.join(','), ...rows].join('\n')], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'Vynx_Master_Report.csv'; a.click();
+    a.href = url; a.download = 'Radix_Master_Leads_Report.csv'; a.click();
   };
 
   const statusStyles = {
@@ -169,30 +185,19 @@ const MasterLeadTracker = () => {
       >
         <div className="flex items-center gap-4">
           <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 border border-indigo-100 shrink-0">
-            <Sparkles size={24} />
+            <BarChart3 size={24} />
           </div>
           <div>
-            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Main Lead Tracker</h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5">
-              <Activity size={12} className="text-emerald-500" /> Active Business Overview
-            </p>
+            <h2 className="text-[20px] font-black text-slate-900 uppercase tracking-tight">Lead Tracker</h2>
+         
           </div>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="bg-slate-50 border border-slate-100 px-4 py-2.5 rounded-xl flex items-center gap-3 flex-1 md:w-80 transition-all focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100">
-            <Search size={16} className="text-slate-400" />
-            <input
-              type="text" placeholder="SEARCH CUSTOMERS OR LEADS..."
-              className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest w-full text-slate-900 placeholder:text-slate-400"
-              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          
           <button onClick={handleExport} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all active:scale-95 shadow-sm flex justify-center">
             <Download size={18} />
           </button>
-          <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all active:scale-95 shadow-sm flex justify-center" title="Refresh">
-            <BarChart3 size={18} />
-          </button>
+         
         </div>
       </motion.div>
 
@@ -204,7 +209,7 @@ const MasterLeadTracker = () => {
           </ChartCard>
         </div>
         <div className="col-span-12 lg:col-span-7">
-          <ChartCard title="Branch Activity" subtitle="Comparison of leads across different locations">
+          <ChartCard title="Partners Activity" subtitle="Comparison of leads across different business units">
             <Chart options={chartConfigs.performance.options} series={chartConfigs.performance.series} type="bar" height={240} />
           </ChartCard>
         </div>
@@ -219,16 +224,32 @@ const MasterLeadTracker = () => {
 
       {/* TABLE */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/20">
-          <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-            <LayoutGrid size={14} className="text-indigo-600" /> Lead Management Table
-          </h3>
-          <div className="flex items-center justify-between sm:justify-end gap-4">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">{filteredLeads.length} Records found</span>
-            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-              <Filter size={10} className="text-indigo-600" />
-              <select className="bg-transparent text-[9px] font-black uppercase outline-none cursor-pointer" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="All">All Leads</option>
+        
+        {/* HEADER & FILTERS */}
+        <div className="px-5 py-4 border-b border-slate-50 flex flex-col gap-4 bg-slate-50/20">
+          
+          {/* Top Row: Title & Record Count */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+              <LayoutGrid size={14} className="text-indigo-600" /> Lead Management Table
+            </h3>
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
+              {filteredLeads.length} Records found
+            </span>
+          </div>
+
+          {/* Bottom Row: Filter Controls */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            
+            {/* Status Filter (Existing) */}
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm focus-within:border-indigo-400 transition-colors">
+              <Filter size={12} className="text-indigo-600 shrink-0" />
+              <select 
+                className="w-full bg-transparent text-[9px] font-black uppercase text-slate-700 outline-none cursor-pointer" 
+                value={statusFilter} 
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="All">All Statuses</option>
                 <option value="Pending">Pending</option>
                 <option value="Verified">Verified</option>
                 <option value="Started">Started</option>
@@ -236,9 +257,60 @@ const MasterLeadTracker = () => {
                 <option value="Completed">Completed</option>
               </select>
             </div>
+
+            {/* Business Unit Filter (New) */}
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm focus-within:border-indigo-400 transition-colors">
+              <Briefcase size={12} className="text-indigo-600 shrink-0" />
+              <select 
+                className="w-full bg-transparent text-[9px] font-black uppercase text-slate-700 outline-none cursor-pointer" 
+                value={unitFilter || "All"} 
+                onChange={(e) => setUnitFilter(e.target.value)}
+              >
+                <option value="All">All Units</option>
+                {/* Dynamically extract unique units, or replace with your unit list state */}
+                {Array.from(new Set(leads.map(l => l.businessUnit).filter(Boolean))).map(unit => (
+                  <option key={unit} value={unit}>{unit}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Agent Filter (New) */}
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm focus-within:border-indigo-400 transition-colors">
+              <User size={12} className="text-indigo-600 shrink-0" />
+              <select 
+                className="w-full bg-transparent text-[9px] font-black uppercase text-slate-700 outline-none cursor-pointer" 
+                value={agentFilter || "All"} 
+                onChange={(e) => setAgentFilter(e.target.value)}
+              >
+                <option value="All">All Agents</option>
+                {/* Dynamically extract unique agents, or replace with your agent list state */}
+                {Array.from(new Set(leads.map(l => l.agentName).filter(Boolean))).map(agent => (
+                  <option key={agent} value={agent}>{agent}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Customer Search Filter (New) */}
+            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm focus-within:border-indigo-400 transition-colors">
+              <Search size={12} className="text-indigo-600 shrink-0" />
+              <input 
+                type="text"
+                placeholder="Search Customer..."
+                className="w-full bg-transparent text-[9px] font-black uppercase text-slate-700 placeholder:text-slate-400 outline-none"
+                value={customerSearch || ""}
+                onChange={(e) => setCustomerSearch(e.target.value)}
+              />
+              {customerSearch && (
+                <button onClick={() => setCustomerSearch("")} className="text-slate-400 hover:text-slate-600">
+                   <X size={10} />
+                </button>
+              )}
+            </div>
+
           </div>
         </div>
 
+        {/* TABLE CONTENT */}
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-400">
@@ -305,171 +377,191 @@ const MasterLeadTracker = () => {
           )}
         </div>
       </motion.div>
-
       {/* DETAIL PANEL */}
-      <AnimatePresence>
-        {selectedLead && (
-          <div className="fixed inset-0 z-[100] flex justify-end">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedLead(null)} className="absolute inset-0 bg-slate-900/10 backdrop-blur-sm" />
-            <motion.div
-              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="bg-white w-full max-w-lg h-full relative shadow-2xl border-l border-slate-100 p-6 md:p-8 flex flex-col"
-            >
-              <button onClick={() => setSelectedLead(null)} className="absolute top-6 right-6 p-2 bg-slate-50 rounded-xl text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">
-                <X size={20} />
-              </button>
+<AnimatePresence>
+  {selectedLead && (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setSelectedLead(null)}
+        className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
+      />
+      
+      {/* Modal Container */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="bg-white w-full max-w-5xl max-h-[95vh] overflow-y-auto lg:overflow-hidden relative shadow-2xl border border-slate-100 rounded-md  p-6 md:p-10 flex flex-col"
+      >
+        <button
+          onClick={() => setSelectedLead(null)}
+          className="absolute top-5 right-5 md:top-7 md:right-7 p-2 bg-slate-100 rounded-xl text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 transition-colors z-10"
+        >
+          <X size={20} />
+        </button>
 
-              <div className="space-y-6 pt-10 flex-1 overflow-y-auto pr-1">
-                <header>
-                  <div className="inline-flex items-center gap-2 px-2 py-1 bg-indigo-50 rounded border border-indigo-100 text-indigo-600 mb-3">
-                    <Info size={12} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Customer Profile Overview</span>
-                  </div>
-                  <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{selectedLead.displayId || selectedLead.id}</h3>
-                  <div className="flex items-center gap-3 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    <Calendar size={14} className="text-indigo-500" /> Registration Date: {selectedLead.date}
-                  </div>
-                </header>
+        {/* HEADER */}
+        <header className="mb-8 pr-12">
+          <h3 className="text-4xl font-black text-slate-900 tracking-tighter">
+            {selectedLead.displayId || selectedLead.id}
+          </h3>
+          <div className="flex items-center gap-3 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <Calendar size={14} className="text-indigo-500" /> Registration Date: {selectedLead.date}
+          </div>
+        </header>
 
-                <div className="space-y-4">
-                  {/* CLIENT INFO */}
-                  <section className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-                    <h5 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
-                      <User size={14} /> Client Information
-                    </h5>
-                    <div className="grid grid-cols-2 gap-y-4">
-                      <div>
-                        <span className="text-[8px] text-slate-400 font-black uppercase block mb-1">Customer Name</span>
-                        <span className="text-xs font-black text-slate-900 uppercase">{selectedLead.clientName}</span>
-                      </div>
-                      <div>
-                        <span className="text-[8px] text-slate-400 font-black uppercase block mb-1">Phone</span>
-                        <span className="text-xs font-bold text-slate-900">{selectedLead.clientPhone || 'Not Shared'}</span>
-                      </div>
-                      <div>
-                        <span className="text-[8px] text-slate-400 font-black uppercase block mb-1">Email</span>
-                        <span className="text-xs font-bold text-slate-900">{selectedLead.clientEmail || 'Not Shared'}</span>
-                      </div>
-                      {selectedLead.clientAddress && (
-                        <div className="col-span-2 pt-2">
-                          <span className="text-[8px] text-slate-400 font-black uppercase block mb-2">Service Location</span>
-                          <div className="flex items-start gap-3 bg-indigo-50/30 p-4 rounded-xl border border-indigo-100/50">
-                            <MapPin size={16} className="text-indigo-500 shrink-0 mt-0.5" />
-                            <span className="text-[10px] text-indigo-900 leading-relaxed font-bold uppercase">{selectedLead.clientAddress}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </section>
-
-                  {/* BRANCH & STATUS */}
-                  <section className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                      <p className="text-[8px] text-slate-400 font-black uppercase mb-2">Handling Branch</p>
-                      <div className="flex items-center gap-2">
-                        <Building2 size={12} className="text-slate-600" />
-                        <p className="text-[10px] font-black text-slate-900 uppercase">{selectedLead.businessUnit}</p>
-                      </div>
-                    </div>
-                    <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
-                      <p className="text-[8px] text-indigo-400 font-black uppercase mb-2">Current Stage</p>
-                      <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase border shadow-sm ${statusStyles[selectedLead.status] || 'bg-slate-50 text-slate-600 border-slate-100'}`}>
-                        {selectedLead.status}
+        {/* TWO COLUMN GRID LAYOUT */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 flex-1">
+          
+          {/* --- LEFT COLUMN --- */}
+          <div className="space-y-6">
+            
+            {/* CLIENT INFO */}
+            <section className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm h-full">
+              <h5 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <User size={14} /> Client Information
+              </h5>
+              <div className="grid grid-cols-2 gap-y-5">
+                <div>
+                  <span className="text-[8px] text-slate-400 font-black uppercase block mb-1">
+                    Customer Name
+                  </span>
+                  <span className="text-xs font-black text-slate-900 uppercase">
+                    {selectedLead.clientName}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[8px] text-slate-400 font-black uppercase block mb-1">
+                    Phone
+                  </span>
+                  <span className="text-xs font-bold text-slate-900">
+                    {selectedLead.clientPhone || "Not Shared"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[8px] text-slate-400 font-black uppercase block mb-1">
+                    Email
+                  </span>
+                  <span className="text-xs font-bold text-slate-900">
+                    {selectedLead.clientEmail || "Not Shared"}
+                  </span>
+                </div>
+               
+                {selectedLead.clientAddress && (
+                  <div className="col-span-2 pt-2">
+                    <span className="text-[8px] text-slate-400 font-black uppercase block mb-2">
+                      Service Location
+                    </span>
+                    <div className="flex items-start gap-3 bg-indigo-50/30 p-4 rounded-xl border border-indigo-100/50">
+                      <MapPin size={16} className="text-indigo-500 shrink-0 mt-0.5" />
+                      <span className="text-[10px] text-indigo-900 leading-relaxed font-bold uppercase">
+                        {selectedLead.clientAddress}
                       </span>
                     </div>
-                  </section>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
 
-                  {/* SERVICE DATA */}
-                  <section className="p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Briefcase size={14} className="text-indigo-600" />
-                      <p className="text-[9px] text-slate-400 font-black uppercase">Service Required</p>
-                    </div>
-                    <p className="text-sm font-black text-slate-900 uppercase mb-3 tracking-tight">{selectedLead.service}</p>
-                    {selectedLead.description && (
-                      <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 italic text-[10px] text-slate-500 font-medium leading-relaxed">
-                        "{selectedLead.description}"
-                      </div>
-                    )}
-                  </section>
-
-                  {/* VERIFICATION STATUS (read-only) */}
-                  <section className="p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
-                    <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
-                      <CheckCircle size={14} className={selectedLead.verifiedByAdmin ? 'text-emerald-500' : 'text-slate-300'} />
-                      <p className="text-[9px] text-slate-400 font-black uppercase">Admin Verification</p>
-                    </div>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase border ${selectedLead.verifiedByAdmin ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                        {selectedLead.verifiedByAdmin ? '✓ Verified by Admin' : 'Not Yet Verified'}
-                      </div>
-                    </div>
-                    {selectedLead.verificationNotes && (
-                      <div className="flex items-start gap-2 mt-3">
-                        <FileText size={12} className="text-slate-400 mt-0.5 shrink-0" />
-                        <div>
-                          <p className="text-[8px] text-slate-400 font-black uppercase mb-1">Verification Notes</p>
-                          <p className="text-[10px] text-slate-600 leading-relaxed">{selectedLead.verificationNotes}</p>
-                        </div>
-                      </div>
-                    )}
-                  </section>
-
-                  {/* AGENT CARD */}
-                  <section className="relative overflow-hidden">
-                    <motion.div
-                      onClick={() => setShowAgentContact(!showAgentContact)}
-                      className="p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all shadow-sm group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black text-sm shadow-indigo-200 shadow-lg">
-                          {selectedLead.agentName[0]}
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black text-slate-900 uppercase flex items-center gap-2">
-                            Case Handled By {selectedLead.agentName}
-                            <ChevronRight size={10} className={`text-indigo-500 transition-transform ${showAgentContact ? 'rotate-90' : ''}`} />
-                          </p>
-                          <p className="text-[8px] text-slate-400 font-mono tracking-widest mt-1 uppercase">Staff Ref: {selectedLead.agentId}</p>
-                        </div>
-                      </div>
-                      <Globe size={16} className="text-slate-200 group-hover:text-indigo-400 transition-colors" />
-                    </motion.div>
-                    <AnimatePresence>
-                      {showAgentContact && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                          className="bg-indigo-50 border-x border-b border-indigo-100 rounded-b-xl overflow-hidden"
-                        >
-                          <div className="p-4 space-y-3">
-                            <div className="flex items-center gap-3">
-                              <div className="h-7 w-7 bg-white rounded-md flex items-center justify-center text-indigo-600 shadow-sm"><Mail size={14} /></div>
-                              <span className="text-[10px] font-bold text-indigo-900 lowercase tracking-tight">
-                                {selectedLead.agentName?.toLowerCase().replace(' ', '.')}@vynxweb.com
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="h-7 w-7 bg-white rounded-md flex items-center justify-center text-indigo-600 shadow-sm"><Phone size={14} /></div>
-                              <span className="text-[10px] font-bold text-indigo-900">+971 00 000 0000</span>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </section>
+          {/* --- RIGHT COLUMN --- */}
+          <div className="space-y-6">
+            
+            {/* BRANCH & STATUS */}
+            <section className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                <p className="text-[8px] text-slate-400 font-black uppercase mb-2">
+                  Handling Branch
+                </p>
+                <div className="flex items-center gap-2">
+                  <Building2 size={12} className="text-slate-600" />
+                  <p className="text-[10px] font-black text-slate-900 uppercase">
+                    {selectedLead.businessUnit}
+                  </p>
                 </div>
               </div>
-
-              <div className="pt-6 border-t border-slate-100 mt-auto">
-                <button onClick={() => setSelectedLead(null)} className="w-full py-4 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg active:scale-95 shadow-indigo-100">
-                  Return to Dashboard
-                </button>
+              <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+                <p className="text-[8px] text-indigo-400 font-black uppercase mb-2">
+                  Current Stage
+                </p>
+                <span
+                  className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase border shadow-sm ${
+                    statusStyles[selectedLead.status] ||
+                    "bg-slate-50 text-slate-600 border-slate-100"
+                  }`}
+                >
+                  {selectedLead.status}
+                </span>
               </div>
-            </motion.div>
+            </section>
+
+            {/* SERVICE REQUIRED */}
+            <section className="p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Briefcase size={14} className="text-indigo-600" />
+                <p className="text-[9px] text-slate-400 font-black uppercase">
+                  Service Required
+                </p>
+              </div>
+              <p className="text-sm font-black text-slate-900 uppercase tracking-tight">
+                {selectedLead.service}
+              </p>
+              {selectedLead.description && (
+                <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-100 italic text-[10px] text-slate-500 font-medium leading-relaxed">
+                  "{selectedLead.description}"
+                </div>
+              )}
+            </section>
+
+            {/* AGENT CARD */}
+            <section className="p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black text-sm shadow-indigo-200 shadow-lg">
+                  {selectedLead.agentName[0]}
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-900 uppercase">
+                    Case Handled By {selectedLead.agentName}
+                  </p>
+                  <p className="text-[8px] text-slate-400 font-mono tracking-widest mt-1 uppercase">
+                    Partner Email: {selectedLead.agentId}
+                  </p>
+                </div>
+              </div>
+              {selectedLead.agentPhone && (
+                <div className="flex items-center gap-2">
+                   <div className="h-7 w-7 bg-indigo-50 rounded-md flex items-center justify-center text-indigo-600">
+                    <Phone size={12} />
+                  </div>
+                  <span className="text-[10px] font-bold text-indigo-900 hidden sm:block">
+                    {selectedLead.agentPhone}
+                  </span>
+                </div>
+              )}
+            </section>
+
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+
+        {/* FOOTER BUTTON */}
+        <div className="mt-auto">
+          <button
+            onClick={() => setSelectedLead(null)}
+            className="w-full py-4 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg active:scale-95 shadow-indigo-100"
+          >
+            Close Details
+          </button>
+        </div>
+
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
     </div>
   );
 };

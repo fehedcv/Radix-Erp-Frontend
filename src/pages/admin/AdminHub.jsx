@@ -95,27 +95,46 @@ const AdminHub = ({ onLogout }) => {
       {/* 1. FIXED DESKTOP SIDEBAR */}
       <aside className="hidden lg:flex flex-col w-72 bg-white border-r border-slate-200 sticky top-0 h-screen z-30 overflow-hidden">
         {/* BRANDING */}
-        <div className="p-8 pb-6">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 bg-[#007ACC] rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 shrink-0">
-              <ShieldCheck size={26} strokeWidth={2.5} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tighter leading-none uppercase">RADIX</h1>
-              <p className="text-[10px] font-black text-[#007ACC] uppercase tracking-[0.3em] mt-1 leading-none">Management</p>
-            </div>
-          </div>
-        </div>
+      <div className="p-2 pb-6">
+  <div className="p-8 pb-6">
+  <div className="flex items-center gap-4">
+    {/* LOGO PLACEHOLDER (No Box) */}
+    <div className="h-12 w-12 shrink-0 flex items-center justify-center">
+      <img 
+        src="https://placehold.co/100x100/FF0000/FFFFFF?" 
+        alt="RADIX Logo" 
+        className="w-full h-full object-contain"
+        // Fallback styling if image fails/is missing
+        onError={(e) => {
+          e.target.onerror = null; 
+          e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23007ACC' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='12 2 2 7 12 12 22 7 12 2'%3E%3C/polygon%3E%3Cpolyline points='2 17 12 22 22 17'%3E%3C/polyline%3E%3Cpolyline points='2 12 12 17 22 12'%3E%3C/polyline%3E%3C/svg%3E";
+          e.target.className = "w-10 h-10 object-contain";
+        }}
+      />
+    </div>
+    
+    {/* TYPOGRAPHY */}
+    <div className="flex flex-col justify-center">
+      <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase leading-none">
+        RADIX
+      </h1>
+      <p className="text-[10px] font-bold text-[#007ACC] uppercase tracking-widest mt-1.5 leading-none">
+        Management
+      </p>
+    </div>
+  </div>
+</div>
+</div>
 
         {/* NAVIGATION */}
         <div className="px-4 py-4">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] mb-4 px-4 font-sans">Management Menu</p>
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em] mb-4 px-4 font-sans">navigation</p>
           <nav className="space-y-1 relative">
             {menuItems.map((item) => (
               <NavLink
                 key={item.id}
                 to={item.path}
-                className={({ isActive }) => `group relative flex items-center gap-4 px-6 py-4 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${
+                className={({ isActive }) => `group relative flex items-center gap-4 px-6 py-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
                   isActive 
                   ? 'text-[#007ACC] bg-blue-50/50' 
                   : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
@@ -142,19 +161,11 @@ const AdminHub = ({ onLogout }) => {
 
         {/* FOOTER AREA */}
         <div className="mt-auto p-6 space-y-6 bg-white border-t border-slate-50">
-          <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 bg-white border border-slate-200 flex items-center justify-center rounded-lg text-[#007ACC] font-black text-xs shadow-sm italic">i</div>
-                <div>
-                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Admin Access</p>
-                   <h5 className="text-[11px] font-black text-slate-900 uppercase">Control Center</h5>
-                </div>
-              </div>
-          </div>
+          
 
           <button 
             onClick={() => setShowLogoutConfirm(true)} 
-            className="group flex items-center gap-3 w-full px-4 mb-2 text-slate-400 hover:text-rose-500 transition-colors uppercase font-black text-[10px] tracking-[0.2em]"
+            className="group border p-3 rounded-md border-gray-300 flex items-center gap-3 w-full px-4 mb-2 text-slate-400 hover:text-rose-500 transition-colors uppercase font-black text-[10px] tracking-[0.2em]"
           >
             <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" /> Sign Out
           </button>
@@ -168,82 +179,7 @@ const AdminHub = ({ onLogout }) => {
               <span className="text-[10px] font-black text-[#007ACC] uppercase tracking-[0.2em]">Dashboard</span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="relative" ref={notificationRef}>
-              <button 
-                onClick={() => setShowNotifications(!showNotifications)}
-                className={`relative p-2.5 bg-white border border-slate-200 transition-all duration-300 rounded-xl hover:border-[#007ACC] hover:text-[#007ACC] shadow-sm`}
-              >
-                <Bell size={20} />
-                {totalNotifications > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-rose-500 border-2 border-white flex items-center justify-center text-[9px] font-black text-white rounded-full shadow-md">
-                    {totalNotifications}
-                  </span>
-                )}
-              </button>
-              
-              <AnimatePresence>
-                {showNotifications && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }} 
-                    animate={{ opacity: 1, y: 0, scale: 1 }} 
-                    exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                    className="absolute top-14 right-0 w-80 md:w-[400px] bg-white border border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-3xl overflow-hidden z-[100]"
-                  >
-                    <div className="p-6 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
-                      <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Updates</h4>
-                      {totalNotifications > 0 && (
-                        <button 
-                          onClick={handleClearNotifications}
-                          className="text-[9px] font-black text-rose-500 uppercase hover:underline flex items-center gap-1"
-                        >
-                          <CheckCheck size={12} /> Clear All
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="max-h-[350px] overflow-y-auto">
-                      {notifications.length > 0 ? (
-                        notifications.map(req => (
-                          <div 
-                            key={req.id} 
-                            className="p-5 flex items-start gap-4 hover:bg-blue-50/50 transition-colors border-b border-slate-50 cursor-pointer group" 
-                            onClick={() => handleNotificationClick(req.path)}
-                          >
-                             <div className="h-10 w-10 bg-white border border-slate-100 text-[#007ACC] flex items-center justify-center rounded-xl shrink-0 shadow-sm group-hover:border-blue-200 transition-colors">
-                                {req.icon}
-                             </div>
-                             <div className="flex-1">
-                                <div className="flex justify-between items-start mb-1">
-                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{req.time}</p>
-                                  <ArrowRight size={12} className="text-slate-300 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0"/>
-                                </div>
-                                <h6 className="text-xs font-black text-slate-900 uppercase leading-tight mb-1">{req.title}</h6>
-                                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">{req.message}</p>
-                             </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-10 text-center space-y-2">
-                           <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300">
-                              <Bell size={20} />
-                           </div>
-                           <p className="text-[10px] font-black text-slate-400 uppercase">No New Notifications</p>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <button 
-                      onClick={() => setShowNotifications(false)} 
-                      className="w-full py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#007ACC] transition-all"
-                    >
-                      Close Panel
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
+         
         </header>
 
         <div className="py-3 px-3 max-w-[1600px] w-full mx-auto pb-24 lg:pb-12">
