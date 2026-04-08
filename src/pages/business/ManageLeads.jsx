@@ -292,12 +292,28 @@ const ManageLeads = () => {
 <div className="flex justify-between items-center gap-2 pt-1">
   <span className="text-slate-400 font-medium">Credit</span>
 
-  <div className="flex items-center gap-1.5">
-    <Activity size={14} className="text-slate-400" />
+  {lead.creditStatus === "Credited" ? (
+      <>
+        <CheckCircle2 size={14} className="text-green-600" />
+        <span className="text-green-600 font-medium">
+          Credited
+        </span>
+      </>
+    ) : lead.paymentStatus === "Pending" ? (
+      <>
+        <Activity size={14} className="text-amber-500" />
+        <span className="text-amber-500 font-medium">
+          Pending
+        </span>
+      </>
+    ) : (
+      <>
+        <Activity size={14} className="text-slate-400" />
         <span className="text-slate-400 font-medium">
           Not Credited
         </span>
-  </div>
+      </>
+    )}
 </div>
 
         </div>
