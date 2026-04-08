@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-
+import { StatusBar, Style } from '@capacitor/status-bar';
 // --- PUBLIC PAGES ---
 import LandingPage from './pages/public/LandingPage';
 import AuthGateway from './pages/auth/AuthGateway';
@@ -33,7 +33,25 @@ import LeadReview from "./pages/business/LeadReview";
 const App = () => {
   const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+useEffect(() => {
+    const configureStatusBar = async () => {
+      try {
+        // Change the background color (Use a valid HEX code)
+        await StatusBar.setBackgroundColor({ color: '#FF0000' });
 
+        // Change the text/icon color to light or dark
+        // Style.Dark = Dark background, Light text
+        // Style.Light = Light background, Dark text
+        await StatusBar.setStyle({ style: Style.Dark });
+        
+      } catch (error) {
+        // This catch block prevents crashes if you run the app in a web browser
+        console.warn('StatusBar is not available on this platform');
+      }
+    };
+
+    configureStatusBar();
+  }, []);
   useEffect(() => {
     const checkSession = () => {
       const savedUser = localStorage.getItem('vynx_user');

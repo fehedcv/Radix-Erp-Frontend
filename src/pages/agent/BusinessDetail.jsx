@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { Contacts } from '@capacitor-community/contacts';
 import {
   MapPin, Star, Phone, Globe,
   CheckCircle2, Briefcase, ExternalLink,
   Info, Mail, Zap, ChevronRight, MessageCircle,
   Loader2, X, User, ChevronDown, Image as ImageIcon,
-  Instagram, Facebook, Linkedin // <-- Added Social Icons here
+  Instagram, Facebook, Linkedin,
+  BookUser, Search // <-- Added new icons for contacts
 } from 'lucide-react';
 
 import frappeApi from '../../api/frappeApi';
@@ -28,6 +31,12 @@ const BusinessDetail = () => {
     customer_location: '',
     notes: ''
   });
+
+  // --- NEW STATES FOR CONTACT MODAL ---
+  const [showContactsModal, setShowContactsModal] = useState(false);
+  const [allContacts, setAllContacts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
 
   // ---------------- HELPER: Image URL Builder ----------------
   const getFrappeImage = (path) => {
@@ -114,6 +123,62 @@ const BusinessDetail = () => {
       setSubmitting(false);
     }
   };
+
+  // --- NEW LOGIC: FETCH AND OPEN CUSTOM CONTACTS LIST ---
+  const handleOpenContactList = async () => {
+    if (!Capacitor.isNativePlatform()) return;
+    
+    try {
+      const permission = await Contacts.requestPermissions();
+      if (permission.contacts !== 'granted') {
+        alert('Contact permission is required to view your contact list.');
+        return;
+      }
+
+      setShowContactsModal(true);
+      setIsLoadingContacts(true);
+
+      const result = await Contacts.getContacts({
+        projection: { name: true, phones: true }
+      });
+
+      const validContacts = result.contacts
+        .filter(c => c.phones && c.phones.length > 0)
+        .sort((a, b) => (a.name?.display || "").localeCompare(b.name?.display || ""));
+
+      setAllContacts(validContacts);
+    } catch (error) {
+      console.error("Failed to load contacts:", error);
+      alert(`Error: ${error.message || JSON.stringify(error)}`);
+      setShowContactsModal(false);
+    } finally {
+      setIsLoadingContacts(false);
+    }
+  };
+
+  // --- NEW LOGIC: HANDLE CONTACT SELECTION ---
+  const handleSelectContact = (contact) => {
+    const pickedName = contact.name?.display || "";
+    const rawPhone = contact.phones[0].number; 
+    
+    // Clean the phone number (remove +91, spaces, and dashes)
+    const cleanPhone = rawPhone.replace(/^\+91/, '').replace(/[\s-]/g, '').trim();
+
+    setFormData(prev => ({
+      ...prev,
+      client_name: prev.client_name || pickedName, 
+      client_phone: cleanPhone 
+    }));
+
+    setShowContactsModal(false);
+    setSearchQuery("");
+  };
+
+  const filteredContacts = allContacts.filter(contact => {
+    const nameMatch = contact.name?.display?.toLowerCase().includes(searchQuery.toLowerCase());
+    const phoneMatch = contact.phones?.[0]?.number?.includes(searchQuery);
+    return nameMatch || phoneMatch;
+  });
 
   // ---------------- LOADERS ----------------
   if (loading) {
@@ -374,7 +439,7 @@ const BusinessDetail = () => {
       {/* 3. REFERRAL FORM MODAL */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] flex items-center justify-center p-4 sm:p-6">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -416,22 +481,36 @@ const BusinessDetail = () => {
                   </div>
                 </div>
 
-                {/* Client Phone */}
+                {/* Client Phone - UPDATED WITH CONTACT BUTTON */}
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block ml-1">
                     Client Phone *
                   </label>
-                  <div className="relative">
-                    <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      required
-                      type="tel"
-                      name="client_phone"
-                      value={formData.client_phone}
-                      onChange={handleInputChange}
-                      className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl text-sm text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
-                      placeholder="+91 98765 43210"
-                    />
+                  <div className="flex gap-2 items-center">
+                    <div className="relative flex-grow">
+                      <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        required
+                        type="tel"
+                        name="client_phone"
+                        value={formData.client_phone}
+                        onChange={handleInputChange}
+                        className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl text-sm text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all"
+                        placeholder="98765 43210"
+                      />
+                    </div>
+                    
+                    {/* Contact Button */}
+                    {Capacitor.isNativePlatform() && (
+                      <button
+                        type="button"
+                        onClick={handleOpenContactList}
+                        className="p-3 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-500 hover:bg-[#007ACC] hover:text-white hover:border-[#007ACC] transition-all shadow-sm active:scale-95 flex-shrink-0"
+                        title="Import from Contacts"
+                      >
+                        <BookUser size={18} />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -470,7 +549,6 @@ const BusinessDetail = () => {
                         <option key={i} value={s.name || s}>{s.name || s}</option>
                       ))}
                     </select>
-                    {/* Note: I swapped ChevronRight for ChevronDown for the select dropdown icon */}
                     <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   </div>
                 </div>
@@ -513,6 +591,82 @@ const BusinessDetail = () => {
                 </div>
 
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- IN-APP CONTACTS MODAL OVERLAY --- */}
+      <AnimatePresence>
+        {showContactsModal && (
+          <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, y: "100%" }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: "100%" }}
+              transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              className="bg-white w-full max-w-md h-[80vh] md:h-[600px] rounded-t-[1.5rem] md:rounded-[1.5rem] shadow-2xl flex flex-col overflow-hidden border border-slate-200"
+            >
+              {/* Contact Modal Header */}
+              <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-col gap-4">
+                <div className="flex justify-between items-center px-2">
+                  <h3 className="font-bold text-slate-800">Select Contact</h3>
+                  <button 
+                    onClick={() => setShowContactsModal(false)}
+                    className="p-2 bg-white border border-slate-200 text-slate-500 rounded-full hover:bg-slate-50 transition-colors active:scale-95"
+                  >
+                    <X size={16} strokeWidth={2.5} />
+                  </button>
+                </div>
+                
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Search name or number..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Contact List */}
+              <div className="flex-1 overflow-y-auto p-2 scrollbar-hide">
+                {isLoadingContacts ? (
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
+                    <Loader2 className="animate-spin text-blue-500" size={32} />
+                    <p className="text-sm font-medium">Loading Contacts...</p>
+                  </div>
+                ) : filteredContacts.length > 0 ? (
+                  <ul className="space-y-1">
+                    {filteredContacts.map((contact, index) => (
+                      <li key={contact.contactId || index}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectContact(contact)}
+                          className="w-full text-left p-4 hover:bg-slate-50 rounded-xl transition-colors flex items-center justify-between border border-transparent hover:border-slate-200 active:bg-slate-100"
+                        >
+                          <div>
+                            <p className="font-bold text-slate-800 text-sm">{contact.name?.display || "Unknown"}</p>
+                            <p className="text-xs font-medium text-slate-500 mt-1">
+                              {contact.phones[0].number}
+                            </p>
+                          </div>
+                          <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
+                            <User size={14} strokeWidth={2.5} />
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                    <p className="text-sm font-medium">No contacts found.</p>
+                  </div>
+                )}
+              </div>
             </motion.div>
           </div>
         )}

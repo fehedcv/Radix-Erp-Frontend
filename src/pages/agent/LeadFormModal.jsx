@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Capacitor } from '@capacitor/core';
+import { Contacts } from '@capacitor-community/contacts';
 import { 
   X, User, Phone, Building2, 
   Send, Briefcase, ChevronDown, CheckCircle2, 
-  MapPin, ClipboardList, ArrowRight, Info
+  MapPin, ClipboardList, ArrowRight, Info,
+  BookUser, Search, Loader2 // Added new icons here
 } from 'lucide-react';
 import frappeApi from '../../api/frappeApi';
 
@@ -22,6 +25,12 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
     notes: "",
     location: "",
   });
+
+  // --- NEW STATES FOR CONTACT MODAL ---
+  const [showContactsModal, setShowContactsModal] = useState(false);
+  const [allContacts, setAllContacts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
 
   useEffect(() => {
     if (initialUnit) setFormData(prev => ({ ...prev, category: initialUnit, service: "" }));
@@ -42,6 +51,67 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
+
+  // --- NEW LOGIC: FETCH AND OPEN CUSTOM CONTACTS LIST ---
+  const handleOpenContactList = async () => {
+    if (!Capacitor.isNativePlatform()) return;
+    
+    try {
+      // 1. Request Permission
+      const permission = await Contacts.requestPermissions();
+      if (permission.contacts !== 'granted') {
+        alert('Contact permission is required to view your contact list.');
+        return;
+      }
+
+      // 2. Open Modal & Show Loader
+      setShowContactsModal(true);
+      setIsLoadingContacts(true);
+
+      // 3. Fetch All Contacts
+      const result = await Contacts.getContacts({
+        projection: { name: true, phones: true }
+      });
+
+      // 4. Filter and Sort (Only keep contacts with phone numbers, sort alphabetically)
+      const validContacts = result.contacts
+        .filter(c => c.phones && c.phones.length > 0)
+        .sort((a, b) => (a.name?.display || "").localeCompare(b.name?.display || ""));
+
+      setAllContacts(validContacts);
+    } catch (error) {
+      console.error("Failed to load contacts:", error);
+      alert("Could not load contacts.");
+      alert(`Error: ${error.message || JSON.stringify(error)}`);
+      setShowContactsModal(false);
+    } finally {
+      setIsLoadingContacts(false);
+    }
+  };
+
+  // --- NEW LOGIC: HANDLE CONTACT SELECTION ---
+  const handleSelectContact = (contact) => {
+    const pickedName = contact.name?.display || "";
+    const pickedPhone = contact.phones[0].number; // Take the first available number
+    const cleanPhone = pickedPhone.replace(/^\+91/, '').replace(/[\s-]/g, '').trim();
+    
+    setFormData(prev => ({
+      ...prev,
+      client_name: prev.client_name || pickedName, // Only override if name is currently empty
+      client_phone: cleanPhone // Fill phone number
+    }));
+
+    // Close modal and reset search
+    setShowContactsModal(false);
+    setSearchQuery("");
+  };
+
+  // Filter contacts based on search query
+  const filteredContacts = allContacts.filter(contact => {
+    const nameMatch = contact.name?.display?.toLowerCase().includes(searchQuery.toLowerCase());
+    const phoneMatch = contact.phones?.[0]?.number?.includes(searchQuery);
+    return nameMatch || phoneMatch;
+  });
 
   const proceedToConfirm = (e) => {
     e.preventDefault();
@@ -78,6 +148,7 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
     if (wasSuccess && onSubmit) onSubmit();
     setStep('form');
     setFormData({ category: "", service: "", client_name: "", client_phone: "", clientAddress: "", notes: "" });
+    setShowContactsModal(false); // Ensure contact modal closes too
     onClose();
   };
 
@@ -160,19 +231,34 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      {/* Phone */}
+                      {/* Phone - UPDATED WITH CONTACT BUTTON */}
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Phone Number</label>
-                        <div className="relative">
-                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                          <input
-                            type="tel" name="client_phone" required
-                            value={formData.client_phone} onChange={handleInputChange}
-                            className="w-full pl-11 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold focus:border-[#007ACC]"
-                            placeholder="98475 12028"
-                          />
+                        <div className="flex gap-2 items-center">
+                          <div className="relative flex-grow">
+                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                            <input
+                              type="tel" name="client_phone" required
+                              value={formData.client_phone} onChange={handleInputChange}
+                              className="w-full pl-11 pr-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold focus:border-[#007ACC]"
+                              placeholder="98475 12028"
+                            />
+                          </div>
+                          
+                          {/* Contact Button */}
+                          {Capacitor.isNativePlatform() && (
+                            <button
+                              type="button"
+                              onClick={handleOpenContactList}
+                              className="p-3.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 hover:bg-[#007ACC] hover:text-white hover:border-[#007ACC] transition-all shadow-sm active:scale-95 flex-shrink-0"
+                              title="Import from Contacts"
+                            >
+                              <BookUser size={18} />
+                            </button>
+                          )}
                         </div>
                       </div>
+                      
                       {/* Location */}
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Service Location</label>
@@ -304,6 +390,80 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
 
           </div>
         </motion.div>
+
+        {/* --- IN-APP CONTACTS MODAL OVERLAY --- */}
+        <AnimatePresence>
+          {showContactsModal && (
+            <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/40">
+              <motion.div 
+                initial={{ opacity: 0, y: "100%" }} 
+                animate={{ opacity: 1, y: 0 }} 
+                exit={{ opacity: 0, y: "100%" }}
+                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                className="bg-white w-full max-w-md h-[80vh] md:h-[600px] rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]"
+              >
+                {/* Contact Modal Header */}
+                <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-col gap-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-slate-800">Select Contact</h3>
+                    <button 
+                      onClick={() => setShowContactsModal(false)}
+                      className="p-2 bg-slate-200 text-slate-500 rounded-full hover:bg-slate-300 transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Search name or number..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none text-sm focus:border-[#007ACC] transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Contact List */}
+                <div className="flex-1 overflow-y-auto p-2">
+                  {isLoadingContacts ? (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                      <Loader2 className="animate-spin mb-2" size={32} />
+                      <p className="text-sm font-medium">Loading Contacts...</p>
+                    </div>
+                  ) : filteredContacts.length > 0 ? (
+                    <ul className="space-y-1">
+                      {filteredContacts.map((contact, index) => (
+                        <li key={contact.contactId || index}>
+                          <button
+                            onClick={() => handleSelectContact(contact)}
+                            className="w-full text-left p-4 hover:bg-slate-50 rounded-xl transition-colors flex items-center justify-between border border-transparent hover:border-slate-100"
+                          >
+                            <div>
+                              <p className="font-bold text-slate-800 text-sm">{contact.name?.display || "Unknown"}</p>
+                              <p className="text-xs font-medium text-slate-500 mt-0.5">
+                                {contact.phones[0].number}
+                              </p>
+                            </div>
+                            <User className="text-slate-300" size={18} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                      <p className="text-sm font-medium">No contacts found.</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
       </div>
     </AnimatePresence>
   );
