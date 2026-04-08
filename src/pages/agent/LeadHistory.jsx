@@ -8,6 +8,23 @@ import {
 import Chart from 'react-apexcharts';
 import frappeApi from '../../api/frappeApi';
 import Loader from '../../components/Loader'
+
+ const normalizeStatus = (status) => {
+  if (!status) return "";
+
+  const s = status.toLowerCase().trim();
+
+  if (s === "pending") return "Pending";
+  if (s === "verified") return "Verified";
+  if (s === "in progress") return "In Progress";
+  if (s === "completed") return "Completed";
+  if (s === "rejected") return "Rejected";
+
+    if (s === "successful") return "Completed";
+
+
+  return status; // fallback
+};
 const LeadHistory = () => {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,22 +67,7 @@ const LeadHistory = () => {
   }, [leads, searchTerm, filterStatus]);
 
   // ---------------- CHARTS ----------------
-  const normalizeStatus = (status) => {
-  if (!status) return "";
-
-  const s = status.toLowerCase().trim();
-
-  if (s === "pending") return "Pending";
-  if (s === "verified") return "Verified";
-  if (s === "in progress") return "In Progress";
-  if (s === "completed") return "Completed";
-  if (s === "rejected") return "Rejected";
-
-    if (s === "successful") return "Completed";
-
-
-  return status; // fallback
-};
+ 
   const statusCounts = useMemo(() => {
 const counts = { 
   Pending: 0, 
