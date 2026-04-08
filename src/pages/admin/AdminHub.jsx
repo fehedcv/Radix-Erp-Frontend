@@ -84,8 +84,8 @@ const AdminHub = ({ onLogout }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard, path: '/admin/dashboard' },
     { id: 'leads', label: 'Inquiries', icon: PieChart, path: '/admin/leads' },
-    { id: 'units', label: 'Partners', icon: Building2, path: '/admin/units' },
-    { id: 'agents', label: 'Team', icon: Users, path: '/admin/agents' },
+    { id: 'units', label: 'Businesses', icon: Building2, path: '/admin/units' },
+    { id: 'agents', label: 'Agents', icon: Users, path: '/admin/agents' },
     { id: 'credits', label: 'Payments', icon: CreditCard, path: '/admin/credits' },
   ];
 

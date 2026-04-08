@@ -88,7 +88,7 @@ const AgentControl = () => {
     const blob = new Blob([[headers.join(','), ...rows].join('\n')], { type: 'text/csv' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `Staff_Report_${new Date().toLocaleDateString()}.csv`;
+    link.download = `Radix_Agent_Report_${new Date().toLocaleDateString()}.csv`;
     link.click();
   };
 

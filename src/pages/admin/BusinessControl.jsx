@@ -14,6 +14,17 @@ import {
 import Chart from 'react-apexcharts';
 import frappeApi from '../../api/frappeApi';
 
+const SITE_URL = import.meta.env.VITE_FRAPPE_URL?.replace(/\/api$/, "") || "http://16.171.38.6:8000";
+
+const resolveUrl = (url) => {
+  if (!url) return "";
+  if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) {
+    return url;
+  }
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  return `${SITE_URL}${cleanPath}`;
+};
+
 // ─── Field map ────────────────────────────────────────────────────────────────
 const mapDoc = (doc) => ({
   id:          doc.name,
@@ -29,6 +40,7 @@ const mapDoc = (doc) => ({
   cityArea:    doc.location        || '',
   address:     doc.address         || '',
   description: doc.description     || '',
+  logo:        doc.logo            || '', // <--- ADDED THIS LINE!
   services:    Array.isArray(doc.services) ? doc.services : [],
   gallery:     Array.isArray(doc.gallery)  ? doc.gallery  : [],
   date:        doc.creation ? doc.creation.split(' ')[0] : '—',
@@ -191,6 +203,7 @@ const BusinessHub = () => {
         location:              formData.cityArea,
         address:               formData.address,
         description:           formData.description,
+        logo:  ""
         // commission_percentage: formData.commission // Passed the new commission value to API
       });
       setShowAddModal(false);
@@ -232,7 +245,7 @@ const BusinessHub = () => {
             <Building2 size={24} />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Partner Registry Hub</h2>
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Business Units</h2>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
               <ShieldCheck size={12} className="text-blue-500" /> Authorized Business Management
             </p>
@@ -264,7 +277,7 @@ const BusinessHub = () => {
             <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
               System is managing <span className="text-blue-600 font-bold">{units.length} business units</span>{' '}
               across <span className="text-blue-600 font-bold">{[...new Set(units.map(u => u.category))].length} industry sector(s)</span>.
-              All node connections are optimized.
+              All business connections are optimized.
             </p>
           </div>
         </div>
@@ -335,7 +348,7 @@ const BusinessHub = () => {
                     onClick={() => handleOpenDetail(unit)}
                     className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 hover:border-blue-600 hover:text-blue-600 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2"
                   >
-                    <BarChart3 size={14}/> System Profile
+                    <BarChart3 size={14}/> Business Profile
                   </button>
                   <button
                     onClick={() => initiateDelete(unit)}
@@ -361,9 +374,33 @@ const BusinessHub = () => {
               {/* Header */}
               <div className={`p-6 border-b border-slate-100 flex justify-between items-center shrink-0 transition-colors duration-300 ${editMode ? 'bg-amber-50/70' : 'bg-blue-50/50'}`}>
                 <div className="flex items-center gap-4">
-                  <div className={`h-12 w-12 text-white rounded-lg flex items-center justify-center font-black text-xl shadow-lg transition-colors duration-300 ${editMode ? 'bg-amber-500' : 'bg-slate-900'}`}>
-                    {editMode ? <Pencil size={20}/> : selectedUnit.name.charAt(0)}
-                  </div>
+                <div className={`h-12 w-12 text-white rounded-lg flex items-center justify-center font-black text-xl shadow-lg transition-colors duration-300 overflow-hidden ${editMode ? 'bg-amber-500' : 'bg-slate-900'}`}>
+ {console.log(resolveUrl(selectedUnit.logo))
+ }
+  {editMode ? (
+    <Pencil size={20} />
+  ) : selectedUnit.logo ? (
+    <img 
+      src={resolveUrl(selectedUnit.logo)} /* Wrap with resolveUrl(selectedUnit.logo) if you are using your Frappe helper */
+      alt={selectedUnit.name}
+      className="w-full h-full object-cover"
+      onError={(e) => {
+        // Fallback to the first letter if the image URL is broken
+        e.target.style.display = 'none';
+        e.target.nextSibling.style.display = 'flex';
+      }}
+    />
+  ) : (
+    selectedUnit.name.charAt(0)
+  )}
+  
+  {/* Hidden fallback text used only if the image fails to load */}
+  {selectedUnit.logo && !editMode && (
+    <div style={{ display: 'none' }} className="w-full h-full items-center justify-center">
+      {selectedUnit.name.charAt(0)}
+    </div>
+  )}
+</div>
                   <div>
                     <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter">{selectedUnit.name}</h3>
                     <p className={`text-[9px] font-black uppercase tracking-widest transition-colors duration-300 ${editMode ? 'text-amber-600' : 'text-blue-600'}`}>
