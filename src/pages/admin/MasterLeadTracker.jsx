@@ -8,25 +8,18 @@ import {
 import Chart from 'react-apexcharts';
 import frappeApi from '../../api/frappeApi';
 
-const LEAD_FIELDS = [
-  'name', 'naming_series', 'business_unit', 'source_agent',
-  'customer_name', 'phone', 'email', 'description',
-  'service', 'status', 'verified_by_admin', 'verification_notes',
-  'creation'
-].join(',');
-
-// Map Frappe doc → internal lead shape
+// Map API doc → internal lead shape
 const mapDoc = (doc) => ({
-  id: doc.name,
-  businessUnit: doc.business_unit || '—',
+  id: doc.id || doc.name,
+  businessUnit: doc.business_unit_name || doc.business_unit || '—',
   agentName: doc.source_agent || 'System',
-  agentId: doc.source_agent || 'VYNX-CORE',
+  agentId: doc.agent_id || doc.source_agent || 'VYNX-CORE',
   clientName: doc.customer_name || '—',
   clientPhone: doc.phone || '',
   clientEmail: doc.email || '',
   clientAddress: doc.client_address || '',
   description: doc.description || '',
-  service: doc.service || '—',
+  service: doc.service_name || doc.service || '—',
   status: doc.status || 'Pending',
   verifiedByAdmin: !!doc.verified_by_admin,
   verificationNotes: doc.verification_notes || '',
@@ -43,104 +36,55 @@ const MasterLeadTracker = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [businessUnitMap, setBusinessUnitMap] = useState({});
-  const [serviceMap, setServiceMap] = useState({});
-
-  const getBusinessUnitName = useCallback(
-    (unitId) => businessUnitMap[unitId] || unitId || '—',
-    [businessUnitMap]
-  );
-
-  const getBusinessServiceName = useCallback(
-    (serviceId) => serviceMap[serviceId] || serviceId || '—',
-    [serviceMap]
-  );
-
-  // Fetch business units and services in parallel.
-  // - Business Unit list API:       name (unit doc ID) → business_name
-  // - Business Unit Service list API: name (service row ID) → service_name
-  const fetchBusinessUnits = useCallback(async () => {
-  try {
-    // Single call — Frappe returns one denormalized row per service child.
-    // Each row has: name (service row ID), business_name (unit display name),
-    // service_name (service display name), services.parent (unit doc ID)
-    const res = await frappeApi.get('/resource/Business Unit', {
-      params: {
-        fields: JSON.stringify([
-          'name',           // unit doc ID  (present when no child rows expand it)
-          'business_name',  // unit display name
-          'services.name',        // service row ID
-          'services.service_name', // service display name
-          'services.parent',       // parent unit doc ID (key fix)
-        ]),
-        limit_page_length: 0,
-      },
-    });
-
-    const unitMap = {};
-    const svcMap = {};
-
-    (res.data?.data || []).forEach((row) => {
-      // row.name           = service row ID  (e.g. "m5g07m83qr")
-      // row.business_name  = unit display name (e.g. "Archi Zaid")
-      // row['services.parent'] = unit doc ID  (e.g. "f4cpjpb41i")
-      // row['services.name']   = same as row.name when child fields included
-      // row.service_name   = service display name
-
-      const unitId = row['services.parent'] || row.parent;
-      const unitName = row.business_name;
-      const serviceRowId = row['services.name'] || row.name;
-      const serviceName = row.service_name;
-
-      if (unitId && unitName) {
-        unitMap[unitId] = unitName;
-      }
-
-      if (serviceRowId && serviceName) {
-        svcMap[serviceRowId] = serviceName;
-      }
-    });
-
-    setBusinessUnitMap(unitMap);
-    setServiceMap(svcMap);
-  } catch (err) {
-    console.warn('Failed to fetch business units/services', err);
-  }
-}, []);
-  const fetchLeads = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
+
     try {
-      const res = await frappeApi.get('/resource/Lead', {
-        params: {
-          fields: `["${LEAD_FIELDS.split(',').join('","')}"]`,
-          limit_page_length: 0,
-          order_by: 'creation desc',
-        },
+      const res = await frappeApi.get('/method/business_chain.api.admin.get_leads_business_units_services');
+      const payload = res.data?.message?.data || res.data?.data || res.data;
+
+      const unitMap = {};
+      const serviceMap = {};
+
+      (payload?.business_units || []).forEach((unit) => {
+        if (unit.id) unitMap[unit.id] = unit.name;
       });
-      const leadsWithNames = (res.data?.data || []).map((doc) => {
+
+      (payload?.services || []).forEach((service) => {
+        if (service.id) serviceMap[service.id] = service.name;
+      });
+
+      const leadsWithNames = (payload?.leads || []).map((doc, index) => {
         const base = mapDoc(doc);
         return {
           ...base,
-          businessUnit: getBusinessUnitName(doc.business_unit),
-          service: getBusinessServiceName(doc.service),
+          displayId: `Lead-${index + 1}`,
+          businessUnit:
+            doc.business_unit_name ||
+            unitMap[doc.business_unit_id] ||
+            doc.business_unit_id ||
+            base.businessUnit,
+          service:
+            doc.service_name ||
+            serviceMap[doc.service_id] ||
+            doc.service_id ||
+            base.service,
         };
       });
+
       setLeads(leadsWithNames);
     } catch (err) {
+      console.warn('Failed to load leads data', err);
       setError('Failed to load leads. Please check your connection or permissions.');
     } finally {
       setLoading(false);
     }
-  }, [getBusinessUnitName, getBusinessServiceName]);
+  }, []);
 
   useEffect(() => {
-    fetchBusinessUnits();
-  }, [fetchBusinessUnits]);
-
-  useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     setShowAgentContact(false);
@@ -151,7 +95,7 @@ const MasterLeadTracker = () => {
       const s = searchTerm.toLowerCase();
       const matchesSearch =
         lead.clientName.toLowerCase().includes(s) ||
-        lead.id.toLowerCase().includes(s) ||
+        (lead.displayId || lead.id).toLowerCase().includes(s) ||
         lead.agentName.toLowerCase().includes(s) ||
         lead.businessUnit.toLowerCase().includes(s);
       const matchesStatus = statusFilter === 'All' || lead.status === statusFilter;
@@ -199,7 +143,7 @@ const MasterLeadTracker = () => {
   const handleExport = () => {
     const headers = ['ID', 'Customer', 'Unit', 'Agent', 'Status', 'Date'];
     const rows = filteredLeads.map((l) =>
-      [l.id, l.clientName, l.businessUnit, l.agentName, l.status, l.date].join(',')
+      [l.displayId || l.id, l.clientName, l.businessUnit, l.agentName, l.status, l.date].join(',')
     );
     const blob = new Blob([[headers.join(','), ...rows].join('\n')], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -246,7 +190,7 @@ const MasterLeadTracker = () => {
           <button onClick={handleExport} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all active:scale-95 shadow-sm flex justify-center">
             <Download size={18} />
           </button>
-          <button onClick={fetchLeads} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all active:scale-95 shadow-sm flex justify-center" title="Refresh">
+          <button onClick={fetchData} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all active:scale-95 shadow-sm flex justify-center" title="Refresh">
             <BarChart3 size={18} />
           </button>
         </div>
@@ -305,7 +249,7 @@ const MasterLeadTracker = () => {
             <div className="flex flex-col items-center justify-center py-24 gap-3 text-red-400">
               <AlertCircle size={28} />
               <p className="text-[10px] font-black uppercase tracking-widest">{error}</p>
-              <button onClick={fetchLeads} className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">Retry</button>
+              <button onClick={fetchData} className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">Retry</button>
             </div>
           ) : filteredLeads.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 gap-2 text-slate-300">
@@ -325,7 +269,7 @@ const MasterLeadTracker = () => {
                 {filteredLeads.map((lead) => (
                   <tr key={lead.id} className="hover:bg-indigo-50/30 transition-all group">
                     <td className="px-6 py-4">
-                      <span className="font-mono text-[10px] text-indigo-600 font-bold bg-indigo-50/50 px-2 py-0.5 rounded border border-indigo-100">{lead.id}</span>
+                      <span className="font-mono text-[10px] text-indigo-600 font-bold bg-indigo-50/50 px-2 py-0.5 rounded border border-indigo-100">{lead.displayId || lead.id}</span>
                       <p className="text-[8px] text-slate-400 font-bold uppercase mt-1">{lead.date}</p>
                     </td>
                     <td className="px-6 py-4">
@@ -382,7 +326,7 @@ const MasterLeadTracker = () => {
                     <Info size={12} />
                     <span className="text-[9px] font-black uppercase tracking-widest">Customer Profile Overview</span>
                   </div>
-                  <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{selectedLead.id}</h3>
+                  <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{selectedLead.displayId || selectedLead.id}</h3>
                   <div className="flex items-center gap-3 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     <Calendar size={14} className="text-indigo-500" /> Registration Date: {selectedLead.date}
                   </div>

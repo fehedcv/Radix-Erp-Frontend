@@ -153,19 +153,20 @@ const BusinessHub = () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      if (deleteTarget.linkedLeads.length > 0) {
-        await Promise.all(
-          deleteTarget.linkedLeads.map(lead =>
-            frappeApi.put(`/resource/Lead/${lead.name}`, { business_unit: null })
-          )
-        );
+      const response = await frappeApi.post('/method/business_chain.api.admin.delete_business_unit', {
+        business_unit_id: deleteTarget.id
+      });
+      if (response.data?.message?.success) {
+        alert('Business unit deleted successfully!');
+        setUnits(prev => prev.filter(u => u.id !== deleteTarget.id));
+        if (selectedUnit?.id === deleteTarget.id) setSelectedUnit(null);
+        setDeleteTarget(null);
+      } else {
+        throw new Error('Delete operation failed');
       }
-      await frappeApi.delete(`/resource/Business Unit/${deleteTarget.id}`);
-      setUnits(prev => prev.filter(u => u.id !== deleteTarget.id));
-      if (selectedUnit?.id === deleteTarget.id) setSelectedUnit(null);
-      setDeleteTarget(null);
-    } catch {
-      alert('Failed to delete. Check permissions.');
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Failed to delete business unit. Please try again.');
     } finally { setDeleting(false); }
   };
 
@@ -396,6 +397,7 @@ const BusinessHub = () => {
                     <EditField label="Business Name *" value={editForm.name}        onChange={setField('name')}        placeholder="e.g. SKYLINE TECH" />
                     <EditField label="Market Category" value={editForm.category}    onChange={setField('category')}    />
                     <EditField label="Status"          value={editForm.status}      onChange={setField('status')}      isSelect options={STATUSES} />
+                    <EditField label="Commission (%)"  value={editForm.commision}  onChange={setField('commision')}  type="number" placeholder="e.g. 10" />
                     <EditField label="Unit Manager"    value={editForm.manager}     onChange={setField('manager')}     placeholder="Manager name" />
                     <EditField label="Primary Phone"   value={editForm.phone}       onChange={setField('phone')}       placeholder="+971 50 000 0000" />
                     <EditField label="WhatsApp Number" value={editForm.whatsapp}    onChange={setField('whatsapp')}   placeholder="+971 50 000 0000" />
@@ -417,6 +419,7 @@ const BusinessHub = () => {
                     <div className="space-y-8">
                       <DossierSection title="Unit Identity" icon={<User size={12}/>}>
                         <InfoItem label="Manager"      value={selectedUnit.managerName} />
+                        <InfoItem label="Commission"   value={`${selectedUnit.commision}%`} />
                         <InfoItem label="Onboarded"    value={selectedUnit.date} />
                         <InfoItem label="Status"       value={selectedUnit.status} />
                         {selectedUnit.phone    && <InfoItem label="Primary Phone" value={selectedUnit.phone} />}

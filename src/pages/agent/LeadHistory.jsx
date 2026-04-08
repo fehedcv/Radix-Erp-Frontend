@@ -271,17 +271,20 @@ const donutChartConfig = {
         <span className="text-slate-400">Payment</span>
 
         {lead.paymentStatus === "Settled" ? (
-          <span className="text-green-600 font-medium">Settled</span>
+          <span className="text-green-600 font-medium">Approved</span>
         ) : (
-          <span className="text-amber-500 font-medium">Not Settled</span>
+          <span className="text-amber-500 font-medium">Not Approved</span>
         )}
       </div>
        {/* ✅ DUMMY Credit Status */}
       <div className="flex justify-between items-center">
         <span className="text-slate-400">Credit</span>
 
-                 <span className="text-slate-400 font-medium">Not Credited</span>
-
+                 {lead.creditStatus === "Credited" ? (
+          <span className="text-green-600 font-medium">Credited</span>
+        ) : (
+          <span className="text-amber-500 font-medium">Not Credited</span>
+        )}
       </div>
           </motion.div>
         )) : (
