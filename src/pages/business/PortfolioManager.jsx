@@ -41,7 +41,6 @@ const EMPTY_UNIT = {
   services: [],
   gallery: [],
   logo: "",
-  // Dummy fields for social media (Ready for API update)
   instagram: "",
   facebook: "",
   linkedin: ""
@@ -60,6 +59,9 @@ const PortfolioManager = () => {
   const [logoUploading, setLogoUploading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  // Frozen snapshot of the last-saved state — used to compute the diff
+  const originalUnit = useRef(null);
+
   const fileInputRef = useRef(null);
   const logoInputRef = useRef(null);
 
@@ -75,7 +77,7 @@ const PortfolioManager = () => {
 
         const d = res.data.message;
 
-        setUnit({
+        const normalized = {
           id: d.id,
           name: d.name ?? "",
           website: d.website ?? "",
@@ -84,14 +86,19 @@ const PortfolioManager = () => {
           location: d.location ?? "",
           address: d.address ?? "",
           description: d.description ?? "",
+          // Each service must carry { id, name, description }
+          // where id = Frappe child row docname (e.g. "BUS-SVC-00001")
           services: d.services ?? [],
           gallery: d.gallery ?? [],
           logo: d.logo ?? "",
-          // Map API response later, falling back to empty string for now
           instagram: d.instagram ?? "",
           facebook: d.facebook ?? "",
-          linkedin: d.linkedin ?? ""
-        });
+          linkedin: d.linkedin ?? "",
+        };
+
+        setUnit(normalized);
+        // Deep-clone so edits to `unit` never mutate the snapshot
+        originalUnit.current = JSON.parse(JSON.stringify(normalized));
       } catch (e) {
         console.error("Failed to load business unit", e);
       } finally {
@@ -101,6 +108,87 @@ const PortfolioManager = () => {
 
     load();
   }, []);
+
+  /* =======================
+     DIFF / PATCH HELPERS
+  ======================= */
+  const computePatch = (original, current) => {
+    const patch = {};
+
+    // Scalar fields — only include keys whose value actually changed
+    const scalars = [
+      "website", "contact", "location", "address",
+      "description", "instagram", "facebook", "linkedin",
+    ];
+    for (const key of scalars) {
+      if (original[key] !== current[key]) {
+        patch[key] = current[key];
+      }
+    }
+
+    // Services diff
+    const origById = Object.fromEntries(
+      (original.services ?? []).map((s) => [s.id, s])
+    );
+    const currIds = new Set(current.services.map((s) => s.id).filter(Boolean));
+
+    // Rows that are new (no id) or have changed name/description
+    const upserted = current.services.filter((s) => {
+      if (!s.id) return true; // brand-new row added by user
+      const o = origById[s.id];
+      return !o || o.name !== s.name || o.description !== s.description;
+    });
+
+    // Rows present in original but missing from current → deleted
+    const deletedIds = (original.services ?? [])
+      .filter((s) => s.id && !currIds.has(s.id))
+      .map((s) => s.id);
+
+    if (upserted.length || deletedIds.length) {
+      patch.services = { upserted, deleted_ids: deletedIds };
+    }
+
+    // Gallery diff (items are plain URL strings)
+    const origGallerySet = new Set(original.gallery ?? []);
+    const currGallerySet = new Set(current.gallery ?? []);
+
+    const addedGallery   = current.gallery.filter((u) => !origGallerySet.has(u));
+    const removedGallery = (original.gallery ?? []).filter((u) => !currGallerySet.has(u));
+
+    if (addedGallery.length || removedGallery.length) {
+      patch.gallery = { added: addedGallery, removed: removedGallery };
+    }
+
+    return patch;
+  };
+
+  /* =======================
+     SAVE PROFILE (diff-aware)
+  ======================= */
+  const saveProfile = async () => {
+    if (!originalUnit.current) return;
+
+    const patch = computePatch(originalUnit.current, unit);
+
+    if (!Object.keys(patch).length) {
+      // Nothing changed — no need to hit the network
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await frappeApi.post(
+        "/method/business_chain.api.business_unit.update_my_business_unit",
+        { patch }
+      );
+      // Advance the snapshot so the next save computes a fresh diff
+      originalUnit.current = JSON.parse(JSON.stringify(unit));
+    } catch (e) {
+      console.error("Save failed", e);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   /* =======================
      LOGO UPLOAD
@@ -123,6 +211,8 @@ const PortfolioManager = () => {
 
       const fileUrl = res.data.message.file_url;
       setUnit((prev) => ({ ...prev, logo: fileUrl }));
+      // Keep snapshot in sync — logo is uploaded immediately, not via patch
+      originalUnit.current = { ...originalUnit.current, logo: fileUrl };
     } catch (err) {
       console.error("Logo upload failed", err);
       alert("Failed to upload logo. Please try again.");
@@ -133,27 +223,11 @@ const PortfolioManager = () => {
   };
 
   /* =======================
-     SAVE PROFILE
-  ======================= */
-  const saveProfile = async () => {
-    setSaving(true);
-    try {
-      await frappeApi.post(
-        "/method/business_chain.api.business_unit.update_my_business_unit",
-        { data: unit }
-      );
-    } catch (e) {
-      console.error("Save failed", e);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  /* =======================
      SERVICES LOGIC
   ======================= */
   const addService = () => {
-    setUnit({ ...unit, services: [...unit.services, { name: "", description: "" }] });
+    // New rows have no id — the backend will append them as fresh child rows
+    setUnit({ ...unit, services: [...unit.services, { id: "", name: "", description: "" }] });
   };
 
   const updateService = (idx, field, value) => {
@@ -210,64 +284,62 @@ const PortfolioManager = () => {
 
       {/* HEADER */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col md:flex-row justify-between md:items-center gap-4 shadow-sm">
-      <div className="flex items-start sm:items-center gap-4">
+        <div className="flex items-start sm:items-center gap-4">
 
-  {/* LOGO UPLOAD BUTTON */}
-  <div
-    onClick={() => logoInputRef.current.click()}
-    className="relative h-14 w-14 bg-blue-50 border border-blue-100 flex items-center justify-center rounded-xl overflow-hidden cursor-pointer group shadow-sm shrink-0"
-  >
-    {logoUploading ? (
-      <Loader2 size={20} className="text-blue-500 animate-spin" />
-    ) : unit.logo ? (
-      <img
-        src={resolveUrl(unit.logo)}
-        alt="Business Logo"
-        className="w-full h-full object-cover"
-      />
-    ) : (
-      <Upload size={20} className="text-slate-400" />
-    )}
+          {/* LOGO UPLOAD BUTTON */}
+          <div
+            onClick={() => logoInputRef.current.click()}
+            className="relative h-14 w-14 bg-blue-50 border border-blue-100 flex items-center justify-center rounded-xl overflow-hidden cursor-pointer group shadow-sm shrink-0"
+          >
+            {logoUploading ? (
+              <Loader2 size={20} className="text-blue-500 animate-spin" />
+            ) : unit.logo ? (
+              <img
+                src={resolveUrl(unit.logo)}
+                alt="Business Logo"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Upload size={20} className="text-slate-400" />
+            )}
 
-    {/* Hover overlay — always shown so logo is always re-uploadable */}
-    {!logoUploading && (
-      <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <Upload size={16} className="text-white" />
-        <span className="text-white text-[8px] font-bold mt-1 tracking-wider">
-          {unit.logo ? "CHANGE" : "UPLOAD"}
-        </span>
-      </div>
-    )}
+            {!logoUploading && (
+              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Upload size={16} className="text-white" />
+                <span className="text-white text-[8px] font-bold mt-1 tracking-wider">
+                  {unit.logo ? "CHANGE" : "UPLOAD"}
+                </span>
+              </div>
+            )}
 
-    <input
-      type="file"
-      ref={logoInputRef}
-      hidden
-      accept="image/*"
-      onChange={handleLogoUpload}
-    />
-  </div>
+            <input
+              type="file"
+              ref={logoInputRef}
+              hidden
+              accept="image/*"
+              onChange={handleLogoUpload}
+            />
+          </div>
 
-  <div className="flex flex-col gap-2">
-    <div>
-      <h2 className="text-xl font-black uppercase tracking-tight text-slate-900 leading-none mb-1">
-        {unit.name || "Untitled Unit"}
-      </h2>
-      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-        Business Profile
-      </p>
-    </div>
+          <div className="flex flex-col gap-2">
+            <div>
+              <h2 className="text-xl font-black uppercase tracking-tight text-slate-900 leading-none mb-1">
+                {unit.name || "Untitled Unit"}
+              </h2>
+              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                Business Profile
+              </p>
+            </div>
 
-    {/* PROPER ALERT BOX */}
-    <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg shadow-sm w-fit">
-      <AlertTriangle size={12} className="text-amber-500 animate-pulse shrink-0" />
-      <span className="text-[9px] font-black uppercase tracking-widest text-amber-700">
-        Please remember to save any changes made
-      </span>
-    </div>
-  </div>
-  
-</div>
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg shadow-sm w-fit">
+              <AlertTriangle size={12} className="text-amber-500 animate-pulse shrink-0" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-amber-700">
+                Please remember to save any changes made
+              </span>
+            </div>
+          </div>
+
+        </div>
         <div className="flex gap-3">
           <button
             onClick={saveProfile}
@@ -342,7 +414,7 @@ const PortfolioManager = () => {
             </Section>
           </div>
 
-          {/* SOCIAL MEDIA LINKS (NEW) */}
+          {/* SOCIAL MEDIA LINKS */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <Section title="Social Media Links" icon={<Share2 size={14} />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -402,7 +474,7 @@ const PortfolioManager = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
-                      key={i}
+                      key={img}
                       className="relative group aspect-square"
                     >
                       <img
@@ -441,7 +513,7 @@ const PortfolioManager = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, height: 0 }}
-                    key={i}
+                    key={s.id || `new-${i}`}
                     className="border border-slate-100 bg-slate-50/50 rounded-xl p-3 space-y-3 hover:border-slate-300 transition-colors"
                   >
                     <div className="flex justify-between items-start">
@@ -530,7 +602,7 @@ const PortfolioManager = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {unit.services.map((s, i) => (
-                    <div key={i} className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div key={s.id || i} className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                       <h4 className="font-bold text-slate-900 mb-1">{s.name}</h4>
                       <p className="text-xs text-slate-500">{s.description}</p>
                     </div>
