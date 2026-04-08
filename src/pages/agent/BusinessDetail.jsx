@@ -35,7 +35,7 @@ const BusinessDetail = () => {
     if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) {
       return path;
     }
-    const baseUrl = "http://16.171.38.6:8000";
+    const baseUrl = import.meta.env.VITE_FRAPPE_URL.replace('/api', '');
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
     const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     return `${cleanBase}${cleanPath}`;
@@ -60,6 +60,10 @@ const BusinessDetail = () => {
           location: data.location || '',
           address: data.address || "",
           description: data.description || '',
+          logo: data.logo || '',
+          facebook: data.facebook || '',
+          instagram: data.instagram || '',
+          linkedin: data.linkedin || '',
           services: (data.services || []).map(s => ({
             name: s.name,
             description: s.description || ""
@@ -157,9 +161,17 @@ const BusinessDetail = () => {
       {/* Header Card */}
       <div className="bg-white border border-slate-200 rounded-lg p-6 md:p-8 shadow-sm flex flex-col lg:flex-row justify-between gap-6 items-start lg:items-center">
         <div className="flex items-start md:items-center gap-5">
-          <div className="h-16 w-16 bg-slate-900 text-white flex items-center justify-center rounded-md shrink-0 shadow-sm">
-            <Briefcase size={28} />
-          </div>
+          {unit.logo ? (
+            <img
+              src={getFrappeImage(unit.logo)}
+              alt={`${unit.name} logo`}
+              className="h-16 w-16 rounded-md object-cover shrink-0 shadow-sm border border-slate-200"
+            />
+          ) : (
+            <div className="h-16 w-16 bg-slate-900 text-white flex items-center justify-center rounded-md shrink-0 shadow-sm">
+              <Briefcase size={28} />
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
@@ -314,33 +326,41 @@ const BusinessDetail = () => {
               )}
             </div>
 
-            {/* --- NEW: HARDCODED SOCIAL MEDIA LINKS --- */}
-            <div className="mt-6 pt-5 border-t border-slate-100 flex justify-center gap-4">
-              <a 
-                href="https://instagram.com" 
-                target="_blank" 
-                rel="noreferrer" 
-                className="w-10 h-10 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center text-pink-600 hover:bg-pink-500 hover:text-white hover:scale-110 transition-all shadow-sm"
-              >
-                <Instagram size={18} />
-              </a>
-              <a 
-                href="https://facebook.com" 
-                target="_blank" 
-                rel="noreferrer" 
-                className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white hover:scale-110 transition-all shadow-sm"
-              >
-                <Facebook size={18} />
-              </a>
-              <a 
-                href="https://linkedin.com" 
-                target="_blank" 
-                rel="noreferrer" 
-                className="w-10 h-10 rounded-full bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 hover:bg-sky-600 hover:text-white hover:scale-110 transition-all shadow-sm"
-              >
-                <Linkedin size={18} />
-              </a>
-            </div>
+            {/* --- Social Media Links --- */}
+            {(unit.facebook || unit.instagram || unit.linkedin) && (
+              <div className="mt-6 pt-5 border-t border-slate-100 flex justify-center gap-4">
+                {unit.instagram && (
+                  <a 
+                    href={unit.instagram} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="w-10 h-10 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center text-pink-600 hover:bg-pink-500 hover:text-white hover:scale-110 transition-all shadow-sm"
+                  >
+                    <Instagram size={18} />
+                  </a>
+                )}
+                {unit.facebook && (
+                  <a 
+                    href={unit.facebook} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white hover:scale-110 transition-all shadow-sm"
+                  >
+                    <Facebook size={18} />
+                  </a>
+                )}
+                {unit.linkedin && (
+                  <a 
+                    href={unit.linkedin} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="w-10 h-10 rounded-full bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 hover:bg-sky-600 hover:text-white hover:scale-110 transition-all shadow-sm"
+                  >
+                    <Linkedin size={18} />
+                  </a>
+                )}
+              </div>
+            )}
 
             <div className="mt-6 pt-5 border-t border-slate-100">
               <p className="text-xs text-slate-500 text-center">

@@ -40,7 +40,10 @@ const mapDoc = (doc) => ({
   cityArea:    doc.location        || '',
   address:     doc.address         || '',
   description: doc.description     || '',
-  logo:        doc.logo            || '', // <--- ADDED THIS LINE!
+  logo:        doc.logo            || '',
+  facebook:    doc.facebook        || '',
+  instagram:   doc.instagram       || '',
+  linkedin:    doc.linkedin        || '',
   services:    Array.isArray(doc.services) ? doc.services : [],
   gallery:     Array.isArray(doc.gallery)  ? doc.gallery  : [],
   date:        doc.creation ? doc.creation.split(' ')[0] : '—',
@@ -479,6 +482,30 @@ const BusinessHub = () => {
                             </a>
                           </div>
                         )}
+                        {selectedUnit.facebook && (
+                          <div className="flex justify-between items-center border-b border-slate-50 pb-1.5">
+                            <span className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">Facebook</span>
+                            <a href={selectedUnit.facebook} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">
+                              {selectedUnit.facebook}
+                            </a>
+                          </div>
+                        )}
+                        {selectedUnit.instagram && (
+                          <div className="flex justify-between items-center border-b border-slate-50 pb-1.5">
+                            <span className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">Instagram</span>
+                            <a href={selectedUnit.instagram} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">
+                              {selectedUnit.instagram}
+                            </a>
+                          </div>
+                        )}
+                        {selectedUnit.linkedin && (
+                          <div className="flex justify-between items-center border-b border-slate-50 pb-1.5">
+                            <span className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">LinkedIn</span>
+                            <a href={selectedUnit.linkedin} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">
+                              {selectedUnit.linkedin}
+                            </a>
+                          </div>
+                        )}
                       </DossierSection>
                       <DossierSection title="HQ Coordinates" icon={<MapPin size={12}/>}>
                         <div className="p-4 bg-slate-50 border border-slate-100 rounded-lg flex items-start gap-3">
@@ -518,7 +545,7 @@ const BusinessHub = () => {
                             {selectedUnit.gallery.map((g, i) => (
                               <div key={i} className="aspect-video bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
                                 {g.image
-                                  ? <img src={g.image} alt={g.caption || `Gallery ${i+1}`} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; }} />
+                                  ? <img src={resolveUrl(g.image)} alt={g.caption || `Gallery ${i+1}`} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; }} />
                                   : <div className="w-full h-full flex items-center justify-center text-slate-300"><Image size={20}/></div>
                                 }
                               </div>
