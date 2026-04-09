@@ -123,20 +123,21 @@ const WebLandingPage = ({ onEnterPortal }) => {
       {/* --- NEW MODERN FLOATING NAVBAR --- */}
      {/* --- STANDARD FULL-WIDTH NAVBAR --- */}
       <header className="fixed top-0 left-0 w-full z-[100] bg-[#07070A]/80 backdrop-blur-xl border-b border-white/5">
-        <nav className="max-w-[1400px] mx-auto px-6 sm:px-16 h-20 flex items-center justify-between">
+        <nav className="max-w-[1400px] mx-auto px-2 sm:px-16 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4 md:gap-12">
             
             {/* LOGO */}
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3 group cursor-pointer"
-            >
-             
-              <span className="text-lg font-medium tracking-tight text-white">
-                Radix Holdings
-              </span>
-            </motion.div>
+         <motion.div
+  initial={{ opacity: 0, x: -20 }}
+  animate={{ opacity: 1, x: 0 }}
+  className="flex items-center gap-3 group cursor-pointer"
+>
+  <img
+    src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775796828/Radix_logo_on_navy_blue_background__1_-removebg-preview_1_qbqtpi.png" // <-- Replace with your actual logo path (e.g., /logo.png)
+    alt="Radix Holdings Logo"
+    className="h-16 md:h-18 w-auto block" // Standard height, auto width, ensures it renders as a block
+  />
+</motion.div>
 
             {/* NAV LINKS */}
             <div className="hidden md:flex items-center gap-8">
@@ -166,7 +167,7 @@ const WebLandingPage = ({ onEnterPortal }) => {
 
       <main className="pt-20">
         {/* --- HERO SECTION --- */}
-        <section className="relative pt-24 md:pt-24 pb-20 md:pb-32 px-4 sm:px-6 max-w-[1200px] mx-auto min-h-[85vh] flex flex-col">
+        <section className="relative pt-8 md:pt-24 pb-20 md:pb-32 px-4 sm:px-6 max-w-[1200px] mx-auto min-h-[85vh] flex flex-col">
           
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-12 z-20 relative w-full">
             <div className="reveal-up lg:w-[60%] mt-8 lg:mt-0">
@@ -292,14 +293,14 @@ const WebLandingPage = ({ onEnterPortal }) => {
            <div className="max-w-[1200px] mx-auto">
               
               <div className="text-center mb-16 md:mb-24 reveal-up">
-                 {/* <h2 className="font-['Syne',sans-serif] text-xs font-medium text-[#B282FE] uppercase tracking-[0.2em] mb-4">Inside the Platform</h2> */}
-                 <h3 className="font-['Syne',sans-serif] text-4xl md:text-6xl font-light tracking-tight text-white mb-6 leading-tight">
-                   Manage your business <br className="hidden md:block" />from anywhere.
-                 </h3>
-                 <p className="text-white/50 text-lg leading-relaxed font-light max-w-2xl mx-auto">
-                   Track your submissions, monitor approval status, and watch your earnings grow from a clean, intuitive interface that works flawlessly on your computer and right from your pocket.
-                 </p>
-              </div>
+  {/* <h2 className="font-['Syne',sans-serif] text-xs font-medium text-[#B282FE] uppercase tracking-[0.2em] mb-4">Inside the Platform</h2> */}
+  <h3 className="font-['Syne',sans-serif] text-4xl md:text-6xl font-light tracking-tight text-white mb-6 leading-tight">
+    Manage your referrals <br className="hidden md:block" />from anywhere.
+  </h3>
+  <p className="text-white/50 text-lg leading-relaxed font-light max-w-2xl mx-auto">
+    Track your submitted leads, monitor their real-time verification status, and watch your earned credits grow from a clean, intuitive interface that works flawlessly on your computer and right from your pocket.
+  </p>
+</div>
 
               {/* Stacked Images Layout */}
               <div className="relative h-auto md:h-[550px] lg:h-[700px] w-full flex flex-col md:block gap-12 md:gap-0">
@@ -317,8 +318,8 @@ const WebLandingPage = ({ onEnterPortal }) => {
                     
                     {/* DESKTOP IMAGE PLACEHOLDER: Put your <img> here */}
                     <div className="w-full aspect-[16/9] flex items-center justify-center bg-[#1A1A24] relative overflow-hidden">
-                       {/* <img src="/your-desktop-screenshot.png" alt="Desktop Dashboard" className="w-full h-full object-cover" /> */}
-                       <span className="text-white/20 font-medium tracking-widest uppercase text-sm">Desktop Dashboard (16:9)</span>
+                       <img src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775800298/desktop_uyi0ii.png" alt="Desktop Dashboard" className="w-full h-full object-cover" />
+                       {/* <span className="text-white/20 font-medium tracking-widest uppercase text-sm">Desktop Dashboard (16:9)</span> */}
                     </div>
                  </div>
 
@@ -326,17 +327,22 @@ const WebLandingPage = ({ onEnterPortal }) => {
                  <div className="screen-2 relative md:absolute md:top-[120px] lg:top-[150px] md:right-[5%] w-[65%] sm:w-[50%] md:w-[26%] mx-auto md:mx-0 h-auto rounded-[2.5rem] border-[6px] lg:border-[8px] border-[#1A1A24] bg-[#12121A] shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden z-20">
                     
                     {/* Simulated Phone Notch */}
-                    <div className="absolute top-0 inset-x-0 h-5 flex justify-center z-30">
+                    {/* <div className="absolute top-0 inset-x-0 h-5 flex justify-center z-30">
                        <div className="w-[40%] h-full bg-[#1A1A24] rounded-b-xl"></div>
-                    </div>
+                    </div> */}
 
                     {/* MOBILE IMAGE PLACEHOLDER: Put your <img> here */}
-                    <div className="w-full aspect-[9/16] flex items-center justify-center bg-gradient-to-br from-[#1A1A24] to-[#0A0A0F] pt-6 relative overflow-hidden">
-                       {/* <img src="/your-mobile-screenshot.png" alt="Mobile Dashboard" className="w-full h-full object-cover" /> */}
-                       <span className="text-white/20 font-medium tracking-widest uppercase text-[10px] text-center px-4 leading-relaxed">
-                          Mobile App <br/> (9:16)
-                       </span>
-                    </div>
+                   {/* Removed 'pt-6' so it doesn't squish the image */}
+<div className="w-full aspect-[9/16] flex items-center justify-center bg-[#0A0A0F] relative overflow-hidden rounded-b-[2rem]">
+  
+  <img 
+    src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775800308/WhatsApp_Image_2026-04-10_at_11.21.26_AM_hyqskb.jpg" 
+    alt="Mobile Dashboard" 
+    /* Changed to object-cover object-top to fill edge-to-edge seamlessly */
+    className="w-full h-full " 
+  />
+
+</div>
                     
                     {/* Simulated Home Indicator */}
                     <div className="absolute bottom-2 inset-x-0 flex justify-center z-30">
@@ -452,7 +458,7 @@ const WebLandingPage = ({ onEnterPortal }) => {
                     <span className="relative z-10 flex items-center justify-center gap-2">Create Free Account <ArrowUpRight size={16}/></span>
                   </button>
                   
-                  <a href="https://wa.me/yournumber" className="w-full sm:w-auto px-10 py-4 rounded-full border border-white/10 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2">
+                  <a href="https://wa.me/919400987747" target='_blank' className="w-full sm:w-auto px-10 py-4 rounded-full border border-white/10 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2">
                      <MessageCircle size={16}/> Ask a Question
                   </a>
                </div>
@@ -466,7 +472,7 @@ const WebLandingPage = ({ onEnterPortal }) => {
      <footer className="pt-24 pb-8 px-6 border-t border-white/5 bg-[#07070A] relative overflow-hidden flex flex-col items-center">
         
         {/* Giant Watermark Text */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full text-center overflow-hidden pointer-events-none select-none z-0 opacity-40">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full text-center overflow-hidden pointer-events-none select-none z-0 opacity-100">
            <h1 className="font-['Syne',sans-serif] text-[20vw] md:text-[15vw] font-bold text-white/[0.02] leading-none tracking-tighter">
              RADIX
            </h1>
@@ -475,31 +481,25 @@ const WebLandingPage = ({ onEnterPortal }) => {
         <div className="max-w-[1400px] w-full mx-auto relative z-10 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left mt-20 md:mt-32">
           
           <div className="flex flex-col items-center md:items-start gap-4">
-             <div className="flex items-center gap-3">
-               <div className="w-8 h-8 rounded-lg border border-white/10 bg-[#1A1A24] flex items-center justify-center shadow-lg">
-                   <TrendingUp size={14} className="text-[#B282FE]" />
-               </div>
-               <span className="text-white/80 font-medium text-base tracking-wide">Radix Holdings</span>
-             </div>
-             <p className="text-white/40 text-xs font-light max-w-xs">
-               The premier platform for business lead generation and professional networking payouts.
-             </p>
+            <div className="flex items-center">
+  <img 
+    src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775796828/Radix_logo_on_navy_blue_background__1_-removebg-preview_1_qbqtpi.png" /* <-- Replace with your actual logo file path */
+    alt="Radix Holdings Logo" 
+    className="h-16 md:h-22 w-auto object-contain" /* h-8 matches the height of your previous icon box */
+  />
+</div>
           </div>
 
           <div className="flex flex-col items-center md:items-end gap-6">
-             <nav className="flex flex-wrap justify-center gap-6 text-xs font-bold text-white/50 tracking-widest uppercase">
-               <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-               <a href="mailto:hq@radixchain.com" className="hover:text-white transition-colors">Contact Support</a>
-             </nav>
+           
              
              {/* Updated Copyright & Developer Credit */}
              <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3 text-[10px] text-white/30 font-medium tracking-[0.2em] uppercase">
-                 <span>© {new Date().getFullYear()} Radix Holdings. All rights reserved.</span>
+                 <span>© {new Date().getFullYear()} Radix. All rights reserved.</span>
                  <span className="hidden md:block w-1 h-1 rounded-full bg-white/20"></span>
                  <span className="flex items-center gap-1.5">
                     Developed by 
-                    <a href="https://vynxwebworks.com" target="_blank" rel="noopener noreferrer" className="text-transparent bg-clip-text bg-gradient-to-r from-[#7038FF] to-[#B282FE] font-bold tracking-[0.25em] hover:opacity-80 transition-opacity drop-shadow-[0_0_10px_rgba(178,130,254,0.3)]">
+                    <a href="https://wa.me/919847512024" target="_blank" rel="noopener noreferrer" className="text-transparent bg-clip-text bg-gradient-to-r from-[#7038FF] to-[#B282FE] font-bold tracking-[0.25em] hover:opacity-80 transition-opacity drop-shadow-[0_0_10px_rgba(178,130,254,0.3)]">
                         Vynx Webworks
                     </a>
                  </span>

@@ -102,15 +102,15 @@ const AgentHub = ({ onLogout }) => {
           <div className="flex items-center gap-4">
   {/* Custom Logo Image */}
   <img 
-    src="https://placehold.co/100x100/FF0000/FFFFFF?" 
+    src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775799844/Stylised__X__logo_on_black_background-removebg-preview_nnmney.png" 
     alt="Radix Logo" 
-    className="h-11 w-11  object-contain shrink-0 shadow-sm border border-slate-100" 
+    className="h-16 w-16   object-contain shrink-0 " 
   />
   
   {/* Brand Text */}
   <div>
-    <h1 className="text-[21px] font-black text-slate-900 tracking-tighter leading-none uppercase">RADIX</h1>
-    <p className="text-[9px] font-black text-[#007ACC] uppercase tracking-[0.3em] mt-1.5 leading-none">Partner Dashboard</p>
+    <h1 className="text-[21px] font-[sans] font-bold text-slate-900 tracking-tighter leading-none uppercase">RADIX</h1>
+    <p className="text-[9px] font-[sans] text-[#007ACC] uppercase tracking-[0.3em] mt-1.5 leading-tight">Partner</p>
   </div>
 </div>
         </div>
@@ -147,7 +147,7 @@ const AgentHub = ({ onLogout }) => {
         <div className="p-6 bg-white border-t border-slate-50">
           <button 
             onClick={() => setShowLogoutConfirm(true)} 
-            className="group flex items-center gap-3 w-full px-4 py-2 text-slate-400 hover:text-rose-500 transition-colors uppercase font-bold text-[10px] tracking-[0.2em]"
+            className="group flex items-center border rounded-md gap-3 w-full px-4 py-2 text-slate-400 hover:text-rose-500 transition-colors uppercase font-bold text-[10px] tracking-[0.2em]"
           >
             <LogOut size={16} /> Sign Out
           </button>
