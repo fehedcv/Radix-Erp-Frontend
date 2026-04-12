@@ -6,7 +6,8 @@ import {
   Sparkles, FileImage, Zap, AlertCircle,
   Briefcase, IndianRupee,
   Activity,
-  CreditCard
+  CreditCard,
+  SearchX
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import ApexCharts from 'apexcharts';
@@ -66,12 +67,15 @@ const userRes = await frappeApi.get('/resource/User', {
         limit_page_length: 0 
       }
     });
+    // console.log("API FULL RESPONSE:", userRes.data.message);
     const phoneMap = {};
     if (userRes.data?.data) {
       userRes.data.data.forEach(user => {
         phoneMap[user.name] = user.mobile_no || user.phone || "";
       });
     }
+    console.log("RAW LEADS FROM API:", rawLeads);
+console.log("FIRST LEAD:", rawLeads?.[0]);
     setAgentPhones(phoneMap);
       setLeads(rawLeads.map(l => ({
         ledgerId:     l.ledger_id,
@@ -116,7 +120,7 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
         status:  'Approved',
         ...(settleRemarks ? { remarks: settleRemarks } : {}),
       });
-      setLeads(prev => prev.filter(l => l.ledgerId !== selectedItem.ledgerId));
+     setLeads(prev => prev.filter(l => l.ledgerId !== selectedItem.ledgerId));
       closeAllModals();
     } catch {
       alert('Failed to assign credits. Please try again.');
@@ -249,6 +253,7 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
             </p>
           </div>
         </div>
+       
         <div className="flex gap-2 w-full md:w-auto">
           <StatPill
             label="Unpaid Rewards"
@@ -352,8 +357,8 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
     </div>
   ) : filteredRewards.length === 0 ? (
     <div className="flex flex-col items-center justify-center py-20 gap-2 text-slate-300 bg-white border border-slate-200 rounded-xl">
-      <Sparkles size={28} />
-      <p className="text-[10px] font-black uppercase tracking-widest">No pending rewards found</p>
+      <SearchX size={28} />
+      <p className="text-[10px] font-black uppercase tracking-widest">No pending requests found</p>
     </div>
   ) : (
    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -519,14 +524,12 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
     return (
       <div
         key={item.id}
-        className="bg-white border border-slate-200 rounded-md p-6 shadow-sm flex flex-col h-full hover:shadow-md hover:border-emerald-300 transition-all duration-300 group"
+        className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col h-full hover:shadow-md hover:border-emerald-300 transition-all duration-300 group"
       >
         {/* Header Row: ID, Agent Name & Status Pill */}
         <div className="flex justify-between items-start mb-6">
           <div className="flex-1 pr-4">
-            <span className="inline-block px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-md text-[9px] font-black uppercase tracking-widest mb-2.5">
-              {item.id}
-            </span>
+            
             <h4 className="text-base font-black text-slate-900 uppercase tracking-tight leading-tight line-clamp-2">
               {item.agentName}
             </h4>
@@ -556,7 +559,7 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
               </p>
             </div>
             <p className="text-[10px] font-bold text-emerald-600 tracking-widest mt-1.5">
-              ≈ ₹{item.amount?.toLocaleString()}
+              ₹{item.amount?.toLocaleString()}
             </p>
           </div>
           <div className="text-left sm:text-right flex flex-col items-start sm:items-end w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
@@ -721,7 +724,7 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
                   {selectedItem.agentName?.[0]}
                 </div>
                 <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{selectedItem.agentName}</h3>
-                <p className="text-[9px] text-emerald-600 font-black uppercase mt-1 tracking-widest">REF: {selectedItem.id}</p>
+                {/* <p className="text-[9px] text-emerald-600 font-black uppercase mt-1 tracking-widest">REF: {selectedItem.id}</p> */}
                 
                 {/* AGENT CONTACT CTA SECTION */}
                 <div className="w-full mt-5 bg-slate-50 border border-slate-200 rounded-xl p-3">
@@ -753,10 +756,30 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
                   }`}>{selectedItem.status}</p>
                 </div>
               </div>
-              <div className="space-y-2 text-left p-4 border border-slate-100 rounded-xl bg-white shadow-sm">
-                <InfoItem label="Requested On" value={selectedItem.date} />
-                {selectedItem.remarks && <InfoItem label="Admin Remarks / Ref" value={selectedItem.remarks} />}
-              </div>
+             <div className="space-y-2 text-left p-4 border border-slate-100 rounded-xl bg-white shadow-sm">
+  <InfoItem
+    label="Requested On"
+    value={
+      selectedItem.date
+        ? new Date(selectedItem.date).toLocaleString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          })
+        : '—'
+    }
+  />
+
+  {selectedItem.remarks && (
+    <InfoItem
+      label="Admin Remarks / Ref"
+      value={selectedItem.remarks}
+    />
+  )}
+</div>
             </div>
           )}
 

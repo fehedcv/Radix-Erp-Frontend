@@ -247,7 +247,7 @@ const WebLandingPage = ({ onEnterPortal }) => {
     
   <div className="max-w-4xl mx-auto relative z-10 font-['Syne',sans-serif]">
   <h2 className="font-['Syne',sans-serif] text-4xl md:text-6xl font-light tracking-tight text-white text-white mb-6 ">
-    Partner Android <br />
+    Radix Android <br />
     <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#B282FE] to-[#7038FF]">
       Application
     </span>
