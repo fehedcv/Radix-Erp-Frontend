@@ -170,23 +170,15 @@ const AgentControl = () => {
           <div>
             <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none">Team Directory</h2>
             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5">
-              <ShieldCheck size={10} className="text-blue-500" /> Active Management System
+              Active Management System
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="bg-slate-50 border border-slate-100 px-3 py-2 rounded-lg flex items-center gap-3 flex-1 md:w-64">
-            <Search size={14} className="text-slate-400" />
-            <input
-              type="text" placeholder="SEARCH STAFF..."
-              className="bg-transparent outline-none text-[9px] font-black uppercase tracking-widest w-full text-slate-900 placeholder:text-slate-300"
-              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <button onClick={handleExport} className="bg-blue-600 hover:bg-slate-900 text-white p-2.5 rounded-lg shadow-md transition-all active:scale-95 shrink-0">
-            <Download size={16} />
-          </button>
-        </div>
+  <button onClick={handleExport} className="bg-blue-600 hover:bg-slate-900 text-white p-2.5 rounded-lg shadow-md transition-all active:scale-95 shrink-0">
+    <Download size={16} />
+  </button>
+</div>
       </motion.div>
 
       {/* ── ANALYTICS ── */}
@@ -204,6 +196,17 @@ const AgentControl = () => {
           </ChartCard>
         </div>
       </div>
+      {/* ── SEARCH BAR (MOVED) ── */}
+<div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm flex items-center gap-3">
+  <Search size={16} className="text-slate-400" />
+  <input
+    type="text"
+    placeholder="SEARCH STAFF..."
+    className="bg-transparent outline-none text-[10px] font-black uppercase tracking-widest w-full text-slate-900 placeholder:text-slate-300"
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+  />
+</div>
 
       {/* ── AGENT GRID ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -340,7 +343,7 @@ const AgentControl = () => {
 
                     <section className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
                       <h5 className="text-[9px] font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-slate-100 pb-2">
-                        <Briefcase size={12} className="text-blue-600" /> Customers ({agentLeads.length})
+                        <Briefcase size={12} className="text-blue-600" /> Leads ({agentLeads.length})
                       </h5>
                       <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
                         {agentLeads.length > 0 ? agentLeads.map((l) => (

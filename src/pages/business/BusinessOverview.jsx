@@ -6,19 +6,18 @@ import {
   Activity,
   ShieldCheck,
   TrendingUp,
-  CheckCircle2,
-  ArrowUpRight,
   Loader2
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
-
 import frappeApi from '../../api/frappeApi';
+import { useTheme } from '../../context/ThemeContext';
 
 const BusinessOverview = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
-  // ---- FETCH DASHBOARD DATA (BACKEND AUTHORITY) ----
   useEffect(() => {
     const loadDashboard = async () => {
       try {
@@ -32,84 +31,44 @@ const BusinessOverview = () => {
         setLoading(false);
       }
     };
-
     loadDashboard();
   }, []);
 
-  // ---- SAFE DEFAULTS (CRITICAL) ----
   const safeData = data || {
     total: 0,
     verified: 0,
     in_progress: 0,
-    completed: 0,
-    rejected: 0,
     completion_rate: 0,
     trend: { labels: [], data: [] }
   };
 
-  const {
-    total,
-    verified,
-    in_progress,
-    completed,
-    rejected,
-    completion_rate,
-    trend
-  } = safeData;
+  const { total, verified, in_progress, completion_rate, trend } = safeData;
 
-  // ---- AREA CHART CONFIG (HOOK ALWAYS RUNS) ----
   const areaChartConfig = useMemo(() => ({
-    series: [
-      {
-        name: 'Leads Received',
-        data: trend.data.length ? trend.data : [0, 0, 0, 0, 0, 0, 0],
-      },
-    ],
+    series: [{ name: 'Leads Received', data: trend.data.length ? trend.data : [0, 0, 0, 0, 0, 0, 0] }],
     options: {
-      chart: {
-        type: 'area',
-        toolbar: { show: false },
-        fontFamily: 'Plus Jakarta Sans',
-        zoom: { enabled: false },
-      },
-      colors: ['#007ACC'],
-      dataLabels: { enabled: false },
+      chart: { type: 'area', toolbar: { show: false }, fontFamily: 'Plus Jakarta Sans', zoom: { enabled: false }, background: 'transparent' },
+      colors: ['#61D9DE'],
       stroke: { curve: 'smooth', width: 3 },
       fill: {
         type: 'gradient',
-        gradient: {
-          opacityFrom: 0.45,
-          opacityTo: 0.05,
-          stops: [0, 90, 100],
-        },
+        gradient: { shadeIntensity: 1, opacityFrom: isLight ? 0.3 : 0.45, opacityTo: 0.05, stops: [0, 90, 100] },
       },
       xaxis: {
         categories: trend.labels,
-        labels: {
-          style: { colors: '#94A3B8', fontSize: '11px', fontWeight: 600 },
-        },
+        labels: { style: { colors: isLight ? '#9A9FA5' : '#94A3B8', fontSize: '11px', fontWeight: 600 } },
         axisBorder: { show: false },
         axisTicks: { show: false },
       },
       yaxis: {
-        labels: {
-          style: { colors: '#94A3B8', fontSize: '11px', fontWeight: 600 },
-        },
+        labels: { style: { colors: isLight ? '#9A9FA5' : '#94A3B8', fontSize: '11px', fontWeight: 600 } },
         tickAmount: 4,
       },
-      grid: {
-        borderColor: '#F1F5F9',
-        strokeDashArray: 4,
-      },
-      tooltip: {
-        y: {
-          formatter: (val) => `${val} New Leads`,
-        },
-      },
+      grid: { borderColor: isLight ? '#E8ECEF' : 'rgba(255,255,255,0.05)', strokeDashArray: 4 },
+      tooltip: { theme: isLight ? 'light' : 'dark' },
     },
-  }), [trend]);
+  }), [trend, isLight]);
 
-  // ---- RADIAL COMPLETION CHART ----
   const radialConfig = {
     series: [completion_rate],
     options: {
@@ -119,108 +78,88 @@ const BusinessOverview = () => {
           startAngle: -135,
           endAngle: 135,
           hollow: { size: '65%' },
-          track: { background: '#F8FAFC' },
+          track: { background: isLight ? '#F0F2F5' : 'rgba(255,255,255,0.05)' },
           dataLabels: {
-            name: {
-              offsetY: 20,
-              color: '#64748B',
-              fontSize: '11px',
-              fontWeight: 700,
-            },
-            value: {
-              offsetY: -15,
-              color: '#1E293B',
-              fontSize: '26px',
-              fontWeight: 800,
-              formatter: (val) => `${val}%`,
-            },
+            name: { offsetY: 20, color: isLight ? '#9A9FA5' : '#64748B', fontSize: '11px', fontWeight: 700 },
+            value: { offsetY: -15, color: isLight ? '#1A1D1F' : '#E2E8F0', fontSize: '26px', fontWeight: 800, formatter: (val) => `${val}%` },
           },
         },
       },
-      colors: ['#10B981'],
+      colors: ['#61D9DE'],
       stroke: { lineCap: 'round' },
     },
   };
 
-  // ✅ EARLY RETURN IS NOW SAFE
-  // ✅ EARLY RETURN WITH SIMPLE SPINNER
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] font-['Plus_Jakarta_Sans',sans-serif]">
-        <Loader2 className="h-10 w-10 text-[#007ACC] animate-spin mb-4" />
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] animate-pulse">
-          Loading Analytics...
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className={`h-10 w-10 animate-spin mb-4 ${isLight ? 'text-[#61D9DE]' : 'text-[#38BDF8]'}`} />
+        <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="font-['Plus_Jakarta_Sans',sans-serif] space-y-6 pb-16 px-4 sm:px-6 lg:px-0 max-w-[1400px] mx-auto">
-
-      {/* HEADER */}
+    <div className={`font-['Plus_Jakarta_Sans',sans-serif] space-y-6 pb-16 transition-colors duration-300 ${isLight ? 'text-[#1A1D1F]' : 'text-[#E2E8F0]'}`}>
+      
+      {/* HEADER CARD - Now #F8FAFB */}
       <motion.div
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex items-center justify-between"
+        className={`p-6 rounded-2xl border transition-all duration-300 ${
+          isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] shadow-sm' : 'bg-white/5 border-white/10 shadow-sm'
+        } flex items-center justify-between`}
       >
         <div className="flex items-center gap-4">
-          <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center text-[#007ACC] border border-blue-100">
+          <div className={`h-12 w-12 rounded-xl flex items-center justify-center border transition-colors ${
+            isLight ? 'bg-white text-[#61D9DE] border-[#E8ECEF]' : 'bg-blue-50/10 text-[#38BDF8] border-blue-500/20'
+          }`}>
             <TrendingUp size={24} />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-              Business Analytics
-            </h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-2">
-              <Activity size={12} className="text-[#007ACC]" />
-              Business Performance
-            </p>
+            <h2 className="text-xl font-black uppercase tracking-tight">Analytics</h2>
+            <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>Performance Overview</p>
           </div>
         </div>
       </motion.div>
 
-      {/* METRICS */}
+      {/* METRICS GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard label="Total Leads" value={total} icon={<Users size={18} />} />
-        <MetricCard label="Verified" value={verified} icon={<CheckCircle2 size={18} />} />
-        <MetricCard label="In Progress" value={in_progress} icon={<Clock size={18} />} />
-        <MetricCard label="Rejected" value={rejected} icon={<Activity size={18} />} />
+        <MetricCard label="Total Leads" value={total} icon={<Users size={18} />} isLight={isLight} />
+        <MetricCard label="Verified" value={verified} icon={<ShieldCheck size={18} />} isLight={isLight} />
+        <MetricCard label="In Progress" value={in_progress} icon={<Clock size={18} />} isLight={isLight} />
+        <MetricCard label="Success Rate" value={`${completion_rate}%`} icon={<Activity size={18} />} isLight={isLight} />
       </div>
 
-      {/* CHARTS */}
+      {/* CHARTS SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <Chart
-            options={areaChartConfig.options}
-            series={areaChartConfig.series}
-            type="area"
-            height={280}
-          />
+        <div className={`lg:col-span-2 rounded-2xl p-6 border transition-all ${
+          isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] shadow-sm' : 'bg-white/5 border-white/10 shadow-sm'
+        }`}>
+          <Chart options={areaChartConfig.options} series={areaChartConfig.series} type="area" height={280} />
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <Chart
-            options={radialConfig.options}
-            series={radialConfig.series}
-            type="radialBar"
-            height={260}
-          />
+        <div className={`rounded-2xl p-6 border transition-all ${
+          isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] shadow-sm' : 'bg-white/5 border-white/10 shadow-sm'
+        }`}>
+          <Chart options={radialConfig.options} series={radialConfig.series} type="radialBar" height={260} />
         </div>
       </div>
     </div>
   );
 };
 
-// ---- HELPERS ----
-
-const MetricCard = ({ label, value, icon }) => (
-  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-    <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+const MetricCard = ({ label, value, icon, isLight }) => (
+  <div className={`rounded-2xl p-6 border transition-all ${
+    isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] shadow-sm' : 'bg-white/5 border-white/10 shadow-sm'
+  }`}>
+    <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-colors ${
+      isLight ? 'bg-white text-[#61D9DE] border-[#E8ECEF] border' : 'bg-blue-50/10 text-[#38BDF8] border border-white/5'
+    }`}>
       {icon}
     </div>
-    <p className="text-[11px] font-bold text-slate-400 uppercase mt-4">{label}</p>
-    <h3 className="text-3xl font-black text-slate-900">{value}</h3>
+    <p className={`text-[11px] font-bold uppercase mt-4 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>{label}</p>
+    <h3 className="text-3xl font-black">{value}</h3>
   </div>
 );
 

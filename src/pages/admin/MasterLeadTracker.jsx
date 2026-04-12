@@ -7,7 +7,8 @@ import {
   TrainTrack,
   AlignVerticalJustifyStartIcon,
   VenusAndMarsIcon,
-  TrendingUp
+  TrendingUp,
+  Target
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import frappeApi from '../../api/frappeApi';
@@ -185,7 +186,7 @@ const filteredLeads = useMemo(() => {
       >
         <div className="flex items-center gap-4">
           <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 border border-indigo-100 shrink-0">
-            <BarChart3 size={24} />
+            <Target size={24} />
           </div>
           <div>
             <h2 className="text-[20px] font-black text-slate-900 uppercase tracking-tight">Lead Tracker</h2>
@@ -252,7 +253,7 @@ const filteredLeads = useMemo(() => {
                 <option value="All">All Statuses</option>
                 <option value="Pending">Pending</option>
                 <option value="Verified">Verified</option>
-                <option value="Started">Started</option>
+                {/* <option value="Started">Started</option> */}
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
               </select>

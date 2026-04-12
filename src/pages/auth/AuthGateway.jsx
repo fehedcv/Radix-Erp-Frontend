@@ -77,10 +77,10 @@ const AuthGateway = ({ onLoginSuccess }) => {
           const parsed = JSON.parse(JSON.parse(serverMsg)[0]);
           setLoginError(parsed.message || 'Login failed.');
         } catch {
-          setLoginError('Invalid credentials or role not assigned.');
+          setLoginError('Invalid username or password');
         }
       } else {
-        setLoginError('Invalid credentials or role not assigned.');
+        setLoginError('Invalid username or password');
       }
     } finally {
       setLoginLoading(false);
@@ -236,7 +236,7 @@ Submit referrals, monitor approvals, and withdraw your commissions through our a
                       </div>
                       
                       <div className="pt-2">
-                        <SubmitBtn loading={loginLoading} label="Secure Login" icon={<Lock size={16}/>} />
+                        <SubmitBtn loading={loginLoading} label="Login" icon={<Lock size={16}/>} />
                       </div>
                     </form>
                   </motion.div>
@@ -252,16 +252,16 @@ Submit referrals, monitor approvals, and withdraw your commissions through our a
                           <CheckCircle2 size={32} className="text-emerald-400" />
                         </div>
                         <div>
-                          <h3 className="text-xl font-light lg:font-medium text-white tracking-tight">Welcome Aboard</h3>
+                          <h3 className="text-xl font-light lg:font-medium text-white tracking-tight">Welcome To Radix</h3>
                           <p className="text-xs text-white/50 mt-1 font-light leading-relaxed">
-                            Your agent account is verified and ready.
+                            Your account is verified and ready.
                           </p>
                         </div>
                         <button
                           onClick={() => { setTab('login'); setSignupSuccess(false); setSignupForm({ full_name:'', email:'', phone:'', password:'', confirm:'' }); }}
                           className="w-full mt-2 bg-white/10 lg:bg-white lg:text-black hover:bg-white/20 border border-white/10 lg:border-transparent text-white py-3.5 rounded-full font-bold text-xs uppercase tracking-widest transition-all active:scale-95"
                         >
-                          Proceed to Login
+                          Please Login
                         </button>
                       </div>
                     ) : (
@@ -274,17 +274,17 @@ Submit referrals, monitor approvals, and withdraw your commissions through our a
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Full Name</label>
-                            <AuthInput value={signupForm.full_name} onChange={setField('full_name')} placeholder="John Doe" required />
+                            <AuthInput value={signupForm.full_name} onChange={setField('full_name')} placeholder="Enter your name" required />
                           </div>
                           <div className="space-y-1">
                             <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Email</label>
-                            <AuthInput type="email" value={signupForm.email} onChange={setField('email')} placeholder="john@mail.com" required />
+                            <AuthInput type="email" value={signupForm.email} onChange={setField('email')} placeholder="Enter your email" required />
                           </div>
                         </div>
 
                         <div className="space-y-1">
                           <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Phone Number</label>
-                          <AuthInput type="tel" value={signupForm.phone} onChange={setField('phone')} placeholder="+91 98765 43210" required />
+                          <AuthInput type="tel" value={signupForm.phone} onChange={setField('phone')} placeholder="98765 43210" required />
                         </div>
                         
                         {/* TWO FIELDS IN ONE LINE: Passwords */}
@@ -299,7 +299,7 @@ Submit referrals, monitor approvals, and withdraw your commissions through our a
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Confirm Pwd</label>
+                            <label className="text-[10px] font-medium text-white/40 uppercase tracking-widest ml-2 lg:ml-1">Confirm Password</label>
                             <AuthInput type="password" value={signupForm.confirm} onChange={setField('confirm')} placeholder="Re-enter" required />
                           </div>
                         </div>
@@ -321,7 +321,7 @@ Submit referrals, monitor approvals, and withdraw your commissions through our a
           </div>
 
           <p className="text-center text-[10px] text-white/20 uppercase tracking-widest mt-6 font-medium">
-            Protected by Frappe Session Auth
+            Secured Authentication
           </p>
 
         </div>

@@ -5,8 +5,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import { 
   ArrowRight, Wallet, CheckCircle, 
-  Send, MessageCircle, Globe, Plus,
-  ShieldCheck, TrendingUp, Zap, Clock, Lock, ArrowUpRight
+  Send, MessageCircle, Smartphone,Download, Plus,
+  ShieldCheck,  Clock, Lock, ArrowUpRight,Apple
 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import AppHomePage from './AppHomePage'; 
@@ -123,7 +123,7 @@ const WebLandingPage = ({ onEnterPortal }) => {
       {/* --- NEW MODERN FLOATING NAVBAR --- */}
      {/* --- STANDARD FULL-WIDTH NAVBAR --- */}
       <header className="fixed top-0 left-0 w-full z-[100] bg-[#07070A]/80 backdrop-blur-xl border-b border-white/5">
-        <nav className="max-w-[1400px] mx-auto px-2 sm:px-16 h-20 flex items-center justify-between">
+        <nav className="max-w-[1400px] mx-auto px- sm:px-16 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4 md:gap-12">
             
             {/* LOGO */}
@@ -133,15 +133,15 @@ const WebLandingPage = ({ onEnterPortal }) => {
   className="flex items-center gap-3 group cursor-pointer"
 >
   <img
-    src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775796828/Radix_logo_on_navy_blue_background__1_-removebg-preview_1_qbqtpi.png" // <-- Replace with your actual logo path (e.g., /logo.png)
+    src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775799844/Stylised__X__logo_on_black_background-removebg-preview_nnmney.png" // <-- Replace with your actual logo path (e.g., /logo.png)
     alt="Radix Holdings Logo"
-    className="h-16 md:h-18 w-auto block" // Standard height, auto width, ensures it renders as a block
+    className="h-8 md:h-8 w-auto block" // Standard height, auto width, ensures it renders as a block
   />
 </motion.div>
 
             {/* NAV LINKS */}
             <div className="hidden md:flex items-center gap-8">
-              {['How it Works', 'Dashboard', 'Contact Us'].map((item) => (
+              {['How it Works', 'Dashboard'].map((item) => (
                 <a
                   key={item}
                   href={`#${item.split(' ').pop().toLowerCase()}`}
@@ -234,6 +234,93 @@ const WebLandingPage = ({ onEnterPortal }) => {
              </div>
           </div>
         </section>
+{/* {Download app secition} */}
+{/* import { Download, Smartphone, Apple } from 'lucide-react'; */}
+
+{/* --- RADIX MOBILE APP SECTION: SMART HOME STYLE --- */}
+<section id="app" className="relative overflow-hidden bg-[#07070A] font-['Plus_Jakarta_Sans',sans-serif]">
+  
+  {/* TOP HEADER BLOCK: Matches Smart Home Blue top, but using Radix Black */}
+  <div className="bg-[#07070A] pt-20 pb-40 md:pt-28 md:pb-60 px-4 text-center relative">
+    {/* Radix Background Accents */}
+    <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#080a07] blur-[120px] rounded-full pointer-events-none"></div>
+    
+  <div className="max-w-4xl mx-auto relative z-10 font-['Syne',sans-serif]">
+  <h2 className="font-['Syne',sans-serif] text-4xl md:text-6xl font-light tracking-tight text-white text-white mb-6 ">
+    Partner Android <br />
+    <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#B282FE] to-[#7038FF]">
+      Application
+    </span>
+  </h2>
+  
+  <p className="text-white/50 text-lg leading-relaxed font-light max-w-2xl mx-auto ">
+    Take your business networking to the next level. Submit high-quality leads directly from your contacts, track verification milestones in real-time, and manage your earned credits with our high-performance mobile portal.
+  </p>
+</div>
+  </div>
+
+  {/* DEVICE SECTION: Triple Phone Layout shifting into the white area */}
+  <div className="relative -mt-32 md:-mt-48 px-4 z-20">
+    <div className="max-w-[1200px] mx-auto">
+      <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
+        
+        {/* Side Phone - Left */}
+        <div className="hidden md:block w-64 h-[500px] rounded-[2.5rem] border-[6px] border-[#1A1A24] bg-white shadow-2xl overflow-hidden transform -rotate-6 translate-y-12">
+           <img src="https://res.cloudinary.com/dmtzmgbkj/image/upload/v1775842532/WhatsApp_Image_2026-04-10_at_11.04.58_PM_qzmp3u.jpg" className="w-full h-full object-cover" alt="App UI 1" />
+        </div>
+
+        {/* Main Phone - Center (Highlighted) */}
+        <div className="w-72 h-[580px] rounded-[3rem] border-[8px] border-[#1A1A24] bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden z-30">
+           <img src="https://res.cloudinary.com/dmtzmgbkj/image/upload/v1775842532/WhatsApp_Image_2026-04-10_at_11.04.58_PM_qzmp3u.jpg" className="w-full h-full object-cover" alt="App UI Main" />
+        </div>
+
+        {/* Side Phone - Right */}
+        <div className="hidden md:block w-64 h-[500px] rounded-[2.5rem] border-[6px] border-[#1A1A24] bg-white shadow-2xl overflow-hidden transform rotate-6 translate-y-12">
+           <img src="https://res.cloudinary.com/dmtzmgbkj/image/upload/v1775842532/WhatsApp_Image_2026-04-10_at_11.04.58_PM_qzmp3u.jpg" className="w-full h-full object-cover" alt="App UI 2" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* DOWNLOAD ACTION AREA: Clean White Background */}
+  <div className="py-20 text-center">
+  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+    
+    {/* Animated APK Download Button */}
+    <a 
+      href="/radix-v1.apk" 
+      className="group relative px-8 py-5 rounded-full overflow-hidden text-white shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95"
+    >
+      {/* 1. Static Border (White/20) */}
+      <span className="absolute inset-0 border border-white/20 rounded-full transition-colors duration-300 group-hover:border-transparent"></span>
+      
+      {/* 2. The Purple Fill Animation (Bottom to Top) */}
+      <span className="absolute inset-x-0 bottom-0 h-0 bg-gradient-to-t from-[#B282FE] to-[#7038FF] transition-all duration-500 ease-out group-hover:h-full rounded-full"></span>
+      
+      {/* 3. Button Content */}
+      <span className="relative flex items-center gap-4 z-10">
+        <Smartphone size={24} className="text-[#B282FE] group-hover:text-white transition-colors duration-300" />
+        
+        <div className="text-left">
+          <p className="text-[9px] uppercase font-bold tracking-[0.2em] opacity-60 group-hover:opacity-100 transition-opacity leading-none mb-1">
+            Available for
+          </p>
+          <p className="text-sm font-black uppercase tracking-widest leading-none">
+            Android APK
+          </p>
+        </div>
+
+        <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+      </span>
+    </a>
+
+  </div>
+</div>
+
+  {/* Floating Decorative Elements from the reference */}
+  {/* <div className="absolute top-[40%] left-10 w-24 h-24 border border-[#B282FE]/20 rounded-full animate-bounce"></div> */}
+  <div className="absolute top-[60%] right-10 w-32 h-32 bg-[#7038FF]/5 rounded-full blur-2xl"></div>
+</section>
 
         {/* --- HOW IT WORKS --- */}
         <section id="works" className="py-24 md:py-32 px-4 sm:px-6 relative border-t border-white/5">
@@ -318,7 +405,7 @@ const WebLandingPage = ({ onEnterPortal }) => {
                     
                     {/* DESKTOP IMAGE PLACEHOLDER: Put your <img> here */}
                     <div className="w-full aspect-[16/9] flex items-center justify-center bg-[#1A1A24] relative overflow-hidden">
-                       <img src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775800298/desktop_uyi0ii.png" alt="Desktop Dashboard" className="w-full h-full object-cover" />
+                       <img src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775831651/Screenshot_1188_stqtcy.png" alt="Desktop Dashboard" className="w-full h-full object-cover" />
                        {/* <span className="text-white/20 font-medium tracking-widest uppercase text-sm">Desktop Dashboard (16:9)</span> */}
                     </div>
                  </div>
@@ -336,7 +423,7 @@ const WebLandingPage = ({ onEnterPortal }) => {
 <div className="w-full aspect-[9/16] flex items-center justify-center bg-[#0A0A0F] relative overflow-hidden rounded-b-[2rem]">
   
   <img 
-    src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775800308/WhatsApp_Image_2026-04-10_at_11.21.26_AM_hyqskb.jpg" 
+    src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775842532/WhatsApp_Image_2026-04-10_at_11.04.58_PM_qzmp3u.jpg" 
     alt="Mobile Dashboard" 
     /* Changed to object-cover object-top to fill edge-to-edge seamlessly */
     className="w-full h-full " 
@@ -485,7 +572,7 @@ const WebLandingPage = ({ onEnterPortal }) => {
   <img 
     src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775796828/Radix_logo_on_navy_blue_background__1_-removebg-preview_1_qbqtpi.png" /* <-- Replace with your actual logo file path */
     alt="Radix Holdings Logo" 
-    className="h-16 md:h-22 w-auto object-contain" /* h-8 matches the height of your previous icon box */
+    className="h-8 md:h-22 w-auto object-contain" /* h-8 matches the height of your previous icon box */
   />
 </div>
           </div>

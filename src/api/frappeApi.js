@@ -33,10 +33,12 @@ frappeApi.interceptors.response.use(
     if (error.response?.status === 401 || error.response?.status === 403) {
       console.warn("AUTH ERROR", error.response.data);
       // Optionally clear tokens and redirect
-      localStorage.removeItem("bc_api_key");
-      localStorage.removeItem("bc_api_secret");
-      localStorage.removeItem("vynx_user");
-      window.location.href = "/auth";
+       if (!error.config.url.includes("update_agent_profile")) {
+    localStorage.removeItem("bc_api_key");
+    localStorage.removeItem("bc_api_secret");
+    localStorage.removeItem("vynx_user");
+    window.location.href = "/auth";
+  }
     }
     return Promise.reject(error);
   }

@@ -250,7 +250,7 @@ const BusinessHub = () => {
           <div>
             <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Business Units</h2>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
-              <ShieldCheck size={12} className="text-blue-500" /> Authorized Business Management
+             Authorized Business Management
             </p>
           </div>
         </div>
@@ -272,17 +272,42 @@ const BusinessHub = () => {
         <div className="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
           <StatCard label="Total Business Units" value={units.length} icon={<LayoutGrid size={18}/>} color="text-blue-600" bg="bg-blue-50" />
           <StatCard label="Active Connections" value={units.filter(u => u.status === 'Active').length} icon={<Activity size={18}/>} color="text-emerald-600" bg="bg-emerald-50" />
-          <div className="md:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp size={14} className="text-blue-600"/>
-              <h4 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Network Distribution Status</h4>
-            </div>
-            <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-              System is managing <span className="text-blue-600 font-bold">{units.length} business units</span>{' '}
-              across <span className="text-blue-600 font-bold">{[...new Set(units.map(u => u.category))].length} industry sector(s)</span>.
-              All business connections are optimized.
-            </p>
-          </div>
+        <div className={`md:col-span-2 bg-white rounded-2xl p-5 shadow-md flex flex-col justify-between transition-all duration-300 `}>
+  
+  {/* Header */}
+  <div className="flex items-center justify-between mb-5">
+    <div className="flex items-center gap-2">
+      <Activity size={14} className='text-blue-600' />
+      <h4 className={`text-[10px] font-black uppercase tracking-widest`}>
+        Platform Scale & Health
+      </h4>
+    </div>
+  
+  </div>
+
+  {/* Main KPI Grid */}
+  <div className="grid grid-cols-2 gap-3 mb-4">
+    <div className={`p-4 rounded-xl border border-gray-200 flex flex-col justify-center transition-colors `}>
+      <p className={`text-[9px] font-black uppercase tracking-widest mb-1 `}>
+        Total Registered Units
+      </p>
+      <h3 className={`text-2xl font-black `}>
+        {units.length}
+      </h3>
+    </div>
+
+    <div className={`p-4 rounded-xl border border-gray-200 flex flex-col justify-center transition-colors `}>
+      <p className={`text-[9px] font-black uppercase tracking-widest mb-1 `}>
+        Active Industry Sectors
+      </p>
+      <h3 className={`text-2xl font-black `}>
+        {[...new Set(units.map(u => u.category))].length}
+      </h3>
+    </div>
+  </div>
+
+ 
+</div>
         </div>
         <div className="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm min-h-[250px] flex flex-col">
           <h4 className="text-[9px] font-black text-slate-900 uppercase tracking-widest mb-4">Sectors Representation</h4>
@@ -407,7 +432,7 @@ const BusinessHub = () => {
                   <div>
                     <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter">{selectedUnit.name}</h3>
                     <p className={`text-[9px] font-black uppercase tracking-widest transition-colors duration-300 ${editMode ? 'text-amber-600' : 'text-blue-600'}`}>
-                      {editMode ? 'Admin Edit Mode — Changes sync to Frappe' : selectedUnit.category}
+                      {editMode ? 'Admin Edit Mode' : selectedUnit.category}
                     </p>
                   </div>
                 </div>
@@ -555,13 +580,8 @@ const BusinessHub = () => {
                       </DossierSection>
                     </div>
                   </div>
-                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex gap-4">
-                    <Info size={18} className="text-blue-600 shrink-0" />
-                    <p className="text-[10px] text-blue-800 font-bold uppercase leading-relaxed tracking-tight">
-                      Registry ID: {selectedUnit.id} — Last synced from Frappe ERP. Use the Edit button to modify this record.
-                    </p>
-                  </div>
-                </div>
+                 
+                                 </div>
               )}
 
               {/* Footer */}
@@ -694,7 +714,19 @@ const AddUnitForm = ({ onSubmit, onCancel, submitting }) => {
     whatsapp: '', email: '', website: '', cityArea: '', address: '', description: '', commision: 10
   });
   const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
-  const handleSubmit = (e) => { e.preventDefault(); onSubmit(form); };
+const COUNTRY_CODE = "+91";
+
+const handleSubmit = (e) => {
+  e.preventDefault();
+
+  const formattedData = {
+    ...form,
+    phone: form.phone ? COUNTRY_CODE + form.phone : "",
+    whatsapp: form.whatsapp ? COUNTRY_CODE + form.whatsapp : "",
+  };
+
+  onSubmit(formattedData);
+};
 
   return (
     <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-6">
@@ -702,9 +734,9 @@ const AddUnitForm = ({ onSubmit, onCancel, submitting }) => {
         <FormInput label="Business Name *"   value={form.name}      onChange={set('name')}      placeholder="e.g. SKYLINE TECH"        required />
         <FormInput label="Market Category *" value={form.category}  onChange={set('category')}  placeholder="Enter Category"                required  />
         <FormInput label="Commission Percentage (%) *" type="number" value={form.commision} onChange={set('commision')} placeholder="e.g. 10" required />
-        <FormInput label="Unit Manager *"    value={form.manager}   onChange={set('manager')}   placeholder="e.g. ZAID AL-FARSI"       required />
-        <FormInput label="Primary Phone *"   value={form.phone}     onChange={set('phone')}     placeholder="+971 50 000 0000"          required />
-        <FormInput label="WhatsApp Number *" value={form.whatsapp}  onChange={set('whatsapp')}  placeholder="+971 50 000 0000"          required />
+        <FormInput label="Unit Manager *"    value={form.manager}   onChange={set('manager')}   placeholder="e.g. ABHISHEK"       required />
+        <FormInput label="Primary Phone *"   value={form.phone}     onChange={set('phone')}     placeholder="98475 12025"          required />
+        <FormInput label="WhatsApp Number *" value={form.whatsapp}  onChange={set('whatsapp')}  placeholder="98475 12025"          required />
         <FormInput label="Email *"           value={form.email}     onChange={set('email')}     placeholder="unit@example.com"          required type="email" />
         <FormInput label="Website"           value={form.website}   onChange={set('website')}   placeholder="https://example.com"       type="url" />
         <FormInput label="City / Area"       value={form.cityArea}  onChange={set('cityArea')}  placeholder="e.g. Business Bay, Dubai" />
@@ -716,7 +748,7 @@ const AddUnitForm = ({ onSubmit, onCancel, submitting }) => {
         <button type="submit" disabled={submitting}
           className="flex-[2] py-3 bg-blue-600 hover:bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
         >
-          {submitting ? <><Loader2 size={14} className="animate-spin"/> Registering...</> : 'Register Node'}
+          {submitting ? <><Loader2 size={14} className="animate-spin"/> Registering...</> : 'Register Unit'}
         </button>
       </div>
     </form>

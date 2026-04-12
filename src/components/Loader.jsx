@@ -1,49 +1,45 @@
 import React from 'react';
+import { useTheme } from '../context/ThemeContext';
 
-export default function GlobalLoader({ fullScreen = true, text = "Syncing Modules..." }) {
-  // Toggle between a full-screen overlay or an inline container
+export default function GlobalLoader({ fullScreen = true, text = "Syncing Data..." }) {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
+  // Theme-consistent styles based on reference image image_526edd.png
   const containerStyle = fullScreen 
-    ? "fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-50/90 backdrop-blur-sm"
-    : "flex flex-col items-center justify-center p-12 w-full h-full min-h-[200px]";
+    ? `fixed inset-0 z-[500] flex flex-col items-center justify-center backdrop-blur-xl transition-colors duration-300 ${
+        isLight ? "bg-[#F0F2F5]/80" : "bg-[#020617]/80"
+      }`
+    : "flex flex-col items-center justify-center p-12 w-full h-full min-h-[300px] bg-transparent";
 
   return (
     <div className={`${containerStyle} font-['Plus_Jakarta_Sans',sans-serif]`}>
       
-      {/* Smooth Up & Down Data Pillars */}
-      <div className="flex items-end justify-center gap-2.5 h-16">
-        {/* We use origin-bottom so they stretch upwards, and apply the custom animation */}
-        <div className="w-3.5 h-16 bg-blue-300 rounded-sm origin-bottom" style={{ animation: 'erp-bar-bounce 1.2s ease-in-out infinite', animationDelay: '0ms' }}></div>
-        <div className="w-3.5 h-16 bg-blue-500 rounded-sm origin-bottom" style={{ animation: 'erp-bar-bounce 1.2s ease-in-out infinite', animationDelay: '150ms' }}></div>
-        <div className="w-3.5 h-16 bg-indigo-700 rounded-sm origin-bottom" style={{ animation: 'erp-bar-bounce 1.2s ease-in-out infinite', animationDelay: '300ms' }}></div>
-        <div className="w-3.5 h-16 bg-blue-400 rounded-sm origin-bottom" style={{ animation: 'erp-bar-bounce 1.2s ease-in-out infinite', animationDelay: '450ms' }}></div>
-      </div>
+      {/* SaaS Premium Minimal Spinner - Color Synced to Cyan Accent */}
+      <div 
+        className={`w-10 h-10 rounded-full border-2 border-transparent transition-colors duration-300 ${
+          isLight 
+            ? "border-t-[#61D9DE] border-r-[#61D9DE]/30" 
+            : "border-t-[#38BDF8] border-r-[#38BDF8]/40 shadow-[0_0_20px_rgba(56,189,248,0.2)]"
+        }`} 
+        style={{ animation: 'premium-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite' }} 
+      />
 
-      {/* Loading Text & Micro-Progress */}
+      {/* Modern Minimal Text - Synced to Theme Text Colors */}
       {text && (
-        <div className="mt-8 flex flex-col items-center">
-          <p className="text-xs font-bold text-slate-600 uppercase tracking-[0.2em] mb-3">
+        <div className="mt-8">
+          <p className={`text-[9px] font-black uppercase tracking-[0.5em] opacity-70 transition-colors duration-300 ${
+            isLight ? "text-[#1A1D1F]" : "text-[#E2E8F0] drop-shadow-[0_0_10px_rgba(56,189,248,0.2)]"
+          }`}>
             {text}
           </p>
-          
-          {/* Micro-Scanner Bar */}
-          <div className="w-32 h-[3px] bg-slate-200 rounded-full overflow-hidden relative">
-            <div 
-              className="absolute top-0 left-0 h-full bg-blue-600 rounded-full w-1/3"
-              style={{ animation: 'erp-slide 1.5s ease-in-out infinite alternate' }}
-            ></div>
-          </div>
         </div>
       )}
       
-      {/* Injecting custom keyframes directly so no config changes are needed */}
       <style>{`
-        @keyframes erp-bar-bounce {
-          0%, 100% { transform: scaleY(0.3); }
-          50% { transform: scaleY(1); }
-        }
-        @keyframes erp-slide {
-          0% { transform: translateX(0%); }
-          100% { transform: translateX(200%); }
+        @keyframes premium-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
       

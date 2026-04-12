@@ -9,14 +9,21 @@ import {
   MessageSquare, ClipboardCheck,
   Play, Check, Briefcase, Layers,
   IndianRupee, ArrowRight, Wallet, X,
-  CreditCard
+  CreditCard,
+  Columns,
+  ArrowRightCircle
 } from 'lucide-react';
 
 import frappeApi from '../../api/frappeApi';
+import { useTheme } from '../../context/ThemeContext'; // Using Theme Context
 
 const LeadReview = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // --- THEME INTEGRATION ---
+  const { theme } = useTheme(); 
+  const isLight = theme === 'light';
 
   const [lead, setLead] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -97,6 +104,16 @@ const LeadReview = () => {
 
   // ---------------- HELPERS ----------------
   const getStatusColor = (status) => {
+    if (!isLight) {
+        switch (status) {
+          case 'Pending':     return 'text-amber-400 bg-amber-400/10 border-amber-400/20';
+          case 'Verified':    return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+          case 'In Progress': return 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
+          case 'Completed':   return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+          case 'Rejected':    return 'text-rose-400 bg-rose-400/10 border-rose-400/20';
+          default:            return 'text-slate-400 bg-white/5 border-white/10';
+        }
+    }
     switch (status) {
       case 'Pending':     return 'text-amber-600 bg-amber-50 border-amber-100';
       case 'Verified':    return 'text-blue-600 bg-blue-50 border-blue-100';
@@ -119,8 +136,8 @@ const LeadReview = () => {
   if (loading) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-        <Loader2 className="animate-spin text-[#007ACC]" size={32} />
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Lead Details...</p>
+        <Loader2 className={`animate-spin ${isLight ? 'text-[#61D9DE]' : 'text-[#007ACC]'}`} size={32} />
+        <p className={`text-[10px] font-black uppercase tracking-widest ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>Loading Lead Details...</p>
       </div>
     );
   }
@@ -128,18 +145,18 @@ const LeadReview = () => {
   if (!lead) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-        <div className="h-16 w-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300">
+        <div className={`h-16 w-16 rounded-2xl flex items-center justify-center ${isLight ? 'bg-[#F8FAFB] text-[#9A9FA5]' : 'bg-slate-50 text-slate-300'}`}>
           <Info size={32} />
         </div>
         <div className="text-center">
-          <p className="text-lg font-black uppercase text-slate-700 tracking-tight">Lead Unavailable</p>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+          <p className={`text-lg font-black uppercase tracking-tight ${isLight ? 'text-[#1A1D1F]' : 'text-slate-700'}`}>Lead Unavailable</p>
+          <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>
             The requested ID could not be found.
           </p>
         </div>
         <button
           onClick={() => navigate('/business/leads')}
-          className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all"
+          className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isLight ? 'bg-[#1A1D1F] text-white' : 'bg-slate-900 text-white hover:bg-black'}`}
         >
           Return to Registry
         </button>
@@ -156,7 +173,7 @@ const LeadReview = () => {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-[1000px] mx-auto space-y-4 pb-8 font-sans px-4 sm:px-6"
+      className={`max-w-[1000px] mx-auto space-y-4 pb-8 font-sans px-4 sm:px-6 transition-colors duration-300 ${isLight ? 'text-[#1A1D1F]' : 'text-[#E2E8F0]'}`}
     >
 
       {/* 1. TOP NAVIGATION & HEADER */}
@@ -164,30 +181,27 @@ const LeadReview = () => {
         <div>
           <button
             onClick={() => navigate('/business/leads')}
-            className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-[#007ACC] transition-colors mb-2"
+            className={`group   border-cyan-400 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-colors mb-2 ${isLight ? 'text-[#9A9FA5] hover:text-[#61D9DE]' : 'text-slate-400 hover:text-[#007ACC] '}`}
           >
             <ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform" />
             Back to Registry
           </button>
 
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">
+            <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter leading-none">
               {lead.clientName}
             </h2>
             {lead.status === 'Rejected' && <XCircle size={20} className="text-rose-500" />}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 mt-2">
-            {/* <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
-              <ShieldCheck size={12} className="text-[#007ACC]" /> Lead #{lead.id}
-            </span> */}
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+          <div className={`flex flex-wrap items-center gap-3 mt-2 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>
+            <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
               <Calendar size={12} /> {formatDate(lead.date)}
             </span>
           </div>
         </div>
 
-        <div className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 ${getStatusColor(lead.status)}`}>
+        <div className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 transition-all ${getStatusColor(lead.status)}`}>
           <Activity size={12} />
           <span className="text-[9px] font-black uppercase tracking-widest">{lead.status}</span>
         </div>
@@ -199,116 +213,158 @@ const LeadReview = () => {
         {/* LEFT COLUMN: Customer & Project Info */}
         <div className="md:col-span-2 space-y-4">
 
-          {/* Contact Card */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-[#007ACC]" />
+      {/* Contact Card */}
+<div className={`border rounded-xl p-6 shadow-sm relative overflow-hidden transition-all duration-300 ${
+  isLight ? 'bg-[#F8FAFB] border-[#E8ECEF]' : 'bg-white/5 border-white/10'
+}`}>
+  {/* Theme-Synced Accent Line */}
+  <div className={`absolute top-0 left-0 w-1 h-full transition-colors duration-300 ${
+    isLight ? 'bg-[#61D9DE]' : 'bg-[#007ACC]'
+  }`} />
 
-            <div className="flex justify-between items-start mb-4">
-              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                <User size={12} /> Contact Client
-              </p>
-            </div>
+  <div className="flex justify-between items-start mb-6">
+    <p className={`text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-colors ${
+      isLight ? 'text-[#9A9FA5]' : 'text-slate-400'
+    }`}>
+      <User size={12} className={isLight ? 'text-[#61D9DE]' : ''} /> Contact Client
+    </p>
+  </div>
 
-            <div className="grid gap-4">
+  <div className="grid gap-6">
+    {/* Client Phone + Actions */}
+    <div className="flex items-start gap-4">
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+        isLight ? 'bg-white border border-[#E8ECEF] text-[#61D9DE] shadow-sm' : 'bg-slate-50/10 text-slate-400'
+      }`}>
+        <Phone size={16} />
+      </div>
+      <div className="w-full">
+        <p className={`text-[9px] font-bold uppercase tracking-widest mb-2 transition-colors ${
+          isLight ? 'text-[#9A9FA5]' : 'text-slate-400'
+        }`}>
+          Mobile: {lead.clientPhone}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={`tel:${lead.clientPhone}`}
+            className={`flex-1 min-w-[100px] py-2.5 px-3  rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 ${
+              isLight 
+                 ? 'bg-blue-500 border-[#E8ECEF] text-white hover:bg-blue-800' 
+                  : 'bg-blue-500 border-[#E8ECEF] text-white hover:bg-blue-800'
+            }`}
+          >
+            <Phone size={12} /> Call
+          </a>
+          <a
+            href={`https://wa.me/${cleanClientPhone}`}
+            target="_blank"
+            rel="noreferrer"
+            className={`flex-1 min-w-[100px] py-2.5 px-3  rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 ${
+              isLight 
+                ? 'bg-emerald-700 text-emerald-100 hover:bg-emerald-900' 
+                  : 'bg-emerald-700  text-emerald-100 hover:bg-emerald-900'
+            }`}
+          >
+            <MessageSquare size={12} /> WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
 
-              {/* Client Phone + Actions */}
-              <div className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 shrink-0 mt-1">
-                  <Phone size={14} />
-                </div>
-                <div className="w-full">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
-                    Mobile: {lead.clientPhone}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <a
-                      href={`tel:${lead.clientPhone}`}
-                      className="flex-1 min-w-[100px] py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-600 flex items-center justify-center gap-2 transition-all active:scale-95"
-                    >
-                      <Phone size={12} /> Call
-                    </a>
-                    <a
-                      href={`https://wa.me/${cleanClientPhone}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex-1 min-w-[100px] py-2 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-lg text-[9px] font-black uppercase tracking-widest text-emerald-700 flex items-center justify-center gap-2 transition-all active:scale-95"
-                    >
-                      <MessageSquare size={12} /> WhatsApp
-                    </a>
-                  </div>
-                </div>
-              </div>
+    {/* Client Location */}
+    <div className={`flex items-start gap-4 pt-5 border-t transition-colors ${
+      isLight ? 'border-[#E8ECEF]' : 'border-slate-50/10'
+    }`}>
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+        isLight ? 'bg-white border border-[#E8ECEF] text-[#61D9DE] shadow-sm' : 'bg-slate-50/10 text-slate-400'
+      }`}>
+        <MapPin size={16} />
+      </div>
+      <div>
+        <p className={`text-[9px] font-bold uppercase tracking-widest mb-1 transition-colors ${
+          isLight ? 'text-[#9A9FA5]' : 'text-slate-400'
+        }`}>
+          Service Location
+        </p>
+        <p className="text-sm font-bold leading-tight">{lead.location || 'Not specified'}</p>
+      </div>
+    </div>
 
-              {/* Client Location (Hardcoded to Tirur) */}
-              <div className="flex items-start gap-3 pt-3 border-t border-slate-50">
-                <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 shrink-0 mt-0.5">
-                  <MapPin size={14} />
-                </div>
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Service Location</p>
-                  <p className="text-sm font-bold text-slate-700 leading-tight">{lead.location || 'Not specified'}</p>
-                </div>
-              </div>
-
-              {/* Agent Info */}
-              <div className="flex items-start gap-3 pt-3 border-t border-slate-50">
-                <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 shrink-0 mt-0.5">
-                  <Mail size={14} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Handling Agent</p>
-                  <p className="text-sm font-bold text-slate-700 break-all">{lead.agentId || 'Unassigned'}</p>
-                  {lead.agentPhone && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <a
-                        href={`tel:${lead.agentPhone}`}
-                        className="flex-1 min-w-[100px] py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-600 flex items-center justify-center gap-2 transition-all active:scale-95"
-                      >
-                        <Phone size={12} /> Call Agent
-                      </a>
-                      <a
-                        href={`https://wa.me/${lead.agentPhone?.replace(/\D/g, '')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex-1 min-w-[100px] py-2 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-lg text-[9px] font-black uppercase tracking-widest text-emerald-700 flex items-center justify-center gap-2 transition-all active:scale-95"
-                      >
-                        <MessageSquare size={12} /> WhatsApp
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-            </div>
+    {/* Agent Info */}
+    <div className={`flex items-start gap-4 pt-5 border-t transition-colors ${
+      isLight ? 'border-[#E8ECEF]' : 'border-slate-50/10'
+    }`}>
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+        isLight ? 'bg-white border border-[#E8ECEF] text-[#61D9DE] shadow-sm' : 'bg-slate-50/10 text-slate-400'
+      }`}>
+        <Mail size={16} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={`text-[9px] font-bold uppercase tracking-widest mb-1 transition-colors ${
+          isLight ? 'text-[#9A9FA5]' : 'text-slate-400'
+        }`}>
+          Handling Agent
+        </p>
+        <p className="text-sm font-bold break-all">{lead.agentId || 'Unassigned'}</p>
+        
+        {lead.agentPhone && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            <a
+              href={`tel:${lead.agentPhone}`}
+              className={`flex-1 min-w-[100px] py-2.5 px-3  rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 ${
+                isLight 
+                  ? 'bg-blue-500 border-[#E8ECEF] text-white hover:bg-blue-800' 
+                  : 'bg-blue-500 border-[#E8ECEF] text-white hover:bg-blue-800'
+              }`}
+            >
+              <Phone size={12} /> Call Agent
+            </a>
+            <a
+              href={`https://wa.me/${lead.agentPhone?.replace(/\D/g, '')}`}
+              target="_blank"
+              rel="noreferrer"
+              className={`flex-1 min-w-[100px] py-2.5 px-3  rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 ${
+                isLight 
+                  ? 'bg-emerald-700 text-emerald-100 hover:bg-emerald-900' 
+                  : 'bg-emerald-700  text-emerald-100 hover:bg-emerald-900'
+              }`}
+            >
+              <MessageSquare size={12} /> WhatsApp
+            </a>
           </div>
+        )}
+      </div>
+    </div>
+  </div>
+</div>
 
           {/* Project Details */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className={`border rounded-xl p-4 shadow-sm transition-all ${isLight ? 'bg-[#F8FAFB] border-[#E8ECEF]' : 'bg-white/5 border-white/10'}`}>
             <div className="flex items-center gap-2 mb-3">
-              <ClipboardCheck size={14} className="text-[#007ACC]" />
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-800">Requirement Details</h3>
+              <ClipboardCheck size={14} className={isLight ? 'text-[#61D9DE]' : 'text-[#007ACC]'} />
+              <h3 className="text-[10px] font-black uppercase tracking-widest">Requirement Details</h3>
             </div>
 
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 mb-4">
-              <p className="text-sm font-medium text-slate-700 leading-relaxed italic">
+            <div className={`rounded-lg p-3 border mb-4 ${isLight ? 'bg-white border-[#E8ECEF]' : 'bg-slate-50/5 border-slate-700'}`}>
+              <p className={`text-sm font-medium leading-relaxed italic ${isLight ? 'text-slate-600' : 'text-slate-700'}`}>
                 "{lead.description || 'No description provided.'}"
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-2.5 border border-slate-100 rounded-lg">
-                <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+              <div className={`p-2.5 border rounded-lg ${isLight ? 'bg-white border-[#E8ECEF]' : 'border-white/5'}`}>
+                <div className={`flex items-center gap-1.5 mb-1 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>
                   <Briefcase size={10} />
                   <span className="text-[8px] font-bold uppercase tracking-widest">Business Unit</span>
                 </div>
-                <p className="text-xs font-mono font-bold text-slate-700 truncate">{lead.businessUnit}</p>
+                <p className="text-xs font-mono font-bold truncate">{lead.businessUnit}</p>
               </div>
-              <div className="p-2.5 border border-slate-100 rounded-lg">
-                <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+              <div className={`p-2.5 border rounded-lg ${isLight ? 'bg-white border-[#E8ECEF]' : 'border-white/5'}`}>
+                <div className={`flex items-center gap-1.5 mb-1 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>
                   <Layers size={10} />
                   <span className="text-[8px] font-bold uppercase tracking-widest">Service</span>
                 </div>
-                <p className="text-xs font-mono font-bold text-slate-700 truncate">{lead.service}</p>
+                <p className="text-xs font-mono font-bold truncate">{lead.service}</p>
               </div>
             </div>
           </div>
@@ -318,13 +374,13 @@ const LeadReview = () => {
         <div className="space-y-4">
 
           {/* Progress Stepper */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+          <div className={`border rounded-xl p-4 shadow-sm transition-all ${isLight ? 'bg-[#F8FAFB] border-[#E8ECEF]' : 'bg-white/5 border-white/10'}`}>
+            <p className={`text-[9px] font-black uppercase tracking-widest mb-3 flex items-center gap-2 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>
               <Activity size={12} /> Request Lifecycle
             </p>
 
             <div className="space-y-3 relative">
-              <div className="absolute left-[9px] top-2 bottom-2 w-0.5 bg-slate-100 z-0" />
+              <div className={`absolute left-[9px] top-2 bottom-2 w-0.5 z-0 ${isLight ? 'bg-[#E8ECEF]' : 'bg-white/5'}`} />
 
               {workflow.map((step, idx) => {
                 const isCompleted = idx < currentStepIndex || lead.status === 'Completed';
@@ -350,17 +406,15 @@ const LeadReview = () => {
                     }}
                     className={`relative z-10 flex items-center gap-3 rounded-lg px-1.5 py-1 -mx-1.5 transition-all
                       ${isClickable && !isProcessing
-                        ? 'cursor-pointer hover:bg-slate-50 ring-1 ring-transparent hover:ring-slate-200 active:scale-95'
+                        ? 'cursor-pointer hover:bg-white/50 ring-1 ring-transparent hover:ring-[#61D9DE]/20 active:scale-95'
                         : 'cursor-default'
                       }`}
                   >
                     <div className={`
                       w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0
                       ${isCompleted || isCurrent
-                        ? 'bg-[#007ACC] border-[#007ACC] text-white shadow-sm shadow-blue-200'
-                        : isClickable
-                          ? 'bg-white border-slate-300 text-slate-400'
-                          : 'bg-white border-slate-200 text-slate-300'}
+                        ? (isLight ? 'bg-[#61D9DE] border-[#61D9DE] text-white shadow-sm' : 'bg-[#007ACC] border-[#007ACC] text-white shadow-sm shadow-blue-200')
+                        : (isLight ? 'bg-white border-[#E8ECEF] text-[#9A9FA5]' : 'bg-white border-slate-200 text-slate-300')}
                     `}>
                       {isLoading
                         ? <Loader2 size={8} className="animate-spin" />
@@ -371,16 +425,16 @@ const LeadReview = () => {
                     </div>
 
                     <span className={`text-[9px] font-black uppercase tracking-widest flex-1 ${
-                      isCurrent   ? 'text-[#007ACC]' :
-                      isCompleted ? 'text-slate-800'  :
-                      isClickable ? 'text-slate-500'  :
-                                    'text-slate-300'
+                      isCurrent   ? (isLight ? 'text-[#61D9DE]' : 'text-[#007ACC]') :
+                      isCompleted ? (isLight ? 'text-[#1A1D1F]' : 'text-slate-800') :
+                      isClickable ? (isLight ? 'text-[#9A9FA5]' : 'text-slate-500') :
+                                    (isLight ? 'text-[#9A9FA5]/50' : 'text-slate-300')
                     }`}>
                       {step}
                     </span>
 
                     {isClickable && !isProcessing && (
-                      <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">
+                      <span className={`text-[8px] font-bold uppercase tracking-widest ${isLight ? 'text-[#61D9DE]' : 'text-slate-300'}`}>
                         Set →
                       </span>
                     )}
@@ -391,17 +445,16 @@ const LeadReview = () => {
           </div>
 
           {/* ACTION PANEL */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm sticky top-4">
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+          <div className={`border rounded-xl p-4 shadow-sm sticky top-4 transition-all ${isLight ? 'bg-[#F8FAFB] border-[#E8ECEF]' : 'bg-white/5 border-white/10'}`}>
+            <p className={`text-[9px] font-black uppercase tracking-widest mb-3 flex items-center gap-2 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>
               <ShieldCheck size={12} /> Management Actions
             </p>
 
-            {/* Always Visible Warning */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-[10px] text-amber-800 flex gap-2 items-start leading-relaxed shadow-sm mb-4">
-              <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+            <div className={`border rounded-lg p-3 text-[10px] flex gap-2 items-start leading-relaxed shadow-sm mb-4 ${isLight ? 'bg-amber-50 border-amber-100 text-amber-800' : 'bg-amber-200 border-amber-300 text-red-600'}`}>
+              <AlertTriangle size={14} className="text-red-600 shrink-0 mt-0.5" />
               <div>
                 <strong className="block font-bold mb-0.5">Important Information</strong>
-                Credits can only be approved if the assigned work is 100% completed. Please provide truthful and accurate details.
+                Credits can only be approved if the assigned work is 100% completed.
               </div>
             </div>
 
@@ -410,13 +463,13 @@ const LeadReview = () => {
                 <>
                   <button
                     onClick={() => setModal({ show: true, targetStatus: 'Verified' })}
-                    className="w-full py-2.5 bg-[#007ACC] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:bg-[#006bb3] active:scale-95 transition-all flex items-center justify-center gap-2"
+                    className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2 ${isLight ? 'bg-[#61D9DE] text-white hover:bg-[#49C5CB]' : 'bg-[#007ACC] text-white'}`}
                   >
                     <CheckCircle2 size={14} /> Approve Lead
                   </button>
                   <button
                     onClick={() => setModal({ show: true, targetStatus: 'Rejected' })}
-                    className="w-full py-2.5 bg-white border border-rose-100 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    className={`w-full py-2.5 bg-white border rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 ${isLight ? 'border-rose-100 text-rose-600 hover:bg-rose-50' : 'border-rose-100 text-rose-600'}`}
                   >
                     <XCircle size={14} /> Reject Request
                   </button>
@@ -426,7 +479,7 @@ const LeadReview = () => {
               {lead.status === 'Verified' && (
                 <button
                   onClick={() => setModal({ show: true, targetStatus: 'In Progress' })}
-                  className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                   <Play size={14} /> Start Work
                 </button>
@@ -435,67 +488,36 @@ const LeadReview = () => {
               {lead.status === 'In Progress' && (
                 <button
                   onClick={() => setModal({ show: true, targetStatus: 'Completed' })}
-                  className="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                   <Check size={14} /> Mark Complete
                 </button>
               )}
 
               {lead.status === 'Completed' && lead.paymentStatus === 'Settled' ? (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle2 size={14} className="text-emerald-600" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-800">Settlement Details</span>
+                <div className={`border rounded-xl p-4 space-y-3 ${isLight ? 'bg-emerald-50 border-emerald-100' : 'bg-emerald-50 border-emerald-200'}`}>
+                  <div className="flex items-center gap-2 mb-3 text-emerald-700 font-black text-[10px] uppercase tracking-widest">
+                    <CheckCircle2 size={14} /> Settlement Details
                   </div>
-               <div className="space-y-2">
-  <div className="flex justify-between items-center">
-    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
-      {/* Show the percentage in brackets (e.g., 10%) */}
-      Agent Credit
-    </span>
-    <span className="text-sm font-black text-slate-800 flex items-center gap-1">
-      <CreditCard size={12} />
-      {/* Show the actual money amount saved during settlement */}
-      {lead.commission}
-    </span>
-  </div>
-   <div className="flex justify-between items-center">
-    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
-      {/* Show the percentage in brackets (e.g., 10%) */}
-      System Commission ({lead.commision}%)
-    </span>
-    <span className="text-sm font-black text-slate-800 flex items-center gap-1">
-      
-      {/* Show the actual money amount saved during settlement */}
-      ₹{(parseFloat(lead.totalSaleAmount || 0) * (parseFloat(lead.commision || 0) / 100)).toLocaleString()}
-      
-    </span>
-  </div>
-
-  <div className="flex justify-between items-center">
-    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
-      Total Sale Amount
-    </span>
-    <span className="text-sm font-black text-slate-800 flex items-center gap-1">
-      
-      ₹{lead.totalSaleAmount}
-    </span>
-  </div>
-
-  <div className="flex justify-between items-center">
-    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
-      Payment Status
-    </span>
-    <span className="text-sm font-black text-emerald-600">
-      {lead.paymentStatus}
-    </span>
-  </div>
-</div>
+                   <div className="space-y-2">
+                      <div className="flex justify-between items-center text-[9px] font-bold uppercase text-slate-500">
+                        <span>Agent Credit</span>
+                        <span className="text-sm font-black text-slate-800 flex items-center gap-1"><CreditCard size={12} /> {lead.commission}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[9px] font-bold uppercase text-slate-500">
+                        <span>Commission ({lead.commision}%)</span>
+                        <span className="text-sm font-black text-slate-800">₹{(parseFloat(lead.totalSaleAmount || 0) * (parseFloat(lead.commision || 0) / 100)).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[9px] font-bold uppercase text-slate-500 pt-2 border-t border-emerald-100">
+                        <span>Total Sale</span>
+                        <span className="text-sm font-black text-slate-800">₹{lead.totalSaleAmount}</span>
+                      </div>
+                   </div>
                 </div>
               ) : lead.status === 'Completed' ? (
                 <button
                   onClick={() => setSettleModal({ show: true, step: 1 })}
-                  className="w-full py-3 bg-purple-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-purple-500/20 hover:bg-purple-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-purple-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                   <Wallet size={16} /> Settle Agent Credit
                 </button>
@@ -505,47 +527,23 @@ const LeadReview = () => {
         </div>
       </div>
 
-      {/* 3. STATUS CONFIRMATION MODAL */}
+      {/* MODALS */}
       <AnimatePresence>
         {modal.show && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white p-6 md:p-8 rounded-2xl w-full max-w-sm border border-slate-100 shadow-2xl relative"
+              className={`p-6 md:p-8 rounded-2xl w-full max-w-sm shadow-2xl relative border ${isLight ? 'bg-white border-[#F0F2F5]' : 'border-cyan-800'}`}
             >
-              <button 
-                onClick={() => setModal({ show: false })}
-                className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-1.5 rounded-full transition-colors"
-              >
-                <X size={16} />
-              </button>
-
-              <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-[#007ACC]">
-                <AlertTriangle size={24} />
-              </div>
-
-              <h3 className="text-lg font-black uppercase text-center text-slate-900 tracking-tight mb-2">
-                Confirm Update
-              </h3>
-              <p className="text-xs text-center text-slate-500 font-medium mb-8 leading-relaxed">
-                Are you sure you want to change the status of this lead to{' '}
-                <span className="font-bold text-slate-800">"{modal.targetStatus}"</span>? This action is tracked.
-              </p>
-
+              <button onClick={() => setModal({ show: false })} className={`absolute top-4 right-4 p-1.5 rounded-full transition-colors ${isLight ? 'text-[#9A9FA5] hover:bg-[#F0F2F5]' : 'text-slate-400 hover:bg-slate-50'}`}><X size={16} /></button>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${isLight ? 'bg-[#F0F2F5] text-[#61D9DE]' : 'bg-slate-50 text-[#007ACC]'}`}><AlertTriangle size={24} /></div>
+              <h3 className="text-lg font-black uppercase text-center tracking-tight mb-2">Confirm Update</h3>
+              <p className={`text-xs text-center font-medium mb-8 leading-relaxed ${isLight ? 'text-[#9A9FA5]' : 'text-slate-500'}`}>Change status to <strong>"{modal.targetStatus}"</strong>?</p>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setModal({ show: false })}
-                  className="flex-1 py-2.5 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => updateStatus(modal.targetStatus)}
-                  disabled={isProcessing}
-                  className="flex-1 py-2.5 bg-[#007ACC] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#006bb3] shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center"
-                >
+                <button onClick={() => setModal({ show: false })} className={`flex-1 py-2.5 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors ${isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] text-[#9A9FA5]' : 'border-slate-200 text-slate-500'}`}>Cancel</button>
+                <button onClick={() => updateStatus(modal.targetStatus)} disabled={isProcessing} className={`flex-1 py-2.5 text-white rounded-xl text-[10px] font-black uppercase shadow-sm transition-all flex items-center justify-center ${isLight ? 'bg-[#61D9DE] hover:bg-[#49C5CB]' : 'bg-[#007ACC] hover:bg-[#006bb3]'}`}>
                   {isProcessing ? <Loader2 size={14} className="animate-spin" /> : 'Confirm'}
                 </button>
               </div>
@@ -554,129 +552,68 @@ const LeadReview = () => {
         )}
       </AnimatePresence>
 
-      {/* 4. SETTLEMENT MODAL */}
       <AnimatePresence>
         {settleModal.show && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white p-6 rounded-2xl w-full max-w-md border border-slate-100 shadow-2xl relative"
+              className={`p-6 rounded-2xl w-full max-w-md shadow-2xl relative border ${isLight ? 'bg-white border-[#F0F2F5]' : ' border-cyan-800'}`}
             >
-              <button 
-                onClick={() => setSettleModal({ show: false, step: 1 })}
-                className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-1.5 rounded-full transition-colors"
-              >
-                <X size={16} />
-              </button>
-
-              <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-600">
-                <Wallet size={24} />
-              </div>
-
-              <h3 className="text-lg font-black uppercase text-center text-slate-900 tracking-tight mb-6">
-                Settle Lead Credits
-              </h3>
+              <button onClick={() => setSettleModal({ show: false, step: 1 })} className={`absolute top-4 right-4 p-1.5 rounded-full transition-colors ${isLight ? 'text-[#9A9FA5] hover:bg-[#F0F2F5]' : 'text-slate-400 hover:bg-slate-50'}`}><X size={16} /></button>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${isLight ? 'bg-[#F0F2F5] text-purple-500' : 'bg-purple-50 text-cyan-600'}`}><Wallet size={24} /></div>
+              <h3 className="text-lg font-black uppercase text-center tracking-tight mb-6">Settle Lead Credits</h3>
 
               {settleModal.step === 1 ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 flex items-center gap-1.5">
-                      <IndianRupee size={12} /> Total Amount Earned
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 5000"
-                      value={settleData.totalAmount}
-                      onChange={(e) => setSettleData({ ...settleData, totalAmount: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
-                    />
+                    <label className={`text-[10px] font-black uppercase tracking-widest mb-1.5 flex items-center gap-1.5 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-500'}`}><IndianRupee size={12} /> Total Amount</label>
+                    <input type="number" placeholder="e.g. 5000" value={settleData.totalAmount} onChange={(e) => setSettleData({ ...settleData, totalAmount: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition-all ${isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] focus:border-[#61D9DE] focus:bg-white' : 'border-slate-200 focus:border-cyan-500'}`} />
                   </div>
-
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 flex items-center gap-1.5">
-                      <Wallet size={12} /> Credits Approved
-                    </label>
-                    <p className="text-[9px] text-slate-400 mb-2">1 Credit = 1 INR</p>
-                    <input
-                      type="number"
-                      placeholder="e.g. 500"
-                      value={settleData.credits}
-                      onChange={(e) => setSettleData({ ...settleData, credits: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none transition-all"
-                    />
+                    <label className={`text-[10px] font-black uppercase tracking-widest mb-1.5 flex items-center gap-1.5 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-500'}`}><Wallet size={12} /> Agent Credits</label>
+                    <input type="number" placeholder="e.g. 500" value={settleData.credits} onChange={(e) => setSettleData({ ...settleData, credits: e.target.value })}
+                      className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition-all ${isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] focus:border-[#61D9DE] focus:bg-white' : 'border-slate-200 focus:border-cyan-500'}`} />
                   </div>
+                 <div className="flex gap-3 pt-2 justify-center">
+  
+  <button
+    onClick={() => setSettleModal({ show: false, step: 1 })}
+    className={`flex-1 flex items-center justify-center py-2.5 border rounded-xl text-[10px] font-black uppercase tracking-widest ${
+      isLight
+        ? 'bg-[#F8FAFB] border-[#E8ECEF] text-[#9A9FA5]'
+        : 'border-slate-200 text-slate-500'
+    }`}
+  >
+    Cancel
+  </button>
 
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      onClick={() => setSettleModal({ show: false, step: 1 })}
-                      className="flex-1 py-2.5 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      disabled={!settleData.totalAmount || !settleData.credits}
-                      onClick={() => setSettleModal({ ...settleModal, step: 2 })}
-                      className="flex-1 py-2.5 bg-purple-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 shadow-lg shadow-purple-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next <ArrowRight size={14} />
-                    </button>
-                  </div>
+  <button
+    disabled={!settleData.totalAmount || !settleData.credits}
+    onClick={() => setSettleModal({ ...settleModal, step: 2 })}
+    className="flex-1 flex items-center justify-center gap-1 py-2.5 bg-cyan-600 text-white rounded-xl text-[10px] font-black uppercase shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    Next
+    <ArrowRight size={14} />
+  </button>
+
+</div>
                 </div>
               ) : (
                 <div className="space-y-5">
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-200">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Agent Credits</span>
-                      <span className="text-sm font-black text-slate-800">{settleData.credits}</span>
-                    </div>
-                   <div className="flex justify-between items-center">
-  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-    Admin Commission ({lead.commision || 0}%)
-  </span>
-  <span className="text-sm font-black text-emerald-600 flex items-center gap-1">
-    <IndianRupee size={12} />
-    {/* Assuming 'commission' from backend is the percentage value, e.g., 15 */}
-    {(
-      (parseFloat(settleData.totalAmount || 0) * (parseFloat(lead.commision || 0) / 100))
-    ).toFixed(2)}
-  </span>
-</div>
+                  <div className={`p-4 rounded-xl border space-y-3 ${isLight ? 'bg-[#F8FAFB] border-[#E8ECEF]' : 'bg-slate-50 border-slate-100'}`}>
+                    <div className="flex justify-between items-center pb-3 border-b border-slate-200 text-xs font-bold uppercase text-slate-500"><span>Agent Credits</span><span className="text-sm font-black text-slate-800">{settleData.credits}</span></div>
+                    <div className="flex justify-between items-center text-xs font-bold uppercase text-slate-500"><span>Commission ({lead.commision}%)</span><span className="text-sm font-black text-emerald-600">₹{((parseFloat(settleData.totalAmount || 0) * (parseFloat(lead.commision || 0) / 100))).toFixed(2)}</span></div>
                   </div>
-
-                  {/* Informational Section */}
-                  <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3.5 text-xs text-slate-600 space-y-2.5 leading-relaxed">
-                    <div className="flex gap-2.5">
-                      <ShieldCheck size={14} className="text-blue-600 shrink-0 mt-0.5" />
-                      <p>
-                        <strong className="text-slate-800 block mb-0.5">Admin Verification</strong>
-                        These credits will be passed to the admin for review. The admin decides and finalizes the exact approved credit amount, which may be modified.
-                      </p>
-                    </div>
-                   <div className="flex gap-2.5 pt-2.5 border-t border-blue-100/50">
-  <Info size={14} className="text-blue-600 shrink-0 mt-0.5" />
-  <p>
-    <strong className="text-slate-800 block mb-0.5">Commission Details</strong>
-    The {lead.commision}% commission is deducted to cover system running, platform maintenance, and other ongoing operational costs.
-  </p>
-</div>
+                  <div className={`rounded-xl p-3.5 text-xs flex gap-3 border ${isLight ? 'bg-blue-50 border-blue-100 text-blue-800' : 'bg-blue-50 border-blue-100 text-slate-600'}`}>
+                    <ShieldCheck size={18} className="shrink-0" />
+                    <p><strong className="block mb-0.5">Admin Verification</strong>Final amount may be modified by the admin.</p>
                   </div>
-
                   <div className="flex gap-3">
-                    <button
-                      onClick={() => setSettleModal({ ...settleModal, step: 1 })}
-                      className="flex-1 py-2.5 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-colors"
-                    >
-                      Back
-                    </button>
-                    <button
-                      onClick={handleSettleSubmit}
-                      disabled={isSettling}
-                      className="flex-[2] py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
-                    >
-                      {isSettling ? <Loader2 size={14} className="animate-spin" /> : 'Submit to Admin'}
-                    </button>
+                    <button onClick={() => setSettleModal({ ...settleModal, step: 1 })} className={`flex-1 py-3 rounded-xl text-[10px] font-black border uppercase tracking-widest ${isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] text-[#9A9FA5]' : 'border-cyan-800 text-slate-100'}`}>Back</button>
+                    <button onClick={handleSettleSubmit} disabled={isSettling} className="flex-[2] py-3 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase shadow-sm flex items-center justify-center gap-2">{isSettling ? <Loader2 size={14} className="animate-spin" /> : 'Submit to Admin'}</button>
                   </div>
                 </div>
               )}

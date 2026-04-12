@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { StatusBar, Style } from '@capacitor/status-bar';
+
+// --- THEME CONTEXT ---
+import { ThemeProvider, useTheme } from './context/ThemeContext'; // Ensure this path is correct
+
 // --- PUBLIC PAGES ---
 import LandingPage from './pages/public/LandingPage';
 import AuthGateway from './pages/auth/AuthGateway';
@@ -30,28 +34,30 @@ import PortfolioManager from "./pages/business/PortfolioManager";
 import BusinessSettings from "./pages/business/BusinessSettings";
 import LeadReview from "./pages/business/LeadReview";
 
-const App = () => {
+const AppContent = () => {
   const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-useEffect(() => {
+  const { theme } = useTheme(); // Access global theme
+
+  // Update Status Bar based on Theme
+  useEffect(() => {
     const configureStatusBar = async () => {
       try {
-        // Change the background color (Use a valid HEX code)
-        await StatusBar.setBackgroundColor({ color: '#FF0000' });
-
-        // Change the text/icon color to light or dark
-        // Style.Dark = Dark background, Light text
-        // Style.Light = Light background, Dark text
-        await StatusBar.setStyle({ style: Style.Dark });
-        
+        if (theme === 'light') {
+          await StatusBar.setBackgroundColor({ color: '#F8FAFC' }); // Soft Alabaster
+          await StatusBar.setStyle({ style: Style.Light }); // Dark text for light bg
+        } else {
+          await StatusBar.setBackgroundColor({ color: '#020617' }); // Deep Navy
+          await StatusBar.setStyle({ style: Style.Dark }); // Light text for dark bg
+        }
       } catch (error) {
-        // This catch block prevents crashes if you run the app in a web browser
         console.warn('StatusBar is not available on this platform');
       }
     };
 
     configureStatusBar();
-  }, []);
+  }, [theme]); // Re-run whenever theme changes
+
   useEffect(() => {
     const checkSession = () => {
       const savedUser = localStorage.getItem('vynx_user');
@@ -71,21 +77,18 @@ useEffect(() => {
     return () => window.removeEventListener('storage', checkSession);
   }, []);
 
-  // 2. ലോഗൗട്ട് ഫങ്ക്ഷൻ
-function handleLogout() {
-  localStorage.removeItem('bc_api_key');
-  localStorage.removeItem('bc_api_secret');
-  localStorage.removeItem('vynx_user');
-  window.location.href = '/auth';
-}
+  function handleLogout() {
+    localStorage.removeItem('bc_api_key');
+    localStorage.removeItem('bc_api_secret');
+    localStorage.removeItem('vynx_user');
+    window.location.href = '/auth';
+  }
 
   if (isLoading) return null;
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* --- PUBLIC ROUTES --- */}
-        {/* ലോഗിൻ ചെയ്തിട്ടില്ലെങ്കിൽ ലാൻഡിംഗ് പേജ്, ഉണ്ടെങ്കിൽ ഡാഷ്‌ബോർഡ് */}
         <Route 
           path="/" 
           element={!userRole ? <LandingPage onEnterPortal={() => window.location.href='/login'} /> : <Navigate to={`/${userRole}`} replace />} 
@@ -138,11 +141,17 @@ function handleLogout() {
           </Route>
         )}
 
-        {/* FALLBACK: തെറ്റായ URL അടിച്ചാൽ ഹോം പേജിലേക്ക് റീഡയറക്ട് ചെയ്യുന്നു */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
 };
+
+// --- WRAPPER TO PROVIDE CONTEXT TO THE WHOLE APP ---
+const App = () => (
+  <ThemeProvider>
+    <AppContent />
+  </ThemeProvider>
+);
 
 export default App;

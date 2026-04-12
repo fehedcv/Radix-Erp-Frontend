@@ -245,7 +245,7 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
           <div>
             <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Credit & Payment Settlement</h2>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1">
-              <Activity size={12} className="text-blue-500" /> Active Settlement Management
+              Active Settlement Management
             </p>
           </div>
         </div>
@@ -273,7 +273,7 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
             <Chart
               options={chartConfigs.payouts.options}
               series={chartConfigs.payouts.series}
-              type="area" height={220}
+              type="line" height={220}
             />
           </ChartCard>
         </div>
@@ -356,95 +356,106 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
       <p className="text-[10px] font-black uppercase tracking-widest">No pending rewards found</p>
     </div>
   ) : (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-      {filteredRewards.map(item => (
-        <div
-          key={item.ledgerId}
-          className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col h-full hover:shadow-md hover:border-blue-300 transition-all group"
-        >
-          {/* Header Row: ID, Client Name & Agent Avatar */}
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1 pr-3">
-              <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded text-[8px] font-black uppercase tracking-widest mb-2">
-                {item.id}
-              </span>
-              <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight leading-tight line-clamp-2">
-                {item.clientName}
-              </h4>
-            </div>
-            <div className="h-9 w-9 rounded-lg bg-slate-900 text-white flex items-center justify-center text-sm font-black uppercase shrink-0 shadow-sm border border-slate-700">
-              {item.agentName?.[0] || '?'}
-            </div>
-          </div>
+   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+  {filteredRewards.map(item => (
+    <div
+      key={item.ledgerId}
+      className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col h-full hover:shadow-lg hover:border-blue-400 transition-all group"
+    >
 
-          {/* Info Grid: Branch, Service, Staff */}
-          <div className="bg-slate-50/50 rounded-lg p-3.5 grid grid-cols-2 gap-y-3 gap-x-2 border border-slate-100 mb-4 flex-1">
-            <div>
-              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                <Briefcase size={10} className="text-slate-400" /> Branch
-              </p>
-              <p className="text-[10px] font-black text-slate-700 uppercase truncate" title={item.businessUnit}>
-                {item.businessUnit}
-              </p>
-            </div>
-            <div>
-              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                <Zap size={10} className="text-blue-400" /> Service
-              </p>
-              <p className="text-[10px] font-black text-blue-600 uppercase truncate" title={item.service}>
-                {item.service}
-              </p>
-            </div>
-            <div className="col-span-2 pt-2.5 border-t border-slate-200/60">
-              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-                <User size={10} className="text-slate-400" /> Staff Member
-              </p>
-              <p className="text-[10px] font-black text-slate-700 uppercase truncate" title={item.agentName}>
-                {item.agentName}
-              </p>
-            </div>
-          </div>
-
-          {/* Financial Breakdown */}
-          <div className="bg-gradient-to-br from-emerald-50/80 to-emerald-50/30 rounded-lg p-3.5 border border-emerald-100/60 mb-5">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Admin Comm.</span>
-              <span className="text-[10px] font-black text-amber-600">
-                ₹{item.commission?.toLocaleString() ?? 'N/A'}
-              </span>
-            </div>
-            <div className="flex justify-between items-center pt-2 border-t border-emerald-200/50">
-              <span className="text-[8px] font-bold text-emerald-700 uppercase tracking-widest flex items-center gap-1.5">
-                <Wallet size={10} className="text-emerald-500" /> Agent Credit
-              </span>
-              <span className="text-xs font-black text-emerald-600">
-                {item.agentCredit?.toLocaleString() ?? 'N/A'} CR
-              </span>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="mt-auto flex justify-end gap-2 pt-1">
-            <button
-              onClick={() => { setSelectedItem(item); setActiveModal('case-review'); }}
-              className="flex-[0.8] py-2.5 bg-white text-slate-600 border border-slate-200 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 hover:text-slate-900 flex justify-center items-center gap-1.5 transition-all shadow-sm"
-            >
-              <Info size={12} /> Info
-            </button>
-            <button
-              onClick={() => {
-                setSelectedItem(item);
-                setSettleAmount(item.agentCredit);
-                setActiveModal('verify');
-              }}
-              className="flex-[1.2] py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all shadow-md shadow-blue-500/20 flex justify-center items-center gap-1.5 active:scale-95"
-            >
-              Verify CR
-            </button>
-          </div>
+      {/* Header */}
+      <div className="flex justify-between items-start gap-4 mb-5">
+        <div className="flex-1 min-w-0">
+        
+          <h4 className="text-base font-black text-slate-900 uppercase tracking-tight leading-snug line-clamp-2">
+            {item.clientName}
+          </h4>
         </div>
-      ))}
+
+        <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-sm font-black uppercase shrink-0 shadow-md border border-slate-700">
+          {item.agentName?.[0] || '?'}
+        </div>
+      </div>
+
+      {/* Info Grid */}
+      <div className="bg-slate-50/60 rounded-xl p-4 grid grid-cols-2 gap-y-4 gap-x-3 border border-slate-100 mb-5 flex-1">
+
+        <div className="min-w-0">
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+            <Briefcase size={11} className="text-slate-400" /> Branch
+          </p>
+          <p className="text-[11px] font-black text-slate-700 uppercase truncate">
+            {item.businessUnit}
+          </p>
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+            <Zap size={11} className="text-blue-400" /> Service
+          </p>
+          <p className="text-[11px] font-black text-blue-600 uppercase truncate">
+            {item.service}
+          </p>
+        </div>
+
+        <div className="col-span-2 pt-3 border-t border-slate-200/60">
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+            <User size={11} className="text-slate-400" /> Handling Agent
+          </p>
+          <p className="text-[11px] font-black text-slate-700 uppercase truncate">
+            {item.agentName}
+          </p>
+        </div>
+
+      </div>
+
+      {/* Financial */}
+      <div className="bg-gradient-to-br from-emerald-50/80 to-emerald-50/30 rounded-xl p-4 border border-emerald-100/60 mb-6">
+
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+            Admin Commission.
+          </span>
+          <span className="text-[11px] font-black text-amber-600">
+            ₹{item.commission?.toLocaleString() ?? 'N/A'}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center pt-3 border-t border-emerald-200/50">
+          <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-widest flex items-center gap-1.5">
+            <Wallet size={11} className="text-emerald-500" /> Agent Credit
+          </span>
+          <span className="text-sm font-black text-emerald-600">
+            {item.agentCredit?.toLocaleString() ?? 'N/A'} CR
+          </span>
+        </div>
+
+      </div>
+
+      {/* Actions */}
+      <div className="mt-auto flex gap-3">
+        <button
+          onClick={() => { setSelectedItem(item); setActiveModal('case-review'); }}
+          className="flex-1 py-2.5 bg-white text-slate-600 border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 hover:text-slate-900 flex justify-center items-center gap-2 transition-all shadow-sm"
+        >
+          <Info size={13} /> Info
+        </button>
+
+        <button
+          onClick={() => {
+            setSelectedItem(item);
+            setSettleAmount(item.agentCredit);
+            setActiveModal('verify');
+          }}
+          className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all shadow-md shadow-blue-500/20 flex justify-center items-center gap-2 active:scale-95"
+        >
+          Verify CR
+        </button>
+      </div>
+
     </div>
+  ))}
+</div>
   )}
 </motion.div>
       </section>
@@ -619,7 +630,7 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
             {activeModal === 'agent-payout-info' ? 'Agent Withdrawal Info'
               : activeModal === 'verify'  ? 'Verify Agent Credits'
               : activeModal === 'payout'  ? 'Process Manual Payout'
-              : 'Case Review Summary'}
+              : 'Lead Details'}
           </h3>
           <button onClick={closeAllModals} className="p-1.5 bg-white rounded-lg hover:bg-slate-100 transition-colors">
             <X size={18} />
@@ -633,7 +644,7 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
           {activeModal === 'case-review' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <section className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl space-y-3 md:col-span-3">
-                <p className="text-[7px] font-black text-emerald-600 uppercase tracking-widest border-b pb-2 border-emerald-100 flex items-center gap-1.5">
+                <p className="text-[12px] font-black text-emerald-600 uppercase tracking-widest border-b pb-2 border-emerald-100 flex items-center gap-1.5">
                   <IndianRupee size={12} /> Financial Breakdown
                 </p>
                 <div className="grid grid-cols-3 gap-4 text-center">
@@ -659,7 +670,7 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
               </section>
 
               <section className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-3">
-                <p className="text-[7px] font-black text-blue-600 uppercase tracking-widest border-b pb-2">Client Details</p>
+                <p className="text-[12px] font-black text-blue-600 uppercase tracking-widest border-b pb-2">Client Details</p>
                 <p className="text-xs font-black text-slate-900 uppercase">{selectedItem.clientName}</p>
                 <div className="flex items-center gap-2 text-[9px] text-slate-500 font-bold">
                   <Phone size={10} /> {selectedItem.clientPhone || 'N/A'}
@@ -670,14 +681,14 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
               </section>
 
               <section className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-3">
-                <p className="text-[7px] font-black text-emerald-600 uppercase tracking-widest border-b pb-2">Business Branch</p>
+                <p className="text-[12px] font-black text-emerald-600 uppercase tracking-widest border-b pb-2">Business Branch</p>
                 <p className="text-xs font-black text-slate-900 uppercase">{selectedItem.businessUnit}</p>
                 <p className="text-[9px] font-bold text-emerald-600 uppercase">{selectedItem.service}</p>
                 <p className="text-[9px] text-slate-400 italic leading-relaxed">"{selectedItem.description}"</p>
               </section>
 
               <section className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-3">
-                <p className="text-[7px] font-black text-blue-400 uppercase tracking-widest border-b pb-2 border-blue-100">Sourced By</p>
+                <p className="text-[12px] font-black text-blue-400 uppercase tracking-widest border-b pb-2 border-blue-500">Handled By</p>
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 bg-blue-600 text-white rounded flex items-center justify-center font-black text-xs uppercase">
                     {selectedItem.agentName?.[0]}
@@ -759,6 +770,7 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
               </div>
               <div className="p-6 bg-slate-900 rounded-2xl text-white text-center shadow-xl">
                 <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-4">Verify & Adjust Credit Points</p>
+                <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-4">One Credit = 1 INR</p>
                 <div className="flex items-center justify-center gap-4">
                   <input
                     type="number" autoFocus placeholder="000"

@@ -7,7 +7,9 @@ import {
   Plus, UserPlus, Clock, Database, Sparkles, Activity, ChevronRight,
   UserCog,
   BriefcaseBusinessIcon,
-  Building2Icon
+  Building2Icon,
+  GitCompareArrows,
+  AppWindowMacIcon
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 
@@ -191,7 +193,7 @@ const AdminOverview = () => {
       >
         <div className="flex items-center gap-4">
            <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center text-[#007ACC] border border-blue-100 shrink-0">
-              <UserCog size={24} />
+              <BarChart3 size={24} />
            </div>
            <div>
               <h2 className="text-[20px] font-black text-slate-900 uppercase tracking leading-none">System Analaytics</h2>
@@ -202,7 +204,7 @@ const AdminOverview = () => {
           onClick={() => navigate('/admin/leads')}
           className="flex items-center justify-center gap-2 px-6 py-3 bg-[#007ACC] text-white rounded-xl font-black text-[10px] hover:bg-[#0F172A] transition-all uppercase tracking-widest shadow-md active:scale-95"
         >
-          View Master Registry <ArrowRight size={14} />
+          View Lead History <ArrowRight size={14} />
         </button>
       </motion.div>
 
@@ -279,7 +281,7 @@ const AdminOverview = () => {
         <div className="lg:col-span-4 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col">
           <div className="px-6 py-4 border-b border-slate-50 bg-slate-50/50">
             <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-              <Building2Icon size={16} className="text-[#007ACC]" /> Key Partners
+              <Building2Icon size={16} className="text-[#007ACC]" />Partners
             </h4>
           </div>
           <div className="p-3 space-y-2 flex-1">
