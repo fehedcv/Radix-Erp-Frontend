@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import frappeApi from '../../api/frappeApi';
 import { useTheme } from '../../context/ThemeContext';
-
+// import { Capacitor } from '@capacitor/core';
 // Lead Modal Import
 import LeadFormModal from './LeadFormModal';
 
@@ -25,7 +25,7 @@ const AgentHub = ({ onLogout }) => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState("");
   const [businessUnits, setBusinessUnits] = useState({});
-  
+  // isNative = Capacitor.isNativePlatform();
   // Theme State from Context
   const { theme, toggleTheme } = useTheme();
 
@@ -196,7 +196,7 @@ const AgentHub = ({ onLogout }) => {
       {/* 2. MAIN HUB AREA */}
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto relative no-scrollbar z-10 bg-transparent">
         
-        <header className={`h-16 w-full sticky top-0 z-[100] flex items-center justify-between lg:justify-end px-6 lg:px-10 border-b transition-colors duration-300 backdrop-blur-3xl ${
+        <header className={`h-16 w-full sticky top-0 z-[100] flex items-center justify-between lg:justify-end px-6  lg:px-10  border-b transition-colors duration-300 backdrop-blur-3xl ${
           theme === 'light' ? 'bg-[#F1F5F9] border-slate-200' : 'bg-white/[0.02] border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.3)]'
         }`}>
           

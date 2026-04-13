@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { StatusBar, Style } from '@capacitor/status-bar';
-
+import { Capacitor } from '@capacitor/core';
 // --- THEME CONTEXT ---
 import { ThemeProvider, useTheme } from './context/ThemeContext'; // Ensure this path is correct
 
@@ -26,6 +26,10 @@ import WalletPage from './pages/agent/Wallet';
 import LeadHistory from './pages/agent/LeadHistory';
 import ProfilePage from './pages/agent/Profile';
 
+// Agent hub in android app
+
+import AgentHubApp from './pages/agent/AgentHubApp';
+
 // --- BUSINESS HUB & SUB-PAGES ---
 import BusinessHub from "./pages/business/BusinessHub";
 import BusinessOverview from "./pages/business/BusinessOverview";
@@ -33,30 +37,43 @@ import ManageLeads from "./pages/business/ManageLeads";
 import PortfolioManager from "./pages/business/PortfolioManager";
 import BusinessSettings from "./pages/business/BusinessSettings";
 import LeadReview from "./pages/business/LeadReview";
+import DashboardOverviewApp from './pages/agent/DashboardOverviewApp';
+import BusinessDirectoryApp from './pages/agent/BusinessDirectoryApp';
+import BusinessDetailApp from './pages/agent/BusinessDetailApp';
+import WalletApp from './pages/agent/WalletApp';
+import LeadHistoryApp from './pages/agent/LeadHistoryApp';
+import ProfilePageApp from './pages/agent/ProfileApp';
+import AuthGatewayApp from './pages/auth/AuthGatewayApp';
 
 const AppContent = () => {
   const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const { theme } = useTheme(); // Access global theme
-
+const isNative = Capacitor.isNativePlatform();
   // Update Status Bar based on Theme
   useEffect(() => {
     const configureStatusBar = async () => {
       try {
+        if (!Capacitor.isNativePlatform()) return;
+
+        // 1. Turn OFF the transparent overlay so it acts like a normal status bar
+        await StatusBar.setOverlaysWebView({ overlay: false });
+
+        // 2. Set the exact hex colors to match your Bento design
         if (theme === 'light') {
-          await StatusBar.setBackgroundColor({ color: '#F8FAFC' }); // Soft Alabaster
-          await StatusBar.setStyle({ style: Style.Light }); // Dark text for light bg
+          await StatusBar.setBackgroundColor({ color: '#FF0000' }); // Light mode app background
+          await StatusBar.setStyle({ style: Style.Light });         // Dark icons/text
         } else {
-          await StatusBar.setBackgroundColor({ color: '#020617' }); // Deep Navy
-          await StatusBar.setStyle({ style: Style.Dark }); // Light text for dark bg
+          await StatusBar.setBackgroundColor({ color: '#09090B' }); // Dark mode app background
+          await StatusBar.setStyle({ style: Style.Dark });          // Light icons/text
         }
       } catch (error) {
-        console.warn('StatusBar is not available on this platform');
+        console.warn('StatusBar is not available on this platform', error);
       }
     };
 
     configureStatusBar();
-  }, [theme]); // Re-run whenever theme changes
+  }, [theme]);// Re-run whenever theme changes
 
   useEffect(() => {
     const checkSession = () => {
@@ -94,14 +111,34 @@ const AppContent = () => {
           element={!userRole ? <LandingPage onEnterPortal={() => window.location.href='/login'} /> : <Navigate to={`/${userRole}`} replace />} 
         />
         
-        <Route 
+      <Route 
           path="/login" 
-          element={!userRole ? <AuthGateway onLoginSuccess={(role) => setUserRole(role)} /> : <Navigate to={`/${userRole}`} replace />} 
+          element={
+            !userRole ? (
+              Capacitor.isNativePlatform() ? (
+                <AuthGatewayApp onLoginSuccess={(role) => setUserRole(role)} />
+              ) : (
+                <AuthGateway onLoginSuccess={(role) => setUserRole(role)} />
+              )
+            ) : (
+              <Navigate to={`/${userRole}`} replace />
+            )
+          } 
         />
         
         <Route 
           path="/signup" 
-          element={!userRole ? <AuthGateway onLoginSuccess={(role) => setUserRole(role)} /> : <Navigate to={`/${userRole}`} replace />} 
+          element={
+            !userRole ? (
+              Capacitor.isNativePlatform() ? (
+                <AuthGatewayApp onLoginSuccess={(role) => setUserRole(role)} />
+              ) : (
+                <AuthGateway onLoginSuccess={(role) => setUserRole(role)} />
+              )
+            ) : (
+              <Navigate to={`/${userRole}`} replace />
+            )
+          } 
         />
 
         {/* --- ADMIN PRIVATE ROUTES --- */}
@@ -118,14 +155,14 @@ const AppContent = () => {
 
         {/* --- AGENT PRIVATE ROUTES --- */}
         {userRole === 'agent' && (
-          <Route path="/agent" element={<AgentHub onLogout={handleLogout} />}>
+          <Route path="/agent" element={isNative ? <AgentHubApp onLogout={handleLogout} /> : <AgentHub onLogout={handleLogout} /> }>
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardOverview />} />
-            <Route path="units" element={<BusinessDirectory />} />
-            <Route path="units/:id" element={<BusinessDetail />} />
-            <Route path="wallet" element={<WalletPage />} />
-            <Route path="history" element={<LeadHistory />} />
-            <Route path="profile" element={<ProfilePage />} />
+            <Route path="dashboard" element={isNative ? <DashboardOverviewApp /> : <DashboardOverview /> } />
+            <Route path="units" element={isNative ? <BusinessDirectoryApp /> : <BusinessDirectory />} />
+            <Route path="units/:id" element={isNative ? <BusinessDetailApp /> : <BusinessDetail />} />
+            <Route path="wallet" element={isNative ? <WalletApp /> : <WalletPage />} />
+            <Route path="history" element={isNative ? <LeadHistoryApp /> : <LeadHistory />} />
+            <Route path="profile" element={isNative ? <ProfilePageApp /> : <ProfilePage />} />
           </Route>
         )}
 
