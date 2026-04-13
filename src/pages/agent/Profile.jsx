@@ -8,6 +8,17 @@ import frappeApi from '../../api/frappeApi';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
 
+const getFrappeImage = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) {
+    return path;
+  }
+  const baseUrl = import.meta.env.VITE_FRAPPE_URL.replace('/api', '');
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  return `${cleanBase}${cleanPath}`;
+};
+
 const ProfilePage = () => {
   const { theme } = useTheme(); // Access Theme
   const [isEditing, setIsEditing] = useState(false);
@@ -76,7 +87,7 @@ const ProfilePage = () => {
 
       if (profile.avatarFile) {
         const imgData = new FormData();
-        imgData.append("profile_picture", profile.avatarFile);
+        imgData.append("file", profile.avatarFile);
         
         await frappeApi.post('/method/business_chain.api.agent.upload_profile_picture', imgData, {
           headers: { "Content-Type": "multipart/form-data" }
@@ -167,7 +178,7 @@ const ProfilePage = () => {
                   }`}
                 >
                   {profile.avatar ? (
-                    <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                    <img src={getFrappeImage(profile.avatar)} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <User size={64} className={theme === 'light' ? 'text-slate-200' : 'text-slate-800'} />
                   )}
