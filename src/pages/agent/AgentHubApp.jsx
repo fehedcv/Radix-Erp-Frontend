@@ -173,7 +173,8 @@ const AgentHubApp = ({ onLogout }) => {
       </main>
 
       {/* FLOATING ACTION BUTTON (Native Android Style) */}
-      <div className="fixed bottom-28 right-6 z-[60]">
+     {/* FLOATING ACTION BUTTON (FAB) */}
+      <div className="fixed right-6 z-[60] bottom-[calc(6.5rem+env(safe-area-inset-bottom))]">
         <button 
           onClick={() => { setSelectedBusiness(""); setIsModalOpen(true); }} 
           className={`w-14 h-14 rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,0.2)] active:scale-90 transition-all ${
@@ -184,8 +185,8 @@ const AgentHubApp = ({ onLogout }) => {
         </button>
       </div>
 
-      {/* BENTO-STYLE BOTTOM NAVIGATION */}
-      <nav className={`fixed bottom-0 left-0 right-0 z-50 px-6 py-5 pb-8 rounded-t-[2rem] flex justify-between items-center transition-colors duration-300 ${
+     {/* BENTO-STYLE BOTTOM NAVIGATION */}
+      <nav className={`fixed bottom-0 left-0 right-0 z-50 px-6 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] rounded-t-[2rem] flex justify-between items-center transition-colors duration-300 ${
         theme === 'light' 
           ? 'bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.05)]' 
           : 'bg-[#18181B] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] border-t border-white/5'
