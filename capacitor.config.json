@@ -10,9 +10,6 @@
       "enabled": true
     }
    
-  },
-  "server": {
-    "url": "http://192.168.0.168:5173",
-    "cleartext": true
   }
+ 
 }
