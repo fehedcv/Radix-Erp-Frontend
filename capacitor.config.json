@@ -1,5 +1,5 @@
 {
-  "appId": "com.example.app",
+  "appId": "com.radix.app",
   "appName": "radix",
   "webDir": "dist",
   "plugins": {
@@ -9,6 +9,7 @@
     "CapacitorHttp": {
       "enabled": true
     }
+   
   }
  
 }
