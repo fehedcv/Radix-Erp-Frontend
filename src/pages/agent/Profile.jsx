@@ -13,7 +13,7 @@ const getFrappeImage = (path) => {
   if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) {
     return path;
   }
-  const baseUrl = import.meta.env.VITE_FRAPPE_URL.replace('/api', '');
+  const baseUrl = import.meta.env.VITE_SUPABASE_STORAGE_PUBLIC_URL || '';
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   return `${cleanBase}${cleanPath}`;
