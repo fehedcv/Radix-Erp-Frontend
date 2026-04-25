@@ -28,7 +28,7 @@ import {
 import frappeApi from "../../api/frappeApi";
 import { useTheme } from "../../context/ThemeContext"; // Theme Context
 
-const SITE_URL = import.meta.env.VITE_FRAPPE_URL?.replace(/\/api$/, "") || "http://16.171.38.6:8000/";
+const SITE_URL = import.meta.env.VITE_SUPABASE_STORAGE_PUBLIC_URL || "";
 
 const EMPTY_UNIT = {
   id: "",

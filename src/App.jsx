@@ -84,6 +84,8 @@ const isNative = Capacitor.isNativePlatform();
           setUserRole(parsedUser.role);
         } catch (error) {
           localStorage.removeItem('vynx_user');
+    localStorage.removeItem('sb_access_token');
+    localStorage.removeItem('sb_refresh_token');
         }
       }
       setIsLoading(false);
@@ -98,6 +100,8 @@ const isNative = Capacitor.isNativePlatform();
     localStorage.removeItem('bc_api_key');
     localStorage.removeItem('bc_api_secret');
     localStorage.removeItem('vynx_user');
+    localStorage.removeItem('sb_access_token');
+    localStorage.removeItem('sb_refresh_token');
     window.location.href = '/auth';
   }
 
