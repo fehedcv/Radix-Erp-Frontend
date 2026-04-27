@@ -116,21 +116,38 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-6 overflow-hidden transition-colors duration-300">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetAndClose} 
-          className={`absolute inset-0 ${isLight ? 'bg-[#1A1D1F]/20' : 'bg-[#020617]/80'} backdrop-blur-md`} 
+      <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-6 overflow-hidden transition-colors duration-300 font-['Plus_Jakarta_Sans',sans-serif]">
+        
+        {/* Backdrop */}
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          exit={{ opacity: 0 }} 
+          onClick={resetAndClose} 
+          className={`absolute inset-0 backdrop-blur-sm transition-colors ${
+            isLight ? 'bg-[#1A202C]/40' : 'bg-[#000000]/60'
+          }`} 
         />
         
+        {/* Modal Container */}
         <motion.div 
-          initial={{ opacity: 0, scale: 0.98, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: 20 }} 
-          className={`w-full max-w-5xl rounded-2xl shadow-2xl relative flex flex-col h-auto max-h-[95vh] border transition-colors duration-300 ${
-            isLight ? 'bg-white border-[#F0F2F5] text-[#1A1D1F]' : 'bg-[#0F172A]/90 backdrop-blur-3xl border-white/10 text-[#E2E8F0]'
+          initial={{ opacity: 0, scale: 0.98, y: 20 }} 
+          animate={{ opacity: 1, scale: 1, y: 0 }} 
+          exit={{ opacity: 0, scale: 0.98, y: 20 }} 
+          className={`w-full max-w-[900px] rounded-xl shadow-2xl relative flex flex-col h-auto max-h-[95vh] border transition-colors duration-300 overflow-hidden ${
+            isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#131720] border-white/5'
           }`}
         >
           {/* HEADER */}
-          <div className={`px-6 py-4 flex justify-between items-center border-b shrink-0 ${isLight ? 'bg-[#F8FAFB]/50 border-[#F0F2F5]' : 'bg-white/5 border-white/5'}`}>
-            <span className={`text-[10px] font-black uppercase tracking-[0.25em] ${isLight ? 'text-[#9A9FA5]' : 'text-[#64748B]'}`}>New Referral Portal</span>
-            <button onClick={resetAndClose} className={`p-1 rounded-md transition-all ${isLight ? 'hover:bg-[#F0F2F5] text-[#9A9FA5]' : 'hover:bg-white/10 text-[#64748B]'}`}>
+          <div className={`px-6 py-4 flex justify-between items-center border-b shrink-0 ${
+            isLight ? 'border-[#E2E8F0]' : 'border-white/5'
+          }`}>
+            <span className={`text-xs font-semibold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+              New Referral Portal
+            </span>
+            <button onClick={resetAndClose} className={`p-1.5 rounded-md transition-all ${
+              isLight ? 'hover:bg-[#F4F5F7] text-[#718096]' : 'hover:bg-[#222938] text-[#9CA3AF]'
+            }`}>
               <X size={18} />
             </button>
           </div>
@@ -140,38 +157,44 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
               <form onSubmit={proceedToConfirm} className="flex flex-col md:flex-row h-full">
                 
                 {/* LEFT COLUMN: Customer Info */}
-                <div className={`flex-1 p-6 lg:p-10 border-r space-y-6 ${isLight ? 'border-[#F0F2F5]' : 'border-white/5'}`}>
+                <div className={`flex-1 p-6 lg:p-8 border-b md:border-b-0 md:border-r space-y-6 ${
+                  isLight ? 'border-[#E2E8F0]' : 'border-white/5'
+                }`}>
                   <div>
-                    <h2 className="text-2xl lg:text-3xl font-black tracking-tight uppercase leading-none">Referral Details</h2>
-                    <p className={`text-xs font-medium mt-2 ${isLight ? 'text-[#9A9FA5]' : 'text-[#94A3B8]'}`}>Personal and Contact Information</p>
+                    <h2 className={`text-2xl font-bold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+                      Referral Details
+                    </h2>
+                    <p className={`text-sm font-normal mt-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                      Personal and Contact Information
+                    </p>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className={`text-[9px] font-black uppercase tracking-widest ml-1 ${isLight ? 'text-[#9A9FA5]' : 'text-[#64748B]'}`}>Client Name</label>
+                    <div className="space-y-1.5">
+                      <label className={`text-xs font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Client Name</label>
                       <input type="text" name="client_name" required value={formData.client_name} onChange={handleInputChange}
-                        className={`w-full px-4 py-3 rounded-xl outline-none text-sm font-bold transition-all border ${
-                          isLight ? 'bg-[#F8FAFB] border-[#F0F2F5] text-[#1A1D1F] focus:bg-white focus:border-[#61D9DE]' : 'bg-white/5 border-white/10 text-[#E2E8F0] focus:border-[#38BDF8]/50'
+                        className={`w-full px-4 py-2.5 rounded-md text-sm transition-all border outline-none ${
+                          isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] focus:bg-[#FFFFFF] focus:border-[#81B398]' : 'bg-[#222938] border-transparent text-[#F4F5F7] focus:bg-[#1A202C] focus:border-[#81B398]'
                         }`}
                         placeholder="Full Name"
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <label className={`text-[9px] font-black uppercase tracking-widest ml-1 ${isLight ? 'text-[#9A9FA5]' : 'text-[#64748B]'}`}>Phone Number</label>
+                    <div className="space-y-1.5">
+                      <label className={`text-xs font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Phone Number</label>
                       <div className="flex gap-2 items-center">
                         <div className="relative flex-grow">
-                          <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#61D9DE]' : 'text-[#38BDF8]/60'}`} size={16} />
+                          <Phone className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />
                           <input type="tel" name="client_phone" required value={formData.client_phone} onChange={handleInputChange}
-                            className={`w-full pl-11 pr-5 py-3 rounded-xl outline-none text-sm font-bold transition-all border ${
-                              isLight ? 'bg-[#F8FAFB] border-[#F0F2F5] text-[#1A1D1F] focus:bg-white focus:border-[#61D9DE]' : 'bg-white/5 border-white/10 text-[#E2E8F0] focus:border-[#38BDF8]/50'
+                            className={`w-full pl-10 pr-4 py-2.5 rounded-md text-sm transition-all border outline-none ${
+                              isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] focus:bg-[#FFFFFF] focus:border-[#81B398]' : 'bg-[#222938] border-transparent text-[#F4F5F7] focus:bg-[#1A202C] focus:border-[#81B398]'
                             }`}
                             placeholder="Mobile Number"
                           />
                         </div>
                         {Capacitor.isNativePlatform() && (
-                          <button type="button" onClick={handleOpenContactList} className={`p-3 rounded-xl transition-all active:scale-95 flex-shrink-0 border ${
-                            isLight ? 'bg-[#F8FAFB] border-[#F0F2F5] text-[#61D9DE] hover:bg-white' : 'bg-white/5 border-white/10 text-[#38BDF8] hover:bg-[#38BDF8]/10'
+                          <button type="button" onClick={handleOpenContactList} className={`p-2.5 rounded-md transition-all active:scale-95 flex-shrink-0 border ${
+                            isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#81B398] hover:bg-[#E2E8F0]' : 'bg-[#222938] border-transparent text-[#81B398] hover:bg-[#1A202C]'
                           }`}>
                             <BookUser size={18} />
                           </button>
@@ -179,13 +202,13 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className={`text-[9px] font-black uppercase tracking-widest ml-1 ${isLight ? 'text-[#9A9FA5]' : 'text-[#64748B]'}`}>Service Location</label>
+                    <div className="space-y-1.5">
+                      <label className={`text-xs font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Service Location</label>
                       <div className="relative">
-                        <MapPin className={`absolute left-4 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#61D9DE]' : 'text-[#38BDF8]/60'}`} size={16} />
+                        <MapPin className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />
                         <input type="text" name="clientAddress" value={formData.clientAddress} onChange={handleInputChange}
-                          className={`w-full pl-11 pr-5 py-3 rounded-xl outline-none text-sm font-bold transition-all border ${
-                            isLight ? 'bg-[#F8FAFB] border-[#F0F2F5] text-[#1A1D1F] focus:bg-white focus:border-[#61D9DE]' : 'bg-white/5 border-white/10 text-[#E2E8F0] focus:border-[#38BDF8]/50'
+                          className={`w-full pl-10 pr-4 py-2.5 rounded-md text-sm transition-all border outline-none ${
+                            isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] focus:bg-[#FFFFFF] focus:border-[#81B398]' : 'bg-[#222938] border-transparent text-[#F4F5F7] focus:bg-[#1A202C] focus:border-[#81B398]'
                           }`}
                           placeholder="City, Area"
                         />
@@ -195,52 +218,55 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
                 </div>
 
                 {/* RIGHT COLUMN: Project Info */}
-                <div className={`w-full md:w-[400px] lg:w-[450px] p-6 lg:p-10 flex flex-col justify-between transition-colors ${isLight ? 'bg-[#F8FAFB]' : 'bg-white/[0.02]'}`}>
-                  <div className="space-y-6">
+                <div className={`w-full md:w-[360px] lg:w-[400px] p-6 lg:p-8 flex flex-col justify-between transition-colors ${
+                  isLight ? 'bg-[#F4F5F7]/50' : 'bg-[#1A202C]/30'
+                }`}>
+                  <div className="space-y-5">
                     <div>
-                      <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2 mb-1 ${isLight ? 'text-[#61D9DE]' : 'text-[#38BDF8]'}`}>
+                      <h4 className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-1 text-[#81B398]`}>
                         <ClipboardList size={14} /> Service Data
                       </h4>
-                      <p className={`text-[10px] font-bold uppercase ${isLight ? 'text-[#9A9FA5]' : 'text-[#64748B]'}`}>Configure project requirements</p>
+                      <p className={`text-sm font-normal ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Configure project requirements</p>
                     </div>
 
                     <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className={`text-[9px] font-black uppercase tracking-widest ml-1 ${isLight ? 'text-[#9A9FA5]' : 'text-[#64748B]'}`}>Category</label>
+                      <div className="space-y-1.5">
+                        <label className={`text-xs font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Category</label>
                         <div className="relative">
-                          <Building2 className={`absolute left-4 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#61D9DE]' : 'text-[#38BDF8]/60'}`} size={16} />
+                          <Building2 className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />
                           <select name="category" required value={formData.category} onChange={handleInputChange}
-                            className={`w-full pl-11 pr-10 py-3 rounded-xl outline-none text-xs font-bold appearance-none border ${
-                              isLight ? 'bg-white border-[#F0F2F5] text-[#1A1D1F]' : 'bg-white/5 border-white/10 text-[#E2E8F0]'
+                            className={`w-full pl-10 pr-10 py-2.5 rounded-md text-sm appearance-none border outline-none transition-colors ${
+                              isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C] focus:border-[#81B398]' : 'bg-[#222938] border-transparent text-[#F4F5F7] focus:border-[#81B398]'
                             }`}
                           >
-                            <option value="" className={isLight ? '' : 'bg-[#0F172A]'}>Select Category</option>
-                            {categories.map(cat => ( <option key={cat} value={cat} className={isLight ? '' : 'bg-[#0F172A]'}>{cat}</option> ))}
+                            <option value="">Select Category</option>
+                            {categories.map(cat => ( <option key={cat} value={cat}>{cat}</option> ))}
                           </select>
-                          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9A9FA5]" size={14} />
+                          <ChevronDown className={`absolute right-3.5 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className={`text-[9px] font-black uppercase tracking-widest ml-1 ${isLight ? 'text-[#9A9FA5]' : 'text-[#64748B]'}`}>Service</label>
+                      <div className="space-y-1.5">
+                        <label className={`text-xs font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Service</label>
                         <div className="relative">
-                          <Briefcase className={`absolute left-4 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#61D9DE]' : 'text-[#38BDF8]/60'}`} size={16} />
+                          <Briefcase className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />
                           <select name="service" required value={formData.service} onChange={handleInputChange} disabled={!formData.category}
-                            className={`w-full pl-11 pr-10 py-3 rounded-xl outline-none text-xs font-bold appearance-none disabled:opacity-30 border ${
-                              isLight ? 'bg-white border-[#F0F2F5] text-[#1A1D1F]' : 'bg-white/5 border-white/10 text-[#E2E8F0]'
+                            className={`w-full pl-10 pr-10 py-2.5 rounded-md text-sm appearance-none disabled:opacity-50 border outline-none transition-colors ${
+                              isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C] focus:border-[#81B398]' : 'bg-[#222938] border-transparent text-[#F4F5F7] focus:border-[#81B398]'
                             }`}
                           >
-                            <option value="" className={isLight ? '' : 'bg-[#0F172A]'}>Select Service</option>
-                            {servicesForCategory.map(svc => ( <option key={svc} value={svc} className={isLight ? '' : 'bg-[#0F172A]'}>{svc}</option> ))}
+                            <option value="">Select Service</option>
+                            {servicesForCategory.map(svc => ( <option key={svc} value={svc}>{svc}</option> ))}
                           </select>
+                          <ChevronDown className={`absolute right-3.5 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className={`text-[9px] font-black uppercase tracking-widest ml-1 ${isLight ? 'text-[#9A9FA5]' : 'text-[#64748B]'}`}>Additional Notes</label>
+                      <div className="space-y-1.5">
+                        <label className={`text-xs font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Additional Notes</label>
                         <textarea name="notes" value={formData.notes} onChange={handleInputChange}
-                          className={`w-full p-4 rounded-xl outline-none text-xs font-bold min-h-[100px] lg:min-h-[140px] resize-none transition-all border ${
-                            isLight ? 'bg-white border-[#F0F2F5] text-[#1A1D1F] focus:border-[#61D9DE]' : 'bg-white/5 border-white/10 text-[#E2E8F0] focus:border-[#38BDF8]/50'
+                          className={`w-full p-3.5 rounded-md text-sm min-h-[100px] resize-none border outline-none transition-colors ${
+                            isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C] focus:border-[#81B398]' : 'bg-[#222938] border-transparent text-[#F4F5F7] focus:border-[#81B398]'
                           }`}
                           placeholder="Project details..."
                         />
@@ -248,40 +274,42 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
                     </div>
                   </div>
 
-                  <button type="submit" className={`mt-8 w-full py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-95 shadow-sm ${
-                    isLight ? 'bg-[#61D9DE] text-white hover:bg-[#49C5CB]' : 'bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20 hover:bg-[#38BDF8]/20'
-                  }`}>
-                    Proceed to Review <ArrowRight size={16} strokeWidth={3} />
+                  <button type="submit" className="mt-8 w-full py-3 rounded-md font-medium text-sm transition-all flex items-center justify-center gap-2 shadow-sm bg-[#81B398] text-[#FFFFFF] hover:bg-[#6FA085] active:scale-95">
+                    Proceed to Review <ArrowRight size={16} />
                   </button>
                 </div>
               </form>
             )}
 
             {step === 'confirm' && (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center h-full p-10 text-center max-w-2xl mx-auto">
-                <div className={`w-16 h-16 rounded-xl flex items-center justify-center mb-6 border ${isLight ? 'bg-[#F8FAFB] border-[#F0F2F5] text-[#61D9DE]' : 'bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/20'}`}>
-                  <Info size={32} />
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center h-full p-8 lg:p-12 text-center max-w-xl mx-auto">
+                <div className="w-14 h-14 rounded-lg flex items-center justify-center mb-6 bg-[#81B398]/10 text-[#81B398]">
+                  <Info size={28} />
                 </div>
-                <h3 className="text-2xl font-black tracking-tight uppercase">Confirm Submission</h3>
-                <div className={`w-full rounded-2xl my-8 text-left grid grid-cols-2 divide-x border transition-all ${
-                  isLight ? 'bg-[#F8FAFB] border-[#F0F2F5] divide-[#F0F2F5]' : 'bg-white/[0.03] border-white/10 divide-white/5'
+                <h3 className={`text-2xl font-bold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>Confirm Submission</h3>
+                
+                <div className={`w-full rounded-lg my-8 text-left grid grid-cols-2 divide-x border ${
+                  isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] divide-[#E2E8F0]' : 'bg-[#222938] border-white/5 divide-white/5'
                 }`}>
-                  <div className="p-6">
-                    <p className={`text-[9px] font-black uppercase mb-2 ${isLight ? 'text-[#9A9FA5]' : 'text-[#64748B]'}`}>Lead Info</p>
-                    <p className="text-sm font-bold truncate">{formData.client_name}</p>
-                    <p className={`text-[10px] font-bold ${isLight ? 'text-[#61D9DE]' : 'text-[#38BDF8]'}`}>{formData.client_phone}</p>
+                  <div className="p-5">
+                    <p className={`text-xs font-medium mb-1.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Lead Info</p>
+                    <p className={`text-sm font-semibold truncate ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{formData.client_name}</p>
+                    <p className="text-sm font-normal text-[#81B398] mt-0.5">{formData.client_phone}</p>
                   </div>
-                  <div className="p-6">
-                    <p className={`text-[9px] font-black uppercase mb-2 ${isLight ? 'text-[#9A9FA5]' : 'text-[#64748B]'}`}>Category</p>
-                    <p className="text-xs font-bold truncate">{formData.category}</p>
-                    <p className={`text-[10px] font-bold ${isLight ? 'text-[#61D9DE]' : 'text-[#38BDF8]'}`}>{formData.service}</p>
+                  <div className="p-5">
+                    <p className={`text-xs font-medium mb-1.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Category</p>
+                    <p className={`text-sm font-semibold truncate ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{formData.category}</p>
+                    <p className="text-sm font-normal text-[#81B398] mt-0.5">{formData.service}</p>
                   </div>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4 w-full">
-                  <button onClick={() => setStep('form')} className={`py-4 font-black uppercase text-[10px] rounded-xl border ${isLight ? 'bg-white text-[#9A9FA5] border-[#F0F2F5]' : 'bg-white/5 text-[#94A3B8] border-white/5'}`}>Back</button>
-                  <button onClick={handleSubmitReferral} disabled={isSubmitting} className={`py-4 rounded-xl font-black text-[10px] shadow-sm transition-all ${
-                    isLight ? 'bg-[#1A1D1F] text-white hover:bg-black' : 'bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/30'
+                  <button onClick={() => setStep('form')} className={`py-3 rounded-md font-medium text-sm transition-colors ${
+                    isLight ? 'bg-[#F4F5F7] text-[#1A202C] hover:bg-[#E2E8F0]' : 'bg-[#222938] text-[#F4F5F7] hover:bg-[#1A202C]'
                   }`}>
+                    Back
+                  </button>
+                  <button onClick={handleSubmitReferral} disabled={isSubmitting} className="py-3 rounded-md font-medium text-sm transition-all shadow-sm bg-[#81B398] text-[#FFFFFF] hover:bg-[#6FA085] disabled:opacity-50">
                     {isSubmitting ? "Sending..." : "Confirm & Send"}
                   </button>
                 </div>
@@ -289,13 +317,19 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
             )}
 
             {step === 'success' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-full p-10 text-center">
-                <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-8 border shadow-sm ${isLight ? 'bg-[#F8FAFB] border-[#61D9DE]/20 text-[#61D9DE]' : 'bg-[#4ADE80]/10 text-[#4ADE80] border-[#4ADE80]/20 shadow-[0_0_30px_rgba(74,222,128,0.2)]'}`}>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-full p-8 lg:p-12 text-center max-w-md mx-auto">
+                <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6 bg-[#81B398]/10 text-[#81B398]">
                   <CheckCircle2 size={40} />
                 </div>
-                <h3 className="text-3xl font-black tracking-tight uppercase">Sent!</h3>
-                <p className={`mt-4 font-medium max-w-xs ${isLight ? 'text-[#9A9FA5]' : 'text-[#94A3B8]'}`}>The referral for {formData.client_name} is now being processed.</p>
-                <button onClick={resetAndClose} className={`mt-8 px-10 py-4 rounded-xl font-black text-[10px] uppercase border ${isLight ? 'bg-[#F0F2F5] border-[#F0F2F5] text-[#1A1D1F]' : 'bg-white/[0.05] border-white/10 text-[#E2E8F0]'}`}>Back to Dashboard</button>
+                <h3 className={`text-2xl font-bold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>Sent!</h3>
+                <p className={`mt-3 text-sm font-normal ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                  The referral for <span className="font-semibold text-[#81B398]">{formData.client_name}</span> is now being processed.
+                </p>
+                <button onClick={resetAndClose} className={`mt-8 px-8 py-3 rounded-md font-medium text-sm transition-colors ${
+                  isLight ? 'bg-[#F4F5F7] text-[#1A202C] hover:bg-[#E2E8F0]' : 'bg-[#222938] text-[#F4F5F7] hover:bg-[#1A202C]'
+                }`}>
+                  Back to Dashboard
+                </button>
               </motion.div>
             )}
           </div>
@@ -304,37 +338,53 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
         {/* CONTACTS MODAL */}
         <AnimatePresence>
           {showContactsModal && (
-            <div className={`fixed inset-0 z-[200] flex items-center justify-center p-4 ${isLight ? 'bg-[#1A1D1F]/40' : 'bg-[#020617]/90'}`}>
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} 
-                className={`w-full max-w-md h-[500px] rounded-2xl shadow-2xl flex flex-col overflow-hidden border transition-colors ${
-                  isLight ? 'bg-white border-[#F0F2F5]' : 'bg-[#0F172A] border-white/10'
+            <div className={`fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm ${
+              isLight ? 'bg-[#1A202C]/40' : 'bg-[#000000]/60'
+            }`}>
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} 
+                className={`w-full max-w-md h-[500px] rounded-xl shadow-2xl flex flex-col overflow-hidden border transition-colors ${
+                  isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#131720] border-white/5'
                 }`}
               >
-                <div className={`p-4 border-b flex flex-col gap-4 ${isLight ? 'bg-[#F8FAFB] border-[#F0F2F5]' : 'bg-white/5 border-white/5'}`}>
+                <div className={`p-4 border-b flex flex-col gap-4 shrink-0 ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>
                   <div className="flex justify-between items-center">
-                    <h3 className={`font-black uppercase text-xs ${isLight ? 'text-[#1A1D1F]' : 'text-[#E2E8F0]'}`}>Select Contact</h3>
-                    <button onClick={() => setShowContactsModal(false)} className="text-[#9A9FA5] hover:text-[#1A1D1F]"><X size={18} /></button>
+                    <h3 className={`font-semibold text-sm ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>Select Contact</h3>
+                    <button onClick={() => setShowContactsModal(false)} className={`p-1.5 rounded-md transition-all ${isLight ? 'text-[#718096] hover:bg-[#F4F5F7]' : 'text-[#9CA3AF] hover:bg-[#222938]'}`}>
+                      <X size={18} />
+                    </button>
                   </div>
                   <div className="relative">
-                    <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#61D9DE]' : 'text-[#38BDF8]'}`} size={14} />
+                    <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />
                     <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                      className={`w-full pl-9 pr-4 py-2 rounded-xl outline-none text-sm border ${
-                        isLight ? 'bg-white border-[#F0F2F5] text-[#1A1D1F]' : 'bg-white/5 border-white/10 text-white'
-                      }`} />
+                      className={`w-full pl-9 pr-4 py-2.5 rounded-md outline-none text-sm border transition-colors ${
+                        isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] focus:border-[#81B398]' : 'bg-[#222938] border-transparent text-[#F4F5F7] focus:border-[#81B398]'
+                      }`} 
+                    />
                   </div>
                 </div>
+                
                 <div className="flex-1 overflow-y-auto p-2">
-                  {isLoadingContacts ? <div className="flex justify-center p-10"><Loader2 className={`animate-spin ${isLight ? 'text-[#61D9DE]' : 'text-[#38BDF8]'}`} /></div> :
+                  {isLoadingContacts ? (
+                    <div className="flex justify-center p-10">
+                      <Loader2 className="animate-spin text-[#81B398]" />
+                    </div>
+                  ) : filteredContacts.length === 0 ? (
+                    <div className={`text-center p-10 text-sm ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>No contacts found.</div>
+                  ) : (
                     filteredContacts.map((contact, i) => (
-                      <button key={i} onClick={() => handleSelectContact(contact)} className={`w-full text-left p-4 rounded-xl flex justify-between items-center group transition-all ${isLight ? 'hover:bg-[#F8FAFB]' : 'hover:bg-white/5'}`}>
+                      <button key={i} onClick={() => handleSelectContact(contact)} className={`w-full text-left p-3.5 rounded-md flex justify-between items-center group transition-all ${
+                        isLight ? 'hover:bg-[#F4F5F7]' : 'hover:bg-[#222938]'
+                      }`}>
                         <div>
-                          <p className={`font-bold text-sm transition-colors ${isLight ? 'text-[#1A1D1F] group-hover:text-[#61D9DE]' : 'text-white group-hover:text-[#38BDF8]'}`}>{contact.name?.display || "Unknown"}</p>
-                          <p className={`text-[10px] ${isLight ? 'text-[#9A9FA5]' : 'text-[#64748B]'}`}>{contact.phones[0].number}</p>
+                          <p className={`font-medium text-sm transition-colors ${
+                            isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'
+                          }`}>{contact.name?.display || "Unknown"}</p>
+                          <p className={`text-xs mt-0.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>{contact.phones[0].number}</p>
                         </div>
-                        <User size={14} className={`transition-colors ${isLight ? 'text-[#F0F2F5] group-hover:text-[#61D9DE]' : 'text-white/10 group-hover:text-[#38BDF8]'}`} />
+                        <User size={16} className={isLight ? 'text-[#E2E8F0] group-hover:text-[#81B398]' : 'text-[#48477A] group-hover:text-[#81B398]'} />
                       </button>
                     ))
-                  }
+                  )}
                 </div>
               </motion.div>
             </div>

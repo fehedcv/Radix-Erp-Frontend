@@ -101,7 +101,7 @@ const AgentHub = ({ onLogout }) => {
 
   return (
     <div className={`flex h-screen font-['Plus_Jakarta_Sans',sans-serif] overflow-hidden transition-colors duration-300 ${
-      theme === 'light' ? 'bg-[#5B6777]' : 'bg-[#131720]'
+      theme === 'light' ? 'bg-[#5B6777]' : 'bg-[#1A202C]'
     }`}>
       
       {/* 1. DESKTOP SIDEBAR - Content sizes reduced to prevent scrolling */}
@@ -231,7 +231,7 @@ const AgentHub = ({ onLogout }) => {
 
           {/* DESKTOP HEADER (Minimal) */}
           <header className={`hidden lg:flex h-16 shrink-0 items-center justify-end px-8 border-b z-20 ${
-            theme === 'light' ? 'border-[#E2E8F0] bg-[#FFFFFF]' : 'border-[#222938] bg-[#131720]'
+            theme === 'light' ? 'border-[#E2E8F0] bg-[#F4F5F7]' : 'border-[#222938] bg-[#131720]'
           }`}>
             <button 
               onClick={() => { setSelectedBusiness(""); setIsModalOpen(true); }} 
