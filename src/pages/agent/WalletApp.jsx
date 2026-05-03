@@ -101,8 +101,24 @@ const WalletApp = () => {
 
   const fetchWallet = async () => {
     try {
-      const res = await frappeApi.get('/method/business_chain.api.wallet.get_agent_wallet');
-      setWallet(res.data.message);
+      // DUMMY DATA: Simulating wallet fetch
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      const dummyWallet = {
+        summary: {
+          available_cash: 25500,
+          earned_credits: 50000,
+          total_withdrawn: 24500
+        },
+        ledger: [
+          { date: '2025-04-28', description: 'Lead Commission', amount: 500, type: 'credit' },
+          { date: '2025-04-25', description: 'Lead Commission', amount: 750, type: 'credit' },
+          { date: '2025-04-20', description: 'Withdrawal Request', amount: 5000, type: 'debit' },
+          { date: '2025-04-15', description: 'Lead Commission', amount: 600, type: 'credit' }
+        ]
+      };
+
+      setWallet(dummyWallet);
     } catch (err) { console.error(err); }
     finally { 
       // Small timeout for smooth skeleton transition
@@ -112,8 +128,17 @@ const WalletApp = () => {
 
   const fetchWithdrawalRequests = async () => {
     try {
-      const res = await frappeApi.get('/method/business_chain.api.wallet.get_withdrawal_requests');
-      setWithdrawalRequests(res.data.message ?? []);
+      // DUMMY DATA: Simulating withdrawal requests fetch
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      const dummyRequests = [
+        { id: 'WR001', date: '2025-04-28', amount: 5000, status: 'Pending' },
+        { id: 'WR002', date: '2025-04-20', amount: 10000, status: 'Credited' },
+        { id: 'WR003', date: '2025-04-10', amount: 7500, status: 'Credited' },
+        { id: 'WR004', date: '2025-04-05', amount: 2000, status: 'Rejected' }
+      ];
+
+      setWithdrawalRequests(dummyRequests);
     } catch (err) { console.error(err); }
     finally { setRequestsLoading(false); }
   };
@@ -121,10 +146,24 @@ const WalletApp = () => {
   const handlePayout = async () => {
     setProcessing(true);
     try {
-      await frappeApi.post('/method/business_chain.api.wallet.request_withdrawal', {
+      // DUMMY DATA: Simulating withdrawal request
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Log the requested payout (dummy)
+      console.log('Withdrawal request submitted (DUMMY):', {
         requested_credits: wallet.summary.available_cash
       });
-      await Promise.all([fetchWallet(), fetchWithdrawalRequests()]);
+
+      // Update wallet with dummy data
+      setWallet(prev => ({
+        ...prev,
+        summary: {
+          ...prev.summary,
+          available_cash: 0,
+          total_withdrawn: prev.summary.total_withdrawn + prev.summary.available_cash
+        }
+      }));
+
       setShowConfirm(false);
     } catch (err) { console.error(err); }
     finally { setProcessing(false); }

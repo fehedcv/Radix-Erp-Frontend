@@ -31,25 +31,18 @@ const AgentHub = ({ onLogout }) => {
   useEffect(() => {
     const fetchBusinessUnits = async () => {
       try {
-        const response = await frappeApi.get('/resource/Business Unit', {
-          params: {
-            fields: '["name", "category", "services.service_name", "services.name"]',
-            limit_page_length: 100
-          }
-        });
+        // DUMMY DATA: Simulating business units fetch
+        await new Promise(resolve => setTimeout(resolve, 600));
 
-        const grouped = {};
-        (response.data.data || []).forEach(item => {
-          const cat = item.category;
-          const svc = item.service_name;
-          if (!cat) return;
-          if (!grouped[cat]) grouped[cat] = [];
-          if (svc && !grouped[cat].includes(svc)) {
-            grouped[cat].push(svc);
-          }
-        });
+        const dummyBusinessUnits = {
+          'Real Estate': ['Residential', 'Commercial', 'Luxury Properties'],
+          'Financial Services': ['Insurance', 'Banking', 'Investment'],
+          'Healthcare': ['Hospitals', 'Clinics', 'Pharmacy'],
+          'Technology': ['Software', 'Hardware', 'IT Services'],
+          'Retail': ['Online Store', 'Boutique', 'Department Store']
+        };
 
-        setBusinessUnits(grouped);
+        setBusinessUnits(dummyBusinessUnits);
       } catch (error) {
         console.error("Failed to fetch business units", error);
       } finally {

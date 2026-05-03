@@ -78,8 +78,30 @@ const DashboardOverviewApp = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await frappeApi.get('/method/business_chain.api.agent.get_agent_dashboard_data');
-        setDashboardData(response.data.message);
+        
+        // DUMMY DATA: Simulating dashboard data
+        await new Promise(resolve => setTimeout(resolve, 600));
+
+        const dummyDashboardData = {
+          walletBalance: 25500,
+          totalPayouts: 50000,
+          activeLeads: 12,
+          earningActivity: [
+            [1200], [1500], [1300], [1800], [2100], [1900], [2400], [2200]
+          ],
+          recentActivity: [
+            ['Client A', 'Completed'],
+            ['Client B', 'In Progress'],
+            ['Client C', 'Verified'],
+            ['Client D', 'Pending'],
+            ['Client E', 'Completed'],
+            ['Client F', 'Verified'],
+            ['Client G', 'In Progress'],
+            ['Client H', 'Completed']
+          ]
+        };
+
+        setDashboardData(dummyDashboardData);
         setError(null);
       } catch (err) {
         setError('Failed to fetch dashboard data. Please try again.');

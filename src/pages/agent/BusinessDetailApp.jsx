@@ -58,34 +58,57 @@ const BusinessDetailApp = () => {
   useEffect(() => {
     const fetchUnit = async () => {
       try {
-        const res = await frappeApi.get(
-          '/method/business_chain.api.api.get_business_unit',
-          { params: { business_unit: id } }
-        );
-        const data = res.data.message;
+        // DUMMY DATA: Simulating business unit fetch
+        await new Promise(resolve => setTimeout(resolve, 600));
+
+        const dummyData = {
+          id: id || 'unit_001',
+          name: 'Premium Real Estate Solutions',
+          website: 'https://example.com',
+          email: 'contact@realestate.com',
+          contact: '+91 9876543210',
+          location: 'Mumbai, Maharashtra',
+          address: '123 Business Park, Mumbai, MH 400001',
+          description: 'We provide comprehensive real estate solutions including residential, commercial and industrial properties with professional consultation and support.',
+          logo: 'https://api.dicebear.com/7.x/business/svg?seed=realestate',
+          facebook: 'https://facebook.com/example',
+          instagram: 'https://instagram.com/example',
+          linkedin: 'https://linkedin.com/company/example',
+          services: [
+            { name: 'Residential Properties', description: 'Luxury apartments and villas' },
+            { name: 'Commercial Spaces', description: 'Office spaces and retail locations' },
+            { name: 'Industrial Properties', description: 'Manufacturing and warehouse spaces' },
+            { name: 'Property Management', description: 'Full property management services' }
+          ],
+          gallery: [
+            'https://images.unsplash.com/photo-1545654711-cd4628902c4d?w=400',
+            'https://images.unsplash.com/photo-1560518883-b1e6e4fcd3b0?w=400',
+            'https://images.unsplash.com/photo-1449844908441-8829872d2607?w=400'
+          ]
+        };
 
         setUnit({
-          id: data.id,
-          name: data.name,
-          website: data.website || '',
-          email: data.email || '',
-          contact: data.contact || '',
-          location: data.location || '',
-          address: data.address || "",
-          description: data.description || '',
-          logo: data.logo || '',
-          facebook: data.facebook || '',
-          instagram: data.instagram || '',
-          linkedin: data.linkedin || '',
-          services: (data.services || []).map(s => ({
+          id: dummyData.id,
+          name: dummyData.name,
+          website: dummyData.website || '',
+          email: dummyData.email || '',
+          contact: dummyData.contact || '',
+          location: dummyData.location || '',
+          address: dummyData.address || "",
+          description: dummyData.description || '',
+          logo: dummyData.logo || '',
+          facebook: dummyData.facebook || '',
+          instagram: dummyData.instagram || '',
+          linkedin: dummyData.linkedin || '',
+          services: (dummyData.services || []).map(s => ({
             name: s.name,
             description: s.description || ""
           })),
-          gallery: (data.gallery || []).map(img => getFrappeImage(img))
+          gallery: dummyData.gallery || []
         });
 
-        if (data.services && data.services.length > 0) {
-          setFormData(prev => ({ ...prev, service: data.services[0].name }));
+        if (dummyData.services && dummyData.services.length > 0) {
+          setFormData(prev => ({ ...prev, service: dummyData.services[0].name }));
         }
       } catch (err) {
         console.error("Failed to fetch unit:", err);
@@ -107,21 +130,23 @@ const BusinessDetailApp = () => {
 
     try {
       setSubmitting(true);
-      await frappeApi.post(
-        '/method/business_chain.api.leads.submit_lead',
-        {
-          business_unit: unit.id,
-          ...formData,
-          location: formData.customer_location
-        }
-      );
+      
+      // DUMMY DATA: Simulating lead submission
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Log the submitted data (dummy)
+      console.log('Lead submitted successfully (DUMMY):', {
+        business_unit: unit.id,
+        ...formData,
+        location: formData.customer_location
+      });
 
       setShowModal(false);
       setFormData(prev => ({ ...prev, client_name: '', client_phone: '', customer_location: '', notes: '' }));
       setShowSuccessModal(true);
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.message || 'Failed to submit referral');
+      alert('Failed to submit referral');
     } finally {
       setSubmitting(false);
     }

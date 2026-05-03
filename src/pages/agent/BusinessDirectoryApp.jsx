@@ -75,22 +75,53 @@ const BusinessDirectoryApp = () => {
   useEffect(() => {
     const fetchUnits = async () => {
       try {
-        const res = await frappeApi.get('/resource/Business Unit', {
-          params: {
-            fields: JSON.stringify(['name', 'business_name', 'description', 'location','email','logo']),
-            filters: JSON.stringify([['status', '=', 'Active']]), 
-          }
-        });
+        // DUMMY DATA: Simulating business units fetch
+        await new Promise(resolve => setTimeout(resolve, 600));
 
-        const normalized = (res.data.data || []).map(unit => ({
-          id: unit.name,
-          name: unit.business_name,
-          description: unit.description || '',
-          location: unit.location || '',
-          logo:unit.logo || "",
-          email: unit.email || ""
-        }));
-        setBusinessUnits(normalized);
+        const dummyBusinessUnits = [
+          {
+            id: 'unit_001',
+            name: 'Premium Real Estate Solutions',
+            description: 'Luxury residential and commercial properties',
+            location: 'Mumbai, Maharashtra',
+            logo: 'https://api.dicebear.com/7.x/business/svg?seed=realestate',
+            email: 'contact@realestate.com'
+          },
+          {
+            id: 'unit_002',
+            name: 'Global Insurance Group',
+            description: 'Comprehensive insurance and coverage solutions',
+            location: 'Bangalore, Karnataka',
+            logo: 'https://api.dicebear.com/7.x/business/svg?seed=insurance',
+            email: 'insurance@global.com'
+          },
+          {
+            id: 'unit_003',
+            name: 'HealthCare Plus Clinic',
+            description: 'Modern healthcare and medical services',
+            location: 'Delhi, NCR',
+            logo: 'https://api.dicebear.com/7.x/business/svg?seed=healthcare',
+            email: 'care@healthcare.com'
+          },
+          {
+            id: 'unit_004',
+            name: 'Tech Innovation Labs',
+            description: 'Software development and IT consulting',
+            location: 'Hyderabad, Telangana',
+            logo: 'https://api.dicebear.com/7.x/business/svg?seed=technology',
+            email: 'tech@innovation.com'
+          },
+          {
+            id: 'unit_005',
+            name: 'Fashion Boutique Pro',
+            description: 'Designer clothing and accessories',
+            location: 'Chennai, Tamil Nadu',
+            logo: 'https://api.dicebear.com/7.x/business/svg?seed=fashion',
+            email: 'style@boutique.com'
+          }
+        ];
+
+        setBusinessUnits(dummyBusinessUnits);
       } catch (err) {
         console.error('Failed to load business units', err);
       } finally {

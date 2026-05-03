@@ -90,14 +90,23 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
     if (isSubmitting) return;
     try {
       setIsSubmitting(true);
-      await frappeApi.post('/method/business_chain.api.leads.submit_lead', {
-        business_unit: formData.category, client_name: formData.client_name,
-        client_phone: formData.client_phone, service: formData.service,
-        notes: formData.notes, location: formData.clientAddress,
+      
+      // DUMMY DATA: Simulating lead submission
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Log the submitted data (dummy)
+      console.log('Lead submitted successfully (DUMMY):', {
+        business_unit: formData.category,
+        client_name: formData.client_name,
+        client_phone: formData.client_phone,
+        service: formData.service,
+        notes: formData.notes,
+        location: formData.clientAddress
       });
+
       setStep('success');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to submit referral');
+      alert('Failed to submit referral');
       setStep('form');
     } finally {
       setIsSubmitting(false);

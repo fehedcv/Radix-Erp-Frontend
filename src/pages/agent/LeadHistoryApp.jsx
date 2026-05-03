@@ -73,8 +73,23 @@ const LeadHistoryApp = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await frappeApi.get('/method/business_chain.api.api.get_my_lead_history');
-        setLeads(res.data.message || []);
+        // DUMMY DATA: Simulating lead history fetch
+        await new Promise(resolve => setTimeout(resolve, 600));
+
+        const dummyLeads = [
+          { id: 'LEAD001', clientName: 'Rajesh Kumar', status: 'Completed', service: 'Residential Properties', date: '2025-04-28' },
+          { id: 'LEAD002', clientName: 'Priya Singh', status: 'Verified', service: 'Commercial Spaces', date: '2025-04-25' },
+          { id: 'LEAD003', clientName: 'Amit Patel', status: 'In Progress', service: 'Industrial Properties', date: '2025-04-22' },
+          { id: 'LEAD004', clientName: 'Meera Desai', status: 'Pending', service: 'Property Management', date: '2025-04-20' },
+          { id: 'LEAD005', clientName: 'Vikram Reddy', status: 'Completed', service: 'Residential Properties', date: '2025-04-18' },
+          { id: 'LEAD006', clientName: 'Anjali Sharma', status: 'Verified', service: 'Commercial Spaces', date: '2025-04-15' },
+          { id: 'LEAD007', clientName: 'Suresh Gupta', status: 'In Progress', service: 'Industrial Properties', date: '2025-04-12' },
+          { id: 'LEAD008', clientName: 'Neha Verma', status: 'Completed', service: 'Residential Properties', date: '2025-04-10' },
+          { id: 'LEAD009', clientName: 'Arjun Singh', status: 'Rejected', service: 'Commercial Spaces', date: '2025-04-08' },
+          { id: 'LEAD010', clientName: 'Divya Kapoor', status: 'Pending', service: 'Property Management', date: '2025-04-05' }
+        ];
+
+        setLeads(dummyLeads);
       } catch (err) {
         console.error(err);
       } finally {

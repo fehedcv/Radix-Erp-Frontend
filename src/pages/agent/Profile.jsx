@@ -40,19 +40,30 @@ const ProfilePage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const profileRes = await frappeApi.get('/method/business_chain.api.agent.get_agent_profile');
-        const agentData = profileRes.data.message;
+        
+        // DUMMY DATA: Simulating profile fetch
+        await new Promise(resolve => setTimeout(resolve, 600));
 
-        const dashboardRes = await frappeApi.get('/method/business_chain.api.agent.get_agent_dashboard_data');
-        const dashboardData = dashboardRes.data.message;
+        const dummyAgentData = {
+          fullName: 'Muhammed Shahad T.',
+          phone: '+91 9876543210',
+          email: 'shahad@radix.com',
+          profilePicture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Shahad&backgroundColor=F4F5F7'
+        };
+
+        const dummyDashboardData = {
+          recentActivity: [
+            ['Client A'], ['Client B'], ['Client C'], ['Client D'], ['Client E']
+          ]
+        };
 
         setProfile(prev => ({
           ...prev,
-          name: agentData.fullName,
-          phone: agentData.phone,
-          email: agentData.email,
-          avatar: agentData.profilePicture,
-          totalLeads: dashboardData.recentActivity.length,
+          name: dummyAgentData.fullName,
+          phone: dummyAgentData.phone,
+          email: dummyAgentData.email,
+          avatar: dummyAgentData.profilePicture,
+          totalLeads: dummyDashboardData.recentActivity.length,
         }));
 
       } catch (error) {
@@ -80,19 +91,19 @@ const ProfilePage = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await frappeApi.post('/method/business_chain.api.agent.update_agent_profile', {
+      // DUMMY DATA: Simulating profile update
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Log the updated data (dummy)
+      console.log('Profile updated successfully (DUMMY):', {
         full_name: profile.name,
         phone: profile.phone
       });
 
       if (profile.avatarFile) {
-        const imgData = new FormData();
-        imgData.append("file", profile.avatarFile);
-        
-        await frappeApi.post('/method/business_chain.api.agent.upload_profile_picture', imgData, {
-          headers: { "Content-Type": "multipart/form-data" }
-        });
+        console.log('Profile picture uploaded (DUMMY):', profile.avatarFile);
       }
+      
       setIsEditing(false);
     } catch (error) {
       console.error(error);
