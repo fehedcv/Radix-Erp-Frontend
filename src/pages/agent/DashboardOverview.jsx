@@ -32,7 +32,7 @@ const DashboardOverview = () => {
         // Transform earningActivity to match expected format
         const transformedData = {
           ...data,
-          earningActivity: data.earningActivity.map(val => [val])
+          earningActivity: (data.earningActivity || []).map(val => [val])
         };
 
         setDashboardData(transformedData);

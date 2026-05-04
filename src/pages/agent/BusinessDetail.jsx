@@ -13,7 +13,7 @@ import {
   Plus
 } from 'lucide-react';
 
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; // Import Theme Context
 
@@ -56,60 +56,82 @@ const BusinessDetail = () => {
   useEffect(() => {
     const fetchUnit = async () => {
       try {
-        // DUMMY DATA: Simulating business unit fetch
-        await new Promise(resolve => setTimeout(resolve, 600));
+        setLoading(true);
 
-        const dummyData = {
-          id: id || 'unit_001',
-          name: 'Premium Real Estate Solutions',
-          website: 'https://example.com',
-          email: 'contact@realestate.com',
-          contact: '+91 9876543210',
-          location: 'Mumbai, Maharashtra',
-          address: '123 Business Park, Mumbai, MH 400001',
-          description: 'We provide comprehensive real estate solutions including residential, commercial and industrial properties with professional consultation and support.',
-          logo: 'https://api.dicebear.com/7.x/business/svg?seed=realestate',
-          facebook: 'https://facebook.com/example',
-          instagram: 'https://instagram.com/example',
-          linkedin: 'https://linkedin.com/company/example',
-          services: [
-            { name: 'Residential Properties', description: 'Luxury apartments and villas' },
-            { name: 'Commercial Spaces', description: 'Office spaces and retail locations' },
-            { name: 'Industrial Properties', description: 'Manufacturing and warehouse spaces' },
-            { name: 'Property Management', description: 'Full property management services' }
-          ],
-          gallery: [
-            'https://images.unsplash.com/photo-1545654711-cd4628902c4d?w=400',
-            'https://images.unsplash.com/photo-1560518883-b1e6e4fcd3b0?w=400',
-            'https://images.unsplash.com/photo-1449844908441-8829872d2607?w=400'
-          ]
-        };
+        // Step 1: Fetch main business unit
+        const { data: unitData, error: unitError } = await supabase
+          .from('business_units')
+          .select(`
+            id,
+            business_name,
+            website,
+            email,
+            primary_phone,
+            location,
+            address,
+            description,
+            logo,
+            facebook,
+            instagram,
+            linkedin
+          `)
+          .eq('id', id)
+          .single();
 
+        if (unitError) {
+          console.error('Failed to fetch business unit:', unitError);
+          return;
+        }
+
+        // Step 2: Fetch services
+        const { data: servicesData, error: servicesError } = await supabase
+          .from('business_unit_services')
+          .select('service_name, description')
+          .eq('business_unit_id', id);
+
+        if (servicesError) {
+          console.error('Failed to fetch services:', servicesError);
+          return;
+        }
+
+        // Step 3: Fetch gallery
+        const { data: galleryData, error: galleryError } = await supabase
+          .from('business_unit_gallery')
+          .select('image')
+          .eq('business_unit_id', id);
+
+        if (galleryError) {
+          console.error('Failed to fetch gallery:', galleryError);
+          return;
+        }
+
+        // Transform and set unit data
         setUnit({
-          id: dummyData.id,
-          name: dummyData.name,
-          website: dummyData.website || '',
-          email: dummyData.email || '',
-          contact: dummyData.contact || '',
-          location: dummyData.location || '',
-          address: dummyData.address || "",
-          description: dummyData.description || '',
-          logo: dummyData.logo || '',
-          facebook: dummyData.facebook || '',
-          instagram: dummyData.instagram || '',
-          linkedin: dummyData.linkedin || '',
-          services: (dummyData.services || []).map(s => ({
-            name: s.name,
-            description: s.description || ""
+          id: unitData.id,
+          name: unitData.business_name,
+          website: unitData.website || '',
+          email: unitData.email || '',
+          contact: unitData.primary_phone || '',
+          location: unitData.location || '',
+          address: unitData.address || '',
+          description: unitData.description || '',
+          logo: unitData.logo || '',
+          facebook: unitData.facebook || '',
+          instagram: unitData.instagram || '',
+          linkedin: unitData.linkedin || '',
+          services: (servicesData || []).map(s => ({
+            name: s.service_name,
+            description: s.description || ''
           })),
-          gallery: dummyData.gallery || []
+          gallery: (galleryData || []).map(g => g.image)
         });
 
-        if (dummyData.services && dummyData.services.length > 0) {
-          setFormData(prev => ({ ...prev, service: dummyData.services[0].name }));
+        // Set default service if available
+        if (servicesData && servicesData.length > 0) {
+          setFormData(prev => ({ ...prev, service: servicesData[0].service_name }));
         }
       } catch (err) {
-        console.error("Failed to fetch unit:", err);
+        console.error('Failed to fetch unit:', err);
       } finally {
         setLoading(false);
       }
@@ -129,15 +151,22 @@ const BusinessDetail = () => {
     try {
       setSubmitting(true);
       
-      // DUMMY DATA: Simulating lead submission
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const { data, error } = await supabase
+        .from('leads')
+        .insert([{
+          business_unit_id: unit.id,
+          client_name: formData.client_name,
+          client_phone: formData.client_phone,
+          service: formData.service,
+          location: formData.customer_location,
+          notes: formData.notes
+        }]);
 
-      // Log the submitted data (dummy)
-      console.log('Lead submitted successfully (DUMMY):', {
-        business_unit: unit.id,
-        ...formData,
-        location: formData.customer_location
-      });
+      if (error) {
+        console.error('Failed to submit referral:', error);
+        alert('Failed to submit referral');
+        return;
+      }
 
       setShowModal(false);
       setFormData(prev => ({ ...prev, client_name: '', client_phone: '', customer_location: '', notes: '' }));

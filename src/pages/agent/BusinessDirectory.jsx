@@ -9,7 +9,7 @@ import {
   Info
 } from 'lucide-react';
 
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
 
@@ -33,55 +33,28 @@ const BusinessDirectory = () => {
   useEffect(() => {
     const fetchUnits = async () => {
       try {
-        // DUMMY DATA: Simulating business units fetch
-        await new Promise(resolve => setTimeout(resolve, 600));
+        const { data, error } = await supabase
+          .from('business_units')
+          .select('id, business_name, description, location, logo')
+          .eq('status', 'active');
 
-        const dummyBusinessUnits = [
-          {
-            id: 'unit_001',
-            name: 'Premium Real Estate Solutions',
-            description: 'Luxury residential and commercial properties',
-            location: 'Mumbai, Maharashtra',
-            logo: 'https://api.dicebear.com/7.x/business/svg?seed=realestate',
-            email: 'contact@realestate.com'
-          },
-          {
-            id: 'unit_002',
-            name: 'Global Insurance Group',
-            description: 'Comprehensive insurance and coverage solutions',
-            location: 'Bangalore, Karnataka',
-            logo: 'https://api.dicebear.com/7.x/business/svg?seed=insurance',
-            email: 'insurance@global.com'
-          },
-          {
-            id: 'unit_003',
-            name: 'HealthCare Plus Clinic',
-            description: 'Modern healthcare and medical services',
-            location: 'Delhi, NCR',
-            logo: 'https://api.dicebear.com/7.x/business/svg?seed=healthcare',
-            email: 'care@healthcare.com'
-          },
-          {
-            id: 'unit_004',
-            name: 'Tech Innovation Labs',
-            description: 'Software development and IT consulting',
-            location: 'Hyderabad, Telangana',
-            logo: 'https://api.dicebear.com/7.x/business/svg?seed=technology',
-            email: 'tech@innovation.com'
-          },
-          {
-            id: 'unit_005',
-            name: 'Fashion Boutique Pro',
-            description: 'Designer clothing and accessories',
-            location: 'Chennai, Tamil Nadu',
-            logo: 'https://api.dicebear.com/7.x/business/svg?seed=fashion',
-            email: 'style@boutique.com'
-          }
-        ];
+        if (error) {
+          console.error('Failed to load business units:', error);
+          return;
+        }
 
-        setBusinessUnits(dummyBusinessUnits);
+        // Transform data to UI format
+        const mappedData = data.map(unit => ({
+          id: unit.id,
+          name: unit.business_name,
+          description: unit.description,
+          location: unit.location,
+          logo: unit.logo
+        }));
+
+        setBusinessUnits(mappedData);
       } catch (err) {
-        console.error('Failed to load business units', err);
+        console.error('Failed to load business units:', err);
       } finally {
         setLoading(false);
       }
