@@ -148,31 +148,84 @@ const BusinessDetail = () => {
     e.preventDefault();
     if (submitting) return;
 
+    // Validation
+    if (!formData.client_name.trim() || !formData.client_phone.trim() || !formData.service) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
     try {
       setSubmitting(true);
       
+      const { data: userData, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('Auth error:', authError);
+        alert('Authentication error. Please log in again.');
+        return;
+      }
+      
+      if (!userData.user) {
+        console.error('No authenticated user');
+        alert('Please log in to submit referrals.');
+        return;
+      }
+
+      // Query service ID
+      const { data: serviceData, error: serviceError } = await supabase
+        .from('business_unit_services')
+        .select('id')
+        .eq('business_unit_id', unit.id)
+        .eq('service_name', formData.service)
+        .single();
+
+      if (serviceError) {
+        console.error('Failed to fetch service ID:', serviceError);
+        alert('Failed to validate service. Please try again.');
+        return;
+      }
+
+      if (!serviceData) {
+        console.error('Service not found');
+        alert('Selected service is not available. Please select a different service.');
+        return;
+      }
+
+      console.log('Submitting lead with data:', {
+        business_unit_id: unit.id,
+        source_user_id: userData.user.id,
+        customer_name: formData.client_name,
+        phone: formData.client_phone,
+        service: serviceData.id,
+        location: formData.customer_location,
+        description: formData.notes,
+      });
+
       const { data, error } = await supabase
         .from('leads')
         .insert([{
           business_unit_id: unit.id,
-          client_name: formData.client_name,
-          client_phone: formData.client_phone,
-          service: formData.service,
+          source_user_id: userData.user.id,
+          service: serviceData.id,
+
+          customer_name: formData.client_name,
+          phone: formData.client_phone,
           location: formData.customer_location,
-          notes: formData.notes
+          description: formData.notes,
         }]);
 
       if (error) {
         console.error('Failed to submit referral:', error);
-        alert('Failed to submit referral');
+        alert('Failed to submit referral: ' + error.message);
         return;
       }
 
+      console.log('Lead submitted successfully:', data);
       setShowModal(false);
       setFormData(prev => ({ ...prev, client_name: '', client_phone: '', customer_location: '', notes: '' }));
       setShowSuccessModal(true);
     } catch (err) {
-      console.error(err);
+      console.error('Unexpected error:', err);
       alert('Failed to submit referral');
     } finally {
       setSubmitting(false);
