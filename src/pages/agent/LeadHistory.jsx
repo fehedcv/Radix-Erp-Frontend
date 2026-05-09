@@ -6,7 +6,7 @@ import {
   Activity, User, AlertCircle
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
 
@@ -32,25 +32,39 @@ const LeadHistory = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        // DUMMY DATA: Simulating lead history fetch
-        await new Promise(resolve => setTimeout(resolve, 600));
+        const { data, error } = await supabase
+          .from('leads')
+          .select(`
+            id,
+            customer_name,
+            status,
+            service,
+            created_at,
+            credit_status,
+            business_units (
+              business_name
+            )
+          `)
+          .order('created_at', { ascending: false });
 
-        const dummyLeads = [
-          { id: 'LEAD001', clientName: 'Rajesh Kumar', status: 'Completed', service: 'Residential Properties', date: '2025-04-28' },
-          { id: 'LEAD002', clientName: 'Priya Singh', status: 'Verified', service: 'Commercial Spaces', date: '2025-04-25' },
-          { id: 'LEAD003', clientName: 'Amit Patel', status: 'In Progress', service: 'Industrial Properties', date: '2025-04-22' },
-          { id: 'LEAD004', clientName: 'Meera Desai', status: 'Pending', service: 'Property Management', date: '2025-04-20' },
-          { id: 'LEAD005', clientName: 'Vikram Reddy', status: 'Completed', service: 'Residential Properties', date: '2025-04-18' },
-          { id: 'LEAD006', clientName: 'Anjali Sharma', status: 'Verified', service: 'Commercial Spaces', date: '2025-04-15' },
-          { id: 'LEAD007', clientName: 'Suresh Gupta', status: 'In Progress', service: 'Industrial Properties', date: '2025-04-12' },
-          { id: 'LEAD008', clientName: 'Neha Verma', status: 'Completed', service: 'Residential Properties', date: '2025-04-10' },
-          { id: 'LEAD009', clientName: 'Arjun Singh', status: 'Rejected', service: 'Commercial Spaces', date: '2025-04-08' },
-          { id: 'LEAD010', clientName: 'Divya Kapoor', status: 'Pending', service: 'Property Management', date: '2025-04-05' }
-        ];
+        if (error) {
+          console.error('Error fetching leads:', error);
+          return;
+        }
 
-        setLeads(dummyLeads);
+        const mappedLeads = data.map(lead => ({
+          id: lead.id,
+          clientName: lead.customer_name,
+          status: lead.status,
+          service: lead.service,
+          date: new Date(lead.created_at).toLocaleDateString(),
+          creditStatus: lead.credit_status,
+          businessUnit: lead.business_units?.business_name || 'Unknown'
+        }));
+
+        setLeads(mappedLeads);
       } catch (err) {
-        console.error(err);
+        console.error('Unexpected error:', err);
       } finally {
         setLoading(false);
       }

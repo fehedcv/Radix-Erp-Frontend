@@ -4,31 +4,21 @@ import {
   User, Phone, Mail, Edit3, Camera, Save, X, 
   CheckCircle2, Settings, Loader2 
 } from 'lucide-react';
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
-
-const getFrappeImage = (path) => {
-  if (!path) return null;
-  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) {
-    return path;
-  }
-  const baseUrl = import.meta.env.VITE_FRAPPE_URL.replace('/api', '');
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-  return `${cleanBase}${cleanPath}`;
-};
 
 const ProfilePage = () => {
   const { theme } = useTheme(); // Access Theme
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [user, setUser] = useState(null);
   const [profile, setProfile] = useState({
-    name: "John Doe",
-    phone: "+91 9876543210",
-    email: "john.doe@radix.com",
-    status: "Active",
+    name: "",
+    phone: "",
+    email: "",
+    status: "agent",
     totalLeads: 0,
     avatar: null,
     avatarFile: null 
@@ -40,34 +30,50 @@ const ProfilePage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
-        // DUMMY DATA: Simulating profile fetch
-        await new Promise(resolve => setTimeout(resolve, 600));
 
-        const dummyAgentData = {
-          fullName: 'Muhammed Shahad T.',
-          phone: '+91 9876543210',
-          email: 'shahad@radix.com',
-          profilePicture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Shahad&backgroundColor=F4F5F7'
-        };
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+          console.error('Auth error:', authError);
+          return;
+        }
+        if (!authData.user) {
+          console.error('No authenticated user');
+          return;
+        }
+        setUser(authData.user);
 
-        const dummyDashboardData = {
-          recentActivity: [
-            ['Client A'], ['Client B'], ['Client C'], ['Client D'], ['Client E']
-          ]
-        };
+        const { data: profileData, error: profileError } = await supabase
+          .from('users')
+          .select('full_name, phone, role, avatar_url')
+          .eq('id', authData.user.id)
+          .single();
 
-        setProfile(prev => ({
-          ...prev,
-          name: dummyAgentData.fullName,
-          phone: dummyAgentData.phone,
-          email: dummyAgentData.email,
-          avatar: dummyAgentData.profilePicture,
-          totalLeads: dummyDashboardData.recentActivity.length,
-        }));
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          return;
+        }
+
+        const { count, error: countError } = await supabase
+          .from('leads')
+          .select('*', { count: 'exact', head: true });
+
+        if (countError) {
+          console.error('Lead count error:', countError);
+          return;
+        }
+
+        setProfile({
+          name: profileData.full_name || '',
+          phone: profileData.phone || '',
+          email: authData.user.email || '',
+          status: profileData.role || 'agent',
+          totalLeads: count || 0,
+          avatar: profileData.avatar_url || null,
+          avatarFile: null
+        });
 
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Unexpected error:", error);
       } finally {
         setLoading(false);
       }
@@ -82,31 +88,59 @@ const ProfilePage = () => {
     if (file) {
       setProfile(prev => ({
         ...prev,
-        avatar: URL.createObjectURL(file),
-        avatarFile: file
+        avatarFile: file,
+        avatar: URL.createObjectURL(file)
       }));
     }
   };
 
   const handleSave = async () => {
+    if (!user) return;
     setSaving(true);
     try {
-      // DUMMY DATA: Simulating profile update
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // Log the updated data (dummy)
-      console.log('Profile updated successfully (DUMMY):', {
-        full_name: profile.name,
-        phone: profile.phone
-      });
+      let avatarUrl = profile.avatar;
 
       if (profile.avatarFile) {
-        console.log('Profile picture uploaded (DUMMY):', profile.avatarFile);
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(`${user.id}.jpg`, profile.avatarFile, {
+            upsert: true
+          });
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          return;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(`${user.id}.jpg`);
+
+        avatarUrl = publicUrlData?.publicUrl || profile.avatar;
       }
-      
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          full_name: profile.name,
+          phone: profile.phone,
+          avatar_url: avatarUrl
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Update error:', updateError);
+        return;
+      }
+
+      setProfile(prev => ({
+        ...prev,
+        avatarFile: null
+      }));
+
       setIsEditing(false);
     } catch (error) {
-      console.error(error);
+      console.error('Unexpected error:', error);
     } finally {
       setSaving(false);
     }
@@ -189,7 +223,7 @@ const ProfilePage = () => {
                   }`}
                 >
                   {profile.avatar ? (
-                    <img src={getFrappeImage(profile.avatar)} alt="Profile" className="w-full h-full object-cover" />
+                    <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <User size={64} className={theme === 'light' ? 'text-slate-200' : 'text-slate-800'} />
                   )}

@@ -8,7 +8,7 @@ import {
   History,
   Loader2
 } from 'lucide-react';
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
 
@@ -41,43 +41,84 @@ const WalletPage = () => {
 
   const fetchWallet = async () => {
     try {
-      // DUMMY DATA: Simulating wallet fetch
-      await new Promise(resolve => setTimeout(resolve, 600));
+      const { data: ledgerData, error: ledgerError } = await supabase
+        .from('agent_credit_ledger')
+        .select('id, credits, transaction_type, status, remarks, created_at')
+        .order('created_at', { ascending: false });
 
-      const dummyWallet = {
+      if (ledgerError) {
+        console.error('Failed to fetch wallet ledger:', ledgerError);
+        return;
+      }
+
+      if (!ledgerData) {
+        console.error('No ledger data returned from Supabase');
+        return;
+      }
+
+      const available_cash = ledgerData.reduce((sum, item) => sum + item.credits, 0);
+      const earned_credits = ledgerData
+        .filter(item => item.credits > 0)
+        .reduce((sum, item) => sum + item.credits, 0);
+      const total_withdrawn = ledgerData
+        .filter(item => item.credits < 0)
+        .reduce((sum, item) => sum + Math.abs(item.credits), 0);
+
+      const mappedLedger = ledgerData.map(entry => ({
+        id: entry.id,
+        date: entry.created_at,
+        credits: entry.credits,
+        type: entry.transaction_type,
+        status: entry.status,
+        remarks: entry.remarks
+      }));
+
+      setWallet({
         summary: {
-          available_cash: 25500,
-          earned_credits: 50000,
-          total_withdrawn: 24500
+          available_cash,
+          earned_credits,
+          total_withdrawn
         },
-        ledger: [
-          { date: '2025-04-28', description: 'Lead Commission', amount: 500, type: 'credit' },
-          { date: '2025-04-25', description: 'Lead Commission', amount: 750, type: 'credit' },
-          { date: '2025-04-20', description: 'Withdrawal Request', amount: 5000, type: 'debit' },
-          { date: '2025-04-15', description: 'Lead Commission', amount: 600, type: 'credit' }
-        ]
-      };
-
-      setWallet(dummyWallet);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+        ledger: mappedLedger
+      });
+    } catch (err) {
+      console.error('Unexpected error while fetching wallet:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchWithdrawalRequests = async () => {
     try {
-      // DUMMY DATA: Simulating withdrawal requests fetch
-      await new Promise(resolve => setTimeout(resolve, 600));
+      const { data: withdrawalData, error: withdrawalError } = await supabase
+        .from('agent_withdrawals')
+        .select('id, requested_credits, status, remarks, requested_on')
+        .order('requested_on', { ascending: false });
 
-      const dummyRequests = [
-        { id: 'WR001', date: '2025-04-28', amount: 5000, status: 'Pending' },
-        { id: 'WR002', date: '2025-04-20', amount: 10000, status: 'Credited' },
-        { id: 'WR003', date: '2025-04-10', amount: 7500, status: 'Credited' },
-        { id: 'WR004', date: '2025-04-05', amount: 2000, status: 'Rejected' }
-      ];
+      if (withdrawalError) {
+        console.error('Failed to fetch withdrawal requests:', withdrawalError);
+        return;
+      }
 
-      setWithdrawalRequests(dummyRequests);
-    } catch (err) { console.error(err); }
-    finally { setRequestsLoading(false); }
+      if (!withdrawalData) {
+        console.error('No withdrawal request data returned from Supabase');
+        return;
+      }
+
+      const mappedWithdrawals = withdrawalData.map(req => ({
+        id: req.id,
+        date: req.requested_on,
+        requested_credits: req.requested_credits,
+        status: req.status,
+        remarks: req.remarks
+      }));
+
+      setWithdrawalRequests(mappedWithdrawals);
+    } catch (err) {
+      console.error('Unexpected error while fetching withdrawal requests:', err);
+    } finally {
+      setRequestsLoading(false);
+    }
   };
 
   const handlePayout = async () => {
