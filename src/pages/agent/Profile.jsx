@@ -4,31 +4,21 @@ import {
   User, Phone, Mail, Edit3, Camera, Save, X, 
   CheckCircle2, Settings, Loader2 
 } from 'lucide-react';
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
-
-const getFrappeImage = (path) => {
-  if (!path) return null;
-  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) {
-    return path;
-  }
-  const baseUrl = import.meta.env.VITE_FRAPPE_URL.replace('/api', '');
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-  return `${cleanBase}${cleanPath}`;
-};
 
 const ProfilePage = () => {
   const { theme } = useTheme(); // Access Theme
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [user, setUser] = useState(null);
   const [profile, setProfile] = useState({
-    name: "John Doe",
-    phone: "+91 9876543210",
-    email: "john.doe@radix.com",
-    status: "Active",
+    name: "",
+    phone: "",
+    email: "",
+    status: "agent",
     totalLeads: 0,
     avatar: null,
     avatarFile: null 
@@ -40,23 +30,50 @@ const ProfilePage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const profileRes = await frappeApi.get('/method/business_chain.api.agent.get_agent_profile');
-        const agentData = profileRes.data.message;
 
-        const dashboardRes = await frappeApi.get('/method/business_chain.api.agent.get_agent_dashboard_data');
-        const dashboardData = dashboardRes.data.message;
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+          console.error('Auth error:', authError);
+          return;
+        }
+        if (!authData.user) {
+          console.error('No authenticated user');
+          return;
+        }
+        setUser(authData.user);
 
-        setProfile(prev => ({
-          ...prev,
-          name: agentData.fullName,
-          phone: agentData.phone,
-          email: agentData.email,
-          avatar: agentData.profilePicture,
-          totalLeads: dashboardData.recentActivity.length,
-        }));
+        const { data: profileData, error: profileError } = await supabase
+          .from('users')
+          .select('full_name, phone, role, avatar_url')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          return;
+        }
+
+        const { count, error: countError } = await supabase
+          .from('leads')
+          .select('*', { count: 'exact', head: true });
+
+        if (countError) {
+          console.error('Lead count error:', countError);
+          return;
+        }
+
+        setProfile({
+          name: profileData.full_name || '',
+          phone: profileData.phone || '',
+          email: authData.user.email || '',
+          status: profileData.role || 'agent',
+          totalLeads: count || 0,
+          avatar: profileData.avatar_url || null,
+          avatarFile: null
+        });
 
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Unexpected error:", error);
       } finally {
         setLoading(false);
       }
@@ -71,31 +88,59 @@ const ProfilePage = () => {
     if (file) {
       setProfile(prev => ({
         ...prev,
-        avatar: URL.createObjectURL(file),
-        avatarFile: file
+        avatarFile: file,
+        avatar: URL.createObjectURL(file)
       }));
     }
   };
 
   const handleSave = async () => {
+    if (!user) return;
     setSaving(true);
     try {
-      await frappeApi.post('/method/business_chain.api.agent.update_agent_profile', {
-        full_name: profile.name,
-        phone: profile.phone
-      });
+      let avatarUrl = profile.avatar;
 
       if (profile.avatarFile) {
-        const imgData = new FormData();
-        imgData.append("file", profile.avatarFile);
-        
-        await frappeApi.post('/method/business_chain.api.agent.upload_profile_picture', imgData, {
-          headers: { "Content-Type": "multipart/form-data" }
-        });
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(`${user.id}.jpg`, profile.avatarFile, {
+            upsert: true
+          });
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          return;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(`${user.id}.jpg`);
+
+        avatarUrl = publicUrlData?.publicUrl || profile.avatar;
       }
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          full_name: profile.name,
+          phone: profile.phone,
+          avatar_url: avatarUrl
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Update error:', updateError);
+        return;
+      }
+
+      setProfile(prev => ({
+        ...prev,
+        avatarFile: null
+      }));
+
       setIsEditing(false);
     } catch (error) {
-      console.error(error);
+      console.error('Unexpected error:', error);
     } finally {
       setSaving(false);
     }
@@ -178,7 +223,7 @@ const ProfilePage = () => {
                   }`}
                 >
                   {profile.avatar ? (
-                    <img src={getFrappeImage(profile.avatar)} alt="Profile" className="w-full h-full object-cover" />
+                    <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <User size={64} className={theme === 'light' ? 'text-slate-200' : 'text-slate-800'} />
                   )}

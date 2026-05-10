@@ -9,7 +9,7 @@ import {
   Info
 } from 'lucide-react';
 
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
 
@@ -33,24 +33,28 @@ const BusinessDirectory = () => {
   useEffect(() => {
     const fetchUnits = async () => {
       try {
-        const res = await frappeApi.get('/resource/Business Unit', {
-          params: {
-            fields: JSON.stringify(['name', 'business_name', 'description', 'location','email','logo']),
-            filters: JSON.stringify([['status', '=', 'Active']]), 
-          }
-        });
+        const { data, error } = await supabase
+          .from('business_units')
+          .select('id, business_name, description, location, logo')
+          .eq('status', 'active');
 
-        const normalized = (res.data.data || []).map(unit => ({
-          id: unit.name,
+        if (error) {
+          console.error('Failed to load business units:', error);
+          return;
+        }
+
+        // Transform data to UI format
+        const mappedData = data.map(unit => ({
+          id: unit.id,
           name: unit.business_name,
-          description: unit.description || '',
-          location: unit.location || '',
-          logo:unit.logo || "",
-          email: unit.email || ""
+          description: unit.description,
+          location: unit.location,
+          logo: unit.logo
         }));
-        setBusinessUnits(normalized);
+
+        setBusinessUnits(mappedData);
       } catch (err) {
-        console.error('Failed to load business units', err);
+        console.error('Failed to load business units:', err);
       } finally {
         setLoading(false);
       }

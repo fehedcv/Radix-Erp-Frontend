@@ -5,6 +5,9 @@ import { Capacitor } from '@capacitor/core';
 // --- THEME CONTEXT ---
 import { ThemeProvider, useTheme } from './context/ThemeContext'; // Ensure this path is correct
 
+// --- SUPABASE ---
+import { supabase } from './supabase/supabaseClient';
+
 // --- PUBLIC PAGES ---
 import LandingPage from './pages/public/LandingPage';
 import AuthGateway from './pages/auth/AuthGateway';
@@ -76,29 +79,61 @@ const isNative = Capacitor.isNativePlatform();
   }, [theme]);// Re-run whenever theme changes
 
   useEffect(() => {
-    const checkSession = () => {
-      const savedUser = localStorage.getItem('vynx_user');
-      if (savedUser) {
-        try {
-          const parsedUser = JSON.parse(savedUser);
-          setUserRole(parsedUser.role);
-        } catch (error) {
-          localStorage.removeItem('vynx_user');
-        }
+    const getInitialSession = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await fetchUserRole(user.id);
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
-    checkSession();
 
-    window.addEventListener('storage', checkSession);
-    return () => window.removeEventListener('storage', checkSession);
+    getInitialSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        await fetchUserRole(session.user.id);
+      } else {
+        setUserRole(null);
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  const fetchUserRole = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('role, full_name')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        setUserRole(null);
+      } else {
+        let role = data.role;
+        if (role === 'manager') role = 'business'; // Map manager to business
+        setUserRole(role);
+        // Store in localStorage for additional persistence
+        localStorage.setItem('vynx_user', JSON.stringify({
+          id: userId,
+          role: role,
+          name: data.full_name
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching user role:', err);
+      setUserRole(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   function handleLogout() {
-    localStorage.removeItem('bc_api_key');
-    localStorage.removeItem('bc_api_secret');
-    localStorage.removeItem('vynx_user');
-    window.location.href = '/auth';
+    supabase.auth.signOut();
   }
 
   if (isLoading) return null;
@@ -116,9 +151,9 @@ const isNative = Capacitor.isNativePlatform();
           element={
             !userRole ? (
               Capacitor.isNativePlatform() ? (
-                <AuthGatewayApp onLoginSuccess={(role) => setUserRole(role)} />
+                <AuthGatewayApp />
               ) : (
-                <AuthGateway onLoginSuccess={(role) => setUserRole(role)} />
+                <AuthGateway />
               )
             ) : (
               <Navigate to={`/${userRole}`} replace />
@@ -131,9 +166,9 @@ const isNative = Capacitor.isNativePlatform();
           element={
             !userRole ? (
               Capacitor.isNativePlatform() ? (
-                <AuthGatewayApp onLoginSuccess={(role) => setUserRole(role)} />
+                <AuthGatewayApp />
               ) : (
-                <AuthGateway onLoginSuccess={(role) => setUserRole(role)} />
+                <AuthGateway />
               )
             ) : (
               <Navigate to={`/${userRole}`} replace />

@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { Wallet, Clock, ArrowRight, BarChart3, TrendingUp, Zap, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Chart from 'react-apexcharts';
-import frappeApi from '../../api/frappeApi'; 
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
 
@@ -20,8 +20,22 @@ const DashboardOverview = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await frappeApi.get('/method/business_chain.api.agent.get_agent_dashboard_data');
-        setDashboardData(response.data.message);
+        
+        const { data, error } = await supabase.rpc('get_agent_dashboard');
+        
+        if (error) {
+          setError('Failed to fetch dashboard data. Please try again.');
+          console.error(error);
+          return;
+        }
+
+        // Transform earningActivity to match expected format
+        const transformedData = {
+          ...data,
+          earningActivity: (data.earningActivity || []).map(val => [val])
+        };
+
+        setDashboardData(transformedData);
         setError(null);
       } catch (err) {
         setError('Failed to fetch dashboard data. Please try again.');

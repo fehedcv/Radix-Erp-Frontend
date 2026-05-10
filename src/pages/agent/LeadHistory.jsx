@@ -6,7 +6,7 @@ import {
   Activity, User, AlertCircle
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
 
@@ -32,10 +32,39 @@ const LeadHistory = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await frappeApi.get('/method/business_chain.api.api.get_my_lead_history');
-        setLeads(res.data.message || []);
+        const { data, error } = await supabase
+          .from('leads')
+          .select(`
+            id,
+            customer_name,
+            status,
+            service,
+            created_at,
+            credit_status,
+            business_units (
+              business_name
+            )
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching leads:', error);
+          return;
+        }
+
+        const mappedLeads = data.map(lead => ({
+          id: lead.id,
+          clientName: lead.customer_name,
+          status: lead.status,
+          service: lead.service,
+          date: new Date(lead.created_at).toLocaleDateString(),
+          creditStatus: lead.credit_status,
+          businessUnit: lead.business_units?.business_name || 'Unknown'
+        }));
+
+        setLeads(mappedLeads);
       } catch (err) {
-        console.error(err);
+        console.error('Unexpected error:', err);
       } finally {
         setLoading(false);
       }

@@ -13,7 +13,7 @@ import {
   Plus
 } from 'lucide-react';
 
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; // Import Theme Context
 
@@ -56,37 +56,82 @@ const BusinessDetail = () => {
   useEffect(() => {
     const fetchUnit = async () => {
       try {
-        const res = await frappeApi.get(
-          '/method/business_chain.api.api.get_business_unit',
-          { params: { business_unit: id } }
-        );
-        const data = res.data.message;
+        setLoading(true);
 
+        // Step 1: Fetch main business unit
+        const { data: unitData, error: unitError } = await supabase
+          .from('business_units')
+          .select(`
+            id,
+            business_name,
+            website,
+            email,
+            primary_phone,
+            location,
+            address,
+            description,
+            logo,
+            facebook,
+            instagram,
+            linkedin
+          `)
+          .eq('id', id)
+          .single();
+
+        if (unitError) {
+          console.error('Failed to fetch business unit:', unitError);
+          return;
+        }
+
+        // Step 2: Fetch services
+        const { data: servicesData, error: servicesError } = await supabase
+          .from('business_unit_services')
+          .select('service_name, description')
+          .eq('business_unit_id', id);
+
+        if (servicesError) {
+          console.error('Failed to fetch services:', servicesError);
+          return;
+        }
+
+        // Step 3: Fetch gallery
+        const { data: galleryData, error: galleryError } = await supabase
+          .from('business_unit_gallery')
+          .select('image')
+          .eq('business_unit_id', id);
+
+        if (galleryError) {
+          console.error('Failed to fetch gallery:', galleryError);
+          return;
+        }
+
+        // Transform and set unit data
         setUnit({
-          id: data.id,
-          name: data.name,
-          website: data.website || '',
-          email: data.email || '',
-          contact: data.contact || '',
-          location: data.location || '',
-          address: data.address || "",
-          description: data.description || '',
-          logo: data.logo || '',
-          facebook: data.facebook || '',
-          instagram: data.instagram || '',
-          linkedin: data.linkedin || '',
-          services: (data.services || []).map(s => ({
-            name: s.name,
-            description: s.description || ""
+          id: unitData.id,
+          name: unitData.business_name,
+          website: unitData.website || '',
+          email: unitData.email || '',
+          contact: unitData.primary_phone || '',
+          location: unitData.location || '',
+          address: unitData.address || '',
+          description: unitData.description || '',
+          logo: unitData.logo || '',
+          facebook: unitData.facebook || '',
+          instagram: unitData.instagram || '',
+          linkedin: unitData.linkedin || '',
+          services: (servicesData || []).map(s => ({
+            name: s.service_name,
+            description: s.description || ''
           })),
-          gallery: (data.gallery || []).map(img => getFrappeImage(img))
+          gallery: (galleryData || []).map(g => g.image)
         });
 
-        if (data.services && data.services.length > 0) {
-          setFormData(prev => ({ ...prev, service: data.services[0].name }));
+        // Set default service if available
+        if (servicesData && servicesData.length > 0) {
+          setFormData(prev => ({ ...prev, service: servicesData[0].service_name }));
         }
       } catch (err) {
-        console.error("Failed to fetch unit:", err);
+        console.error('Failed to fetch unit:', err);
       } finally {
         setLoading(false);
       }
@@ -103,23 +148,85 @@ const BusinessDetail = () => {
     e.preventDefault();
     if (submitting) return;
 
+    // Validation
+    if (!formData.client_name.trim() || !formData.client_phone.trim() || !formData.service) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
     try {
       setSubmitting(true);
-      await frappeApi.post(
-        '/method/business_chain.api.leads.submit_lead',
-        {
-          business_unit: unit.id,
-          ...formData,
-          location: formData.customer_location
-        }
-      );
+      
+      const { data: userData, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('Auth error:', authError);
+        alert('Authentication error. Please log in again.');
+        return;
+      }
+      
+      if (!userData.user) {
+        console.error('No authenticated user');
+        alert('Please log in to submit referrals.');
+        return;
+      }
 
+      // Query service ID
+      const { data: serviceData, error: serviceError } = await supabase
+        .from('business_unit_services')
+        .select('id')
+        .eq('business_unit_id', unit.id)
+        .eq('service_name', formData.service)
+        .single();
+
+      if (serviceError) {
+        console.error('Failed to fetch service ID:', serviceError);
+        alert('Failed to validate service. Please try again.');
+        return;
+      }
+
+      if (!serviceData) {
+        console.error('Service not found');
+        alert('Selected service is not available. Please select a different service.');
+        return;
+      }
+
+      console.log('Submitting lead with data:', {
+        business_unit_id: unit.id,
+        source_user_id: userData.user.id,
+        customer_name: formData.client_name,
+        phone: formData.client_phone,
+        service: serviceData.id,
+        location: formData.customer_location,
+        description: formData.notes,
+      });
+
+      const { data, error } = await supabase
+        .from('leads')
+        .insert([{
+          business_unit_id: unit.id,
+          source_user_id: userData.user.id,
+          service: serviceData.id,
+
+          customer_name: formData.client_name,
+          phone: formData.client_phone,
+          location: formData.customer_location,
+          description: formData.notes,
+        }]);
+
+      if (error) {
+        console.error('Failed to submit referral:', error);
+        alert('Failed to submit referral: ' + error.message);
+        return;
+      }
+
+      console.log('Lead submitted successfully:', data);
       setShowModal(false);
       setFormData(prev => ({ ...prev, client_name: '', client_phone: '', customer_location: '', notes: '' }));
       setShowSuccessModal(true);
     } catch (err) {
-      console.error(err);
-      alert(err?.response?.data?.message || 'Failed to submit referral');
+      console.error('Unexpected error:', err);
+      alert('Failed to submit referral');
     } finally {
       setSubmitting(false);
     }

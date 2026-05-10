@@ -7,6 +7,7 @@ import {
   ChevronLeft, Wallet, CheckCircle2, Lock
 } from 'lucide-react';
 import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 
 const AuthGateway = ({ onLoginSuccess }) => {
   const navigate     = useNavigate();
@@ -44,44 +45,28 @@ const AuthGateway = ({ onLoginSuccess }) => {
     setLoginError('');
     const formData = new FormData(e.target);
 
+    const email = formData.get('email');
+    const password = formData.get('password');
+
+    if (!email || !password) {
+      setLoginError('Please enter email and password');
+      setLoginLoading(false);
+      return;
+    }
+
     try {
-      const tokenRes = await frappeApi.post(
-        '/method/business_chain.api.auth.mobile_login',
-        {
-          usr: formData.get('email'),
-          pwd: formData.get('password'),
-        }
-      );
-      const { api_key, api_secret } = tokenRes.data.message;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-      localStorage.setItem('bc_api_key',    api_key);
-      localStorage.setItem('bc_api_secret', api_secret);
-
-      const res = await frappeApi.get('/method/business_chain.api.api.whoami');
-      const { user, primary_role, roles } = res.data.message;
-
-      if (!primary_role) throw new Error('ROLE_NOT_ASSIGNED');
-
-      localStorage.setItem('vynx_user', JSON.stringify({ email: user, role: primary_role, roles }));
-      onLoginSuccess(primary_role);
-
-      if      (primary_role === 'agent')    navigate('/agent');
-      else if (primary_role === 'business') navigate('/business');
-      else if (primary_role === 'admin')    navigate('/admin');
-      else                                  navigate('/unauthorized');
-
-    } catch (err) {
-      const serverMsg = err?.response?.data?._server_messages;
-      if (serverMsg) {
-        try {
-          const parsed = JSON.parse(JSON.parse(serverMsg)[0]);
-          setLoginError(parsed.message || 'Login failed.');
-        } catch {
-          setLoginError('Invalid username or password');
-        }
+      if (error) {
+        setLoginError(error.message);
       } else {
-        setLoginError('Invalid username or password');
+        // Success, auth state change will handle the rest
       }
+    } catch (err) {
+      setLoginError('Login failed. Please try again.');
     } finally {
       setLoginLoading(false);
     }
@@ -105,25 +90,24 @@ const AuthGateway = ({ onLoginSuccess }) => {
 
     setSignupLoading(true);
     try {
-      await frappeApi.post('/method/business_chain.api.auth.agent_signup', {
-        full_name: signupForm.full_name,
-        email:     signupForm.email,
-        password:  signupForm.password,
-        phone:     signupForm.phone,
-      });
-      setSignupSuccess(true);
-    } catch (err) {
-      const msg = err?.response?.data?._server_messages;
-      if (msg) {
-        try {
-          const parsed = JSON.parse(JSON.parse(msg)[0]);
-          setSignupError(parsed.message || 'Signup failed.');
-        } catch {
-          setSignupError('Signup failed. Please try again.');
+      const { data, error } = await supabase.auth.signUp({
+        email: signupForm.email,
+        password: signupForm.password,
+        options: {
+          data: {
+            full_name: signupForm.full_name,
+            phone: signupForm.phone
+          }
         }
+      });
+
+      if (error) {
+        setSignupError(error.message);
       } else {
-        setSignupError('Signup failed. Please try again.');
+        setSignupSuccess(true);
       }
+    } catch (err) {
+      setSignupError('Signup failed. Please try again.');
     } finally {
       setSignupLoading(false);
     }

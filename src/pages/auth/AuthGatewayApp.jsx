@@ -45,25 +45,51 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
     const formData = new FormData(e.target);
 
     try {
-      const tokenRes = await frappeApi.post(
-        '/method/business_chain.api.auth.mobile_login',
-        {
-          usr: formData.get('email'),
-          pwd: formData.get('password'),
-        }
-      );
-      const { api_key, api_secret } = tokenRes.data.message;
+      // DUMMY DATA: Simulating successful login
+      const email = formData.get('email');
+      const password = formData.get('password');
 
-      localStorage.setItem('bc_api_key',    api_key);
-      localStorage.setItem('bc_api_secret', api_secret);
+      // Validate inputs
+      if (!email || !password) {
+        setLoginError('Please enter email and password');
+        setLoginLoading(false);
+        return;
+      }
 
-      const res = await frappeApi.get('/method/business_chain.api.api.whoami');
-      const { user, primary_role, roles } = res.data.message;
+      // Dummy API Response
+      const dummyTokenRes = {
+        api_key: 'dummy_api_key_' + Math.random().toString(36).substring(7),
+        api_secret: 'dummy_api_secret_' + Math.random().toString(36).substring(7)
+      };
 
-      if (!primary_role) throw new Error('ROLE_NOT_ASSIGNED');
+      localStorage.setItem('bc_api_key', dummyTokenRes.api_key);
+      localStorage.setItem('bc_api_secret', dummyTokenRes.api_secret);
 
-      localStorage.setItem('vynx_user', JSON.stringify({ email: user, role: primary_role, roles }));
-      onLoginSuccess(primary_role);
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Determine role based on email domain (dummy logic)
+      let primary_role = 'agent'; // default
+      if (email.includes('admin')) primary_role = 'admin';
+      else if (email.includes('business')) primary_role = 'business';
+      else primary_role = 'agent';
+
+      const dummyUser = {
+        user: email,
+        primary_role: primary_role,
+        roles: [primary_role]
+      };
+
+      localStorage.setItem('vynx_user', JSON.stringify({ 
+        email: dummyUser.user, 
+        role: dummyUser.primary_role, 
+        roles: dummyUser.roles,
+        id: 'user_' + Math.random().toString(36).substring(7),
+        name: email.split('@')[0],
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + email
+      }));
+      
+      onLoginSuccess(dummyUser.primary_role);
 
       if      (primary_role === 'agent')    navigate('/agent');
       else if (primary_role === 'business') navigate('/business');
@@ -71,17 +97,7 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
       else                                  navigate('/unauthorized');
 
     } catch (err) {
-      const serverMsg = err?.response?.data?._server_messages;
-      if (serverMsg) {
-        try {
-          const parsed = JSON.parse(JSON.parse(serverMsg)[0]);
-          setLoginError(parsed.message || 'Login failed.');
-        } catch {
-          setLoginError('Invalid username or password');
-        }
-      } else {
-        setLoginError('Invalid username or password');
-      }
+      setLoginError('Invalid username or password');
     } finally {
       setLoginLoading(false);
     }
@@ -105,25 +121,23 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
 
     setSignupLoading(true);
     try {
-      await frappeApi.post('/method/business_chain.api.auth.agent_signup', {
-        full_name: signupForm.full_name,
-        email:     signupForm.email,
-        password:  signupForm.password,
-        phone:     signupForm.phone,
-      });
+      // DUMMY DATA: Simulating successful signup
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Store dummy user data
+      const dummyUser = {
+        id: 'dummy_user_' + Math.random().toString(36).substring(7),
+        name: signupForm.full_name,
+        email: signupForm.email,
+        phone: signupForm.phone,
+        role: 'agent',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + signupForm.email
+      };
+
+      console.log('Signup successful (DUMMY):', dummyUser);
       setSignupSuccess(true);
     } catch (err) {
-      const msg = err?.response?.data?._server_messages;
-      if (msg) {
-        try {
-          const parsed = JSON.parse(JSON.parse(msg)[0]);
-          setSignupError(parsed.message || 'Signup failed.');
-        } catch {
-          setSignupError('Signup failed. Please try again.');
-        }
-      } else {
-        setSignupError('Signup failed. Please try again.');
-      }
+      setSignupError('Signup failed. Please try again.');
     } finally {
       setSignupLoading(false);
     }

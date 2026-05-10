@@ -8,7 +8,7 @@ import {
   History,
   Loader2
 } from 'lucide-react';
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
 
@@ -41,27 +41,107 @@ const WalletPage = () => {
 
   const fetchWallet = async () => {
     try {
-      const res = await frappeApi.get('/method/business_chain.api.wallet.get_agent_wallet');
-      setWallet(res.data.message);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+      const { data: ledgerData, error: ledgerError } = await supabase
+        .from('agent_credit_ledger')
+        .select('id, credits, transaction_type, status, remarks, created_at')
+        .order('created_at', { ascending: false });
+
+      if (ledgerError) {
+        console.error('Failed to fetch wallet ledger:', ledgerError);
+        return;
+      }
+
+      if (!ledgerData) {
+        console.error('No ledger data returned from Supabase');
+        return;
+      }
+
+      const available_cash = ledgerData.reduce((sum, item) => sum + item.credits, 0);
+      const earned_credits = ledgerData
+        .filter(item => item.credits > 0)
+        .reduce((sum, item) => sum + item.credits, 0);
+      const total_withdrawn = ledgerData
+        .filter(item => item.credits < 0)
+        .reduce((sum, item) => sum + Math.abs(item.credits), 0);
+
+      const mappedLedger = ledgerData.map(entry => ({
+        id: entry.id,
+        date: entry.created_at,
+        credits: entry.credits,
+        type: entry.transaction_type,
+        status: entry.status,
+        remarks: entry.remarks
+      }));
+
+      setWallet({
+        summary: {
+          available_cash,
+          earned_credits,
+          total_withdrawn
+        },
+        ledger: mappedLedger
+      });
+    } catch (err) {
+      console.error('Unexpected error while fetching wallet:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchWithdrawalRequests = async () => {
     try {
-      const res = await frappeApi.get('/method/business_chain.api.wallet.get_withdrawal_requests');
-      setWithdrawalRequests(res.data.message ?? []);
-    } catch (err) { console.error(err); }
-    finally { setRequestsLoading(false); }
+      const { data: withdrawalData, error: withdrawalError } = await supabase
+        .from('agent_withdrawals')
+        .select('id, requested_credits, status, remarks, requested_on')
+        .order('requested_on', { ascending: false });
+
+      if (withdrawalError) {
+        console.error('Failed to fetch withdrawal requests:', withdrawalError);
+        return;
+      }
+
+      if (!withdrawalData) {
+        console.error('No withdrawal request data returned from Supabase');
+        return;
+      }
+
+      const mappedWithdrawals = withdrawalData.map(req => ({
+        id: req.id,
+        date: req.requested_on,
+        requested_credits: req.requested_credits,
+        status: req.status,
+        remarks: req.remarks
+      }));
+
+      setWithdrawalRequests(mappedWithdrawals);
+    } catch (err) {
+      console.error('Unexpected error while fetching withdrawal requests:', err);
+    } finally {
+      setRequestsLoading(false);
+    }
   };
 
   const handlePayout = async () => {
     setProcessing(true);
     try {
-      await frappeApi.post('/method/business_chain.api.wallet.request_withdrawal', {
+      // DUMMY DATA: Simulating withdrawal request
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Log the requested payout (dummy)
+      console.log('Withdrawal request submitted (DUMMY):', {
         requested_credits: wallet.summary.available_cash
       });
-      await Promise.all([fetchWallet(), fetchWithdrawalRequests()]);
+
+      // Update wallet with dummy data
+      setWallet(prev => ({
+        ...prev,
+        summary: {
+          ...prev.summary,
+          available_cash: 0,
+          total_withdrawn: prev.summary.total_withdrawn + prev.summary.available_cash
+        }
+      }));
+
       setShowConfirm(false);
     } catch (err) { console.error(err); }
     finally { setProcessing(false); }
