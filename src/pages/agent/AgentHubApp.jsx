@@ -11,71 +11,119 @@ import {
   LogOut, History, AlertCircle, 
   LayoutDashboard, Sun, Moon 
 } from 'lucide-react';
-import frappeApi from '../../api/frappeApi';
 import { useTheme } from '../../context/ThemeContext';
+import { supabase } from '../../supabase/supabaseClient';
 
 // Lead Modal Import
-import LeadFormModal from './LeadFormModal';
-
-// Data Sources
-import { initialLeads } from '../../data/leadHistoryData';
 import LeadFormAppModal from './LeadFormModalApp';
 
 const AgentHubApp = ({ onLogout }) => {
   // ==========================================
-  // EXACT SAME LOGIC & STATE AS WEB VERSION
+  // STATE MANAGEMENT
   // ==========================================
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState("");
   const [businessUnits, setBusinessUnits] = useState({});
+  const [isAppLoading, setIsAppLoading] = useState(true);
   
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [leads, setLeads] = useState(() => {
-    const savedLeads = localStorage.getItem('vynx_leads');
-    return savedLeads ? JSON.parse(savedLeads) : initialLeads;
-  });
-
-  const currentUser = JSON.parse(localStorage.getItem('vynx_user') || "{}");
+  const [leads, setLeads] = useState([]);
+  const [currentUser, setCurrentUser] = useState({});
 
   useEffect(() => {
-    const fetchBusinessUnits = async () => {
+    const fetchData = async () => {
       try {
-        const response = await frappeApi.get('/resource/Business Unit', {
-          params: {
-            fields: '["name", "category", "services.service_name", "services.name"]',
-            limit_page_length: 100
-          }
-        });
+        setIsAppLoading(true);
 
-        const grouped = {};
-        (response.data.data || []).forEach(item => {
-          const cat = item.category;
-          const svc = item.service_name;
-          if (!cat) return;
-          if (!grouped[cat]) grouped[cat] = [];
-          if (svc && !grouped[cat].includes(svc)) {
-            grouped[cat].push(svc);
-          }
-        });
+        const {
+          data: { user },
+          error: authError
+        } = await supabase.auth.getUser();
 
-        setBusinessUnits(grouped);
+        if (authError || !user) {
+          console.error('Auth Error:', authError);
+          return;
+        }
+
+        const { data: profileData, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Profile Fetch Error:', profileError);
+        } else {
+          setCurrentUser({
+            id: user.id,
+            name: profileData.full_name,
+            role: profileData.role,
+            avatar: profileData.avatar_url,
+            email: user.email
+          });
+        }
+
+        const { data: leadsData, error: leadsError } = await supabase
+          .from('leads')
+          .select('*');
+
+        if (leadsError) {
+          console.error('Leads Fetch Error:', leadsError);
+        } else {
+          setLeads(leadsData || []);
+        }
+
+        const { data: businessData, error: businessError } = await supabase
+          .from('business_units')
+          .select('*');
+
+        if (businessError) {
+          console.error('Business Units Error:', businessError);
+        } else {
+          const groupedUnits = {};
+          businessData.forEach((item) => {
+            if (!groupedUnits[item.category]) {
+              groupedUnits[item.category] = [];
+            }
+            groupedUnits[item.category].push(item.unit_name);
+          });
+          setBusinessUnits(groupedUnits);
+        }
+
       } catch (error) {
-        console.error("Failed to fetch business units", error);
+        console.error('Unexpected Error:', error);
+      } finally {
+        setIsAppLoading(false);
       }
     };
 
-    fetchBusinessUnits();
+    fetchData();
 
-    const handleSync = () => {
-      const saved = localStorage.getItem('vynx_leads');
-      if (saved) setLeads(JSON.parse(saved));
+    const channel = supabase
+      .channel('realtime-leads')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads'
+        },
+        async () => {
+          const { data } = await supabase
+            .from('leads')
+            .select('*');
+          setLeads(data || []);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
-    window.addEventListener('storage', handleSync);
-    return () => window.removeEventListener('storage', handleSync);
   }, []);
 
   const handleLeadSubmitted = () => {
@@ -90,190 +138,203 @@ const AgentHubApp = ({ onLogout }) => {
     { id: 'profile', label: 'Profile', icon: User, path: '/agent/profile' },
   ];
 
-  const myLeads = leads.filter(l => l.agentId === currentUser.id);
+  const myLeads = leads.filter(
+    (l) => l.agent_id === currentUser.id || l.user_id === currentUser.id
+  );
 
   // ==========================================
-  // CAPACITOR NATIVE UI/UX DESIGN SYSTEM
+  // CAPACITOR NATIVE UI/UX DESIGN SYSTEM (BENTO GRID)
   // ==========================================
   return (
-    <div className={`flex flex-col h-screen w-full font-['Plus_Jakarta_Sans',sans-serif] overflow-hidden relative transition-colors duration-300 ${
-      theme === 'light' ? 'bg-[#F4F5F9] text-black' : 'bg-[#09090B] text-white'
+    <div className={`flex flex-col h-screen w-full font-['Plus_Jakarta_Sans',sans-serif] overflow-hidden relative transition-colors duration-200 ${
+      theme === 'light' ? 'bg-[#F4F5F7] text-[#1A202C]' : 'bg-[#131720] text-[#F4F5F7]'
     }`}>
       
-      {/* Ambient Dark Mode Background */}
-      {theme === 'dark' && (
-        <>
-          <div className="fixed top-[-5%] left-[-5%] w-[45vw] h-[45vw] rounded-full bg-lime-400/10 blur-[100px] pointer-events-none z-0" />
-          <div className="fixed top-[20%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-purple-500/10 blur-[100px] pointer-events-none z-0" />
-        </>
-      )}
+      {/* Maximum Width Constraint for Dashboard Consistency */}
+      <div className="flex flex-col h-full w-full max-w-[1400px] mx-auto relative">
 
-      {/* NATIVE APP BAR (Top) */}
- {/* NATIVE APP BAR (Top) */}
-      <header className="flex items-center  justify-between px-6 pt-12 pb-4 z-50 bg-transparent shrink-0">
-        <div className="flex items-center gap-2">
-          <div className={`w-8 h-7 rounded-full flex items-center justify-center  ${theme === 'light' ? '' : ''}`}>
-             <img 
-              src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775799844/Stylised__X__logo_on_black_background-removebg-preview_nnmney.png" 
-              alt="Profile" 
-              className="w-full h-full object-cover"
-            />
+      {/* NATIVE APP BAR (Top) - Flat Layering */}
+        <header className="flex items-center justify-between px-6 pt-12 pb-4 z-10 bg-transparent shrink-0">
+          
+          {/* LEFT: Logo & User Info */}
+          <div className="flex items-center gap-2">
+            {/* 
+              Logo Wrapper: Fixed to w-8 and h-8. Added shrink-0.
+              Restored the bento border logic so it pops nicely on the canvas. 
+            */}
+            <div className={`w-8  shrink-0 rounded-lg flex items-center justify-center overflow-hidden 
+              `}>
+               <img 
+                src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775799844/Stylised__X__logo_on_black_background-removebg-preview_nnmney.png" 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            
+            {/* Text alignment tightened to match the 32px logo height */}
+            <div className="flex flex-col justify-center">
+              <span className={`text-[10px] font-bold uppercase tracking-wider mb-[2px] leading-none ${
+                theme === 'light' ? 'text-[#718096]' : 'text-[#9CA3AF]'
+              }`}>
+                Welcome Back
+              </span>
+              <span className="text-base font-extrabold tracking-tight leading-none">
+                {currentUser.name?.split(' ')[0] || 'Agent'}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Welcome Back</span>
-            <span className="text-sm font-extrabold tracking-tight uppercase leading-none">
-              {currentUser.name || 'Agent'}
-            </span>
+          
+          {/* RIGHT: Top Right Controls Container */}
+          <div className="flex items-center gap-3">
+            {/* Bento Theme Toggle */}
+            <button 
+              onClick={toggleTheme}
+              className={`w-14 h-8 rounded-xl p-1 flex items-center transition-all duration-200 active:scale-95 border ${
+                theme === 'light' 
+                  ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:border-[#81B398]' 
+                  : 'bg-[#222938] border-white/10 hover:border-[#81B398]'
+              }`}
+            >
+              <motion.div 
+                animate={{ x: theme === 'light' ? 0 : 24 }}
+                className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+                  theme === 'light' ? 'bg-[#F4F5F7]' : 'bg-[#131720]'
+                }`}
+              >
+                {theme === 'light' ? <Sun size={12} className="text-[#1A202C]" /> : <Moon size={12} className="text-[#F4F5F7]" />}
+              </motion.div>
+            </button>
+
+            {/* Destructive Logout Button (Opacity Logic: 10/100/20) */}
+            <button
+              onClick={() => setShowLogoutConfirm(true)}
+              className="w-8 h-8 shrink-0 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-95 bg-[#F0524F]/10 text-[#F0524F] border border-[#F0524F]/20 hover:bg-[#F0524F]/20"
+            >
+              <LogOut size={14} strokeWidth={2.5} />
+            </button>
           </div>
-        </div>
-        
-        {/* Top Right Controls Container */}
-        <div className="flex items-center gap-3">
-          {/* Modern Pill Theme Toggle */}
+        </header>
+
+        {/* SCROLLABLE MAIN CONTENT */}
+        <main className="flex-1 w-full overflow-y-auto no-scrollbar relative z-10 px-4 pb-32">
+          <motion.div 
+            key={`${location.pathname}-${theme}`} 
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.2 }}
+          >
+            <Outlet context={{ myLeads, setIsModalOpen, setSelectedBusiness, currentUser, theme, isAppLoading }} />
+          </motion.div>
+        </main>
+
+        {/* FLOATING ACTION BUTTON (FAB) - Bento Style */}
+        <div className="fixed right-6 z-50 bottom-[calc(6.5rem+env(safe-area-inset-bottom))]">
           <button 
-            onClick={toggleTheme}
-            className={`w-14 h-8 rounded-full p-1 flex items-center transition-colors duration-300 shadow-sm ${
-              theme === 'light' ? 'bg-white' : 'bg-white/10'
-            }`}
+            onClick={() => { setSelectedBusiness(""); setIsModalOpen(true); }} 
+            className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 active:scale-95 bg-[#81B398] text-white hover:bg-[#6FA085] border border-[#81B398]/20 shadow-sm"
           >
-            <motion.div 
-              animate={{ x: theme === 'light' ? 0 : 24 }}
-              className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                theme === 'light' ? 'bg-[#F4F5F9] shadow-inner' : 'bg-[#09090B]'
-              }`}
-            >
-              {theme === 'light' ? <Sun size={12} className="text-black" /> : <Moon size={12} className="text-white" />}
-            </motion.div>
-          </button>
-
-          {/* THE MISSING LOGOUT BUTTON */}
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300 shadow-sm ${
-              theme === 'light' 
-                ? 'bg-white text-red-500 active:bg-red-50' 
-                : 'bg-white/10 text-red-400 active:bg-white/20'
-            }`}
-          >
-            <LogOut size={14} strokeWidth={2.5} />
+            <Plus size={24} strokeWidth={3} />
           </button>
         </div>
-      </header>
 
-      {/* SCROLLABLE MAIN CONTENT */}
-      <main className="flex-1 w-full overflow-y-auto no-scrollbar relative z-10 px-4 pb-32">
-        <motion.div 
-          key={`${location.pathname}-${theme}`} 
-          initial={{ opacity: 0, y: 10 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ duration: 0.3 }}
-        >
-          <Outlet context={{ myLeads, setIsModalOpen, setSelectedBusiness, currentUser, theme }} />
-        </motion.div>
-      </main>
-
-      {/* FLOATING ACTION BUTTON (Native Android Style) */}
-     {/* FLOATING ACTION BUTTON (FAB) */}
-      <div className="fixed right-6 z-[60] bottom-[calc(6.5rem+env(safe-area-inset-bottom))]">
-        <button 
-          onClick={() => { setSelectedBusiness(""); setIsModalOpen(true); }} 
-          className={`w-14 h-14 rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,0.2)] active:scale-90 transition-all ${
-            theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
-          }`}
-        >
-          <Plus size={24} strokeWidth={3} />
-        </button>
-      </div>
-
-     {/* BENTO-STYLE BOTTOM NAVIGATION */}
-      <nav className={`fixed bottom-0 left-0 right-0 z-50 px-6 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] rounded-t-[2rem] flex justify-between items-center transition-colors duration-300 ${
-        theme === 'light' 
-          ? 'bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.05)]' 
-          : 'bg-[#18181B] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] border-t border-white/5'
-      }`}>
-        {navItems.map((item) => (
-          <NavLink 
-            key={item.id}
-            to={item.path} 
-            className={({ isActive }) => `relative flex flex-col items-center justify-center w-12 h-12 transition-all ${
-              isActive 
-                ? (theme === 'light' ? 'text-black' : 'text-white') 
-                : (theme === 'light' ? 'text-gray-400' : 'text-gray-500')
-            }`}
-          >
-            {({ isActive }) => (
-               <>
-                <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'mb-1' : ''} />
-                {isActive && (
-                  <motion.div 
-                    layoutId="nav-indicator"
-                    className={`absolute bottom-0 w-1 h-1 rounded-full ${theme === 'light' ? 'bg-black' : 'bg-white'}`}
-                  />
+        {/* FLAT BENTO BOTTOM NAVIGATION */}
+        <nav className={`fixed bottom-0 left-0 right-0 z-50 px-6 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] flex justify-between items-center transition-colors duration-200 border-t ${
+          theme === 'light' 
+            ? 'bg-[#FFFFFF] border-[#E2E8F0]' 
+            : 'bg-[#222938] border-white/10'
+        }`}>
+          <div className="max-w-[1400px] mx-auto w-full flex justify-between items-center">
+            {navItems.map((item) => (
+              <NavLink 
+                key={item.id}
+                to={item.path} 
+                className={({ isActive }) => `relative flex flex-col items-center justify-center w-12 h-12 transition-all duration-200 active:scale-95 ${
+                  isActive 
+                    ? 'text-[#81B398]' 
+                    : (theme === 'light' ? 'text-[#718096]' : 'text-[#9CA3AF]')
+                }`}
+              >
+                {({ isActive }) => (
+                   <>
+                    <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'mb-1' : ''} />
+                    {isActive && (
+                      <motion.div 
+                        layoutId="nav-indicator"
+                        className="absolute bottom-0 w-1.5 h-1.5 rounded-full bg-[#81B398]"
+                      />
+                    )}
+                   </>
                 )}
-               </>
-            )}
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* NATIVE-STYLE LOGOUT MODAL */}
-      <AnimatePresence>
-        {showLogoutConfirm && (
-          <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }} 
-              animate={{ opacity: 1, scale: 1 }} 
-              exit={{ opacity: 0, scale: 0.95 }} 
-              className={`w-full max-w-sm rounded-[2rem] p-8 text-center space-y-6 shadow-2xl ${
-                theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'
-              }`}
-            >
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${theme === 'light' ? 'bg-gray-100' : 'bg-white/5'}`}>
-                <AlertCircle size={32} className={theme === 'light' ? 'text-black' : 'text-white'} />
-              </div>
-              
-              <div>
-                <h3 className={`text-xl font-black uppercase tracking-tight ${theme === 'light' ? 'text-black' : 'text-white'}`}>Sign Out</h3>
-                <p className={`text-sm mt-2 font-medium ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>
-                  Are you sure you want to end your session?
-                </p>
-              </div>
-              
-              <div className="flex flex-col gap-3 mt-4">
-                <button 
-                  onClick={onLogout} 
-                  className={`w-full py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                    theme === 'light' ? 'bg-black text-white active:bg-gray-800' : 'bg-white text-black active:bg-gray-200'
-                  }`}
-                >
-                  Confirm Exit
-                </button>
-                <button 
-                  onClick={() => setShowLogoutConfirm(false)} 
-                  className={`w-full py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                    theme === 'light' ? 'bg-gray-100 text-black active:bg-gray-200' : 'bg-white/10 text-white active:bg-white/20'
-                  }`}
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
+              </NavLink>
+            ))}
           </div>
-        )}
-      </AnimatePresence>
+        </nav>
 
-      {/* Modal remains unchanged, receives identical props */}
-      <LeadFormAppModal
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSubmit={handleLeadSubmitted}
-        businessUnits={businessUnits}
-        initialUnit={selectedBusiness} 
-        theme={theme}
-      />
+        {/* BENTO LOGOUT MODAL */}
+        <AnimatePresence>
+          {showLogoutConfirm && (
+            <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.95 }} 
+                transition={{ duration: 0.2 }}
+                className={`w-full max-w-sm rounded-3xl p-8 text-center space-y-6 border ${
+                  theme === 'light' ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+                }`}
+              >
+                {/* Destructive Icon Badge */}
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto bg-[#F0524F]/10 text-[#F0524F] border border-[#F0524F]/20">
+                  <AlertCircle size={32} />
+                </div>
+                
+                <div>
+                  <h3 className={`text-xl font-bold tracking-tight ${theme === 'light' ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+                    Sign Out
+                  </h3>
+                  <p className={`text-sm mt-2 font-medium ${theme === 'light' ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                    Are you sure you want to end your session?
+                  </p>
+                </div>
+                
+                <div className="flex flex-col gap-3 mt-4">
+                  {/* Destructive Action */}
+                  <button 
+                    onClick={onLogout} 
+                    className="w-full py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 bg-[#F0524F] text-white hover:bg-[#D44846]"
+                  >
+                    Confirm Exit
+                  </button>
+                  {/* Neutral Action */}
+                  <button 
+                    onClick={() => setShowLogoutConfirm(false)} 
+                    className={`w-full py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 border ${
+                      theme === 'light' 
+                        ? 'bg-[#F4F5F7] text-[#1A202C] border-transparent hover:bg-[#E2E8F0]' 
+                        : 'bg-[#131720] text-[#F4F5F7] border-white/10 hover:bg-[#222938]'
+                    }`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
+        {/* Lead Form Modal */}
+        <LeadFormAppModal
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          onSubmit={handleLeadSubmitted}
+          businessUnits={businessUnits}
+          initialUnit={selectedBusiness} 
+          theme={theme}
+        />
+
+      </div>
     </div>
   );
 };
 
-export default AgentHubApp;
+export default AgentHubApp; 

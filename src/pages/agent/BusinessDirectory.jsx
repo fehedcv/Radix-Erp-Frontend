@@ -5,19 +5,26 @@ import {
   ArrowRight,
   Briefcase,
   ShieldCheck,
-  Zap,
-  Info
+  MapPin,
+  ExternalLink
 } from 'lucide-react';
 
 import { supabase } from '../../supabase/supabaseClient';
-import Loader from '../../components/Loader';
-import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
+import { useTheme } from '../../context/ThemeContext';
 
 const BusinessDirectory = () => {
   const navigate = useNavigate();
-  const { theme } = useTheme(); // Access Theme
+  const { theme } = useTheme(); 
   const [businessUnits, setBusinessUnits] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const isLight = theme === 'light';
+
+  // Design System Utility Classes
+  const surfaceClass = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5';
+  const textPrimary = isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]';
+  const textSecondary = isLight ? 'text-[#718096]' : 'text-[#9CA3AF]';
+  const pulseClass = isLight ? 'bg-[#E2E8F0]' : 'bg-[#334155]';
 
   const getFrappeImage = (path) => {
     if (!path) return null;
@@ -63,122 +70,168 @@ const BusinessDirectory = () => {
     fetchUnits();
   }, []);
 
+  // SKELETON LOADER
   if (loading) {
     return (
-      <div className="flex items-center justify-center w-full min-h-[70vh] font-['Plus_Jakarta_Sans',sans-serif]">
-        <Loader fullScreen={false} text="Loading Businesses..." />
+      <div className="max-w-[1400px] mx-auto space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] mt-2  lg:px-0">
+        
+        {/* Header Skeleton (Borderless) */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 animate-pulse ">
+          <div className="space-y-3 w-full max-w-md">
+            <div className={`h-10 w-64 rounded-md ${pulseClass}`} />
+            <div className={`h-4 w-3/4 rounded-md ${pulseClass}`} />
+          </div>
+          <div className={`h-10 w-32 rounded-lg shrink-0 ${pulseClass}`} />
+        </div>
+
+        {/* Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className={`rounded-2xl border h-[300px] flex flex-col justify-between animate-pulse ${surfaceClass}`}>
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-5">
+                  <div className={`h-14 w-14 rounded-xl ${pulseClass}`} />
+                  <div className={`h-6 w-20 rounded-md ${pulseClass}`} />
+                </div>
+                <div className="space-y-3">
+                  <div className={`h-5 w-3/4 rounded-md ${pulseClass}`} />
+                  <div className={`h-3 w-1/3 rounded-md ${pulseClass}`} />
+                  <div className={`h-3 w-full rounded-md mt-4 ${pulseClass}`} />
+                  <div className={`h-3 w-4/5 rounded-md ${pulseClass}`} />
+                </div>
+              </div>
+              <div className={`px-6 pb-6 flex gap-3`}>
+                <div className={`h-11 flex-1 rounded-lg ${pulseClass}`} />
+                <div className={`h-11 flex-1 rounded-lg ${pulseClass}`} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`space-y-10 font-['Plus_Jakarta_Sans',sans-serif] relative z-0 transition-colors duration-500 ${theme === 'light' ? 'text-slate-900' : 'text-[#E2E8F0]'}`}>
+    <div className={`max-w-[1400px] mx-auto space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] relative z-0 transition-colors duration-300 mt-2  px-0 lg:px-0 ${textPrimary}`}>
       
-      {/* --- AMBIENT BACKGROUND BLOBS (Hidden in Light Mode) --- */}
-      {theme === 'dark' && (
-        <>
-          <div className="fixed top-[0%] left-[10%] w-[400px] h-[400px] bg-lime-400/10 rounded-full blur-[120px] pointer-events-none -z-20" />
-          <div className="fixed top-[30%] left-[40%] w-[500px] h-[500px] bg-[#38BDF8]/10 rounded-full blur-[140px] pointer-events-none -z-20" />
-          <div className="fixed bottom-[-10%] right-[-5%] w-[450px] h-[450px] bg-[#4ADE80]/10 rounded-full blur-[130px] pointer-events-none -z-20" />
-        </>
-      )}
+      {/* HEADER (Clean, Borderless Layout) */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 ">
+        <div className="space-y-1.5">
+          <h1 className={`text-3xl md:text-4xl font-extrabold tracking-tight ${textPrimary}`}>
+            Directory
+          </h1>
+          <p className={`text-sm font-medium max-w-xl ${textSecondary}`}>
+            Explore registered businesses and submit client referrals.
+          </p>
+        </div>
 
-      {/* HEADER */}
-      <div className="relative z-0">
-        <div className={`flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 lg:p-10 rounded-xl border shadow-sm relative z-10 transition-all ${
-          theme === 'light' ? 'bg-[#F1F5F9] border-slate-200' : 'bg-white/[0.02] backdrop-blur-3xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]'
+        <div className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-lg border shrink-0 ${
+          isLight ? 'bg-white border-[#E2E8F0]' : 'bg-[#222938] border-white/5'
         }`}>
-          <div className="space-y-2">
-            <h2 className="text-3xl font-black tracking-tight uppercase">
-              Registered Businesses
-            </h2>
-            <p className={`text-sm font-medium max-w-xl ${theme === 'light' ? 'text-slate-500' : 'text-[#94A3B8]'}`}>
-              Select a business unit to submit or track referrals.
-            </p>
-          </div>
-
-          <div className={`flex items-center gap-3 px-5 py-3 rounded-xl border shadow-sm ${
-            theme === 'light' ? 'bg-slate-200/50 border-slate-300' : 'bg-white/5 border-white/5'
-          }`}>
-            <Info size={16} className={theme === 'light' ? 'text-slate-400' : 'text-[#64748B]'} />
-            <span className={`text-[10px] font-bold uppercase tracking-widest ${theme === 'light' ? 'text-slate-500' : 'text-[#94A3B8]'}`}>
-              Total Units: {businessUnits.length}
-            </span>
-          </div>
+          <Briefcase size={16} className={textSecondary} />
+          <span className={`text-xs font-semibold ${textPrimary}`}>
+            {businessUnits.length} Active Units
+          </span>
         </div>
       </div>
 
-      {/* GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-2">
+      {/* DIRECTORY GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {businessUnits.map((unit, index) => {
           return (
             <motion.div
               key={unit.id}
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
               className="relative z-0 h-full group"
             >
               <div 
-                onClick={() => navigate(`/agent/units/${unit.id}`)}
-                className={`rounded-xl p-8 border cursor-pointer flex flex-col justify-between h-full relative z-10 transition-all duration-500 ${
-                  theme === 'light' 
-                  ? 'bg-[#F1F5F9] border-slate-200 hover:bg-slate-200/50 hover:border-slate-300 shadow-sm hover:shadow-md' 
-                  : 'bg-white/[0.02] backdrop-blur-3xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:bg-white/[0.04] hover:border-white/20 hover:shadow-[0_16px_48px_rgba(0,0,0,0.5)]'
-                } hover:-translate-y-2`}
+                className={`rounded-2xl border flex flex-col justify-between h-full relative z-10 transition-all duration-300 ${
+                  isLight 
+                  ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:shadow-md hover:border-[#E2E8F0]' 
+                  : 'bg-[#222938] border-white/5 hover:bg-[#2A3241] hover:border-[#81B398]/50 hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)]'
+                }`}
               >
-                <div>
-                  <div className="flex items-start justify-between mb-8">
+                {/* Content Area */}
+                <div 
+                  onClick={() => navigate(`/agent/units/${unit.id}`)}
+                  className="p-6 flex-1 flex flex-col cursor-pointer"
+                >
+                  {/* Top: Logo & Badge */}
+                  <div className="flex items-start justify-between mb-5">
                     {unit.logo ? (
                       <img
                         src={getFrappeImage(unit.logo)}
                         alt={`${unit.name} logo`}
-                        className={`h-20 w-20 rounded-xl object-cover shrink-0 shadow-sm border ${
-                          theme === 'light' ? 'border-slate-300 bg-white' : 'border-white/10 bg-white/5 backdrop-blur-md'
+                        className={`h-14 w-14 rounded-xl object-cover shrink-0 border ${
+                          isLight ? 'border-[#E2E8F0] bg-white' : 'border-white/5 bg-[#131720]'
                         }`}
                       />
                     ) : (
-                      <div className={`h-20 w-20 border flex items-center justify-center rounded-xl shrink-0 shadow-sm ${
-                        theme === 'light' ? 'bg-slate-200 border-slate-300 text-slate-400' : 'bg-white/5 border-white/10 text-[#94A3B8]'
+                      <div className={`h-14 w-14 border flex items-center justify-center rounded-xl shrink-0 ${
+                        isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/5 text-[#9CA3AF]'
                       }`}>
-                        <Briefcase size={32} />
+                        <Briefcase size={20} />
                       </div>
                     )}
 
-                    <span className="flex items-center gap-1.5 text-[9px] font-black text-[#4ADE80] bg-[#4ADE80]/10 px-3 py-1.5 rounded-xl border border-[#4ADE80]/20 uppercase tracking-widest">
+                    <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#81B398] bg-[#81B398]/10 px-2.5 py-1 rounded-md border border-[#81B398]/20">
                       <ShieldCheck size={12} /> Verified
                     </span>
                   </div>
 
-                  <div className="space-y-3">
-                    <p className={`text-[10px] font-bold uppercase tracking-widest ${theme === 'light' ? 'text-slate-400' : 'text-[#64748B]'}`}>
-                      Business Unit
-                    </p>
-                    <h3 className={`font-extrabold text-xl uppercase tracking-tight transition-colors group-hover:text-[#38BDF8] ${
-                      theme === 'light' ? 'text-slate-900' : 'text-[#E2E8F0]'
-                    }`}>
+                  {/* Body: Title, Location & Description */}
+                  <div>
+                    <h3 className={`font-bold text-xl tracking-tight transition-colors group-hover:text-[#81B398] ${textPrimary} truncate`}>
                       {unit.name}
                     </h3>
-                    <p className={`text-sm italic line-clamp-3 leading-relaxed ${theme === 'light' ? 'text-slate-500' : 'text-[#94A3B8]'}`}>
-                      {unit.description || 'No description provided.'}
+                    <div className={`flex items-center gap-1.5 mt-1 text-xs font-medium ${textSecondary}`}>
+                      <MapPin size={12} className="text-[#81B398] shrink-0" /> 
+                      <span className="truncate">{unit.location || 'Location not specified'}</span>
+                    </div>
+                    
+                    <p className={`text-sm mt-4 line-clamp-2 leading-relaxed ${textSecondary}`}>
+                      {unit.description || 'No description provided for this business unit.'}
                     </p>
                   </div>
                 </div>
 
-                <div className={`mt-10 pt-6 border-t flex items-center justify-between ${theme === 'light' ? 'border-slate-200' : 'border-white/5'}`}>
-                  <span className={`text-[11px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-slate-400' : 'text-[#64748B]'}`}>
-                    View Portfolio
-                  </span>
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:bg-[#38BDF8] group-hover:text-[#020617] group-hover:scale-105 ${
-                    theme === 'light' ? 'bg-slate-200 text-slate-400' : 'bg-white/5 text-[#64748B]'
-                  }`}>
-                    <ArrowRight size={16} />
+                {/* Bottom: Explicit User-Friendly Split Actions */}
+                <div className="px-6 pb-6 pt-2">
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => navigate(`/agent/units/${unit.id}`)}
+                      className={`flex-1 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 border transition-all duration-200 ${
+                        isLight 
+                        ? 'bg-[#FFFFFF] text-[#1A202C] border-[#E2E8F0] hover:bg-[#F4F5F7]' 
+                        : 'bg-[#131720] text-[#F4F5F7] border-white/5 hover:bg-[#222938]'
+                      }`}
+                    >
+                      <ExternalLink size={14} /> Details
+                    </button>
+                    
+                    <button 
+                      onClick={() => navigate(`/agent/units/${unit.id}`)}
+                      className="flex-[1.5] py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 bg-[#81B398] text-[#FFFFFF] hover:bg-[#6FA085] transition-all duration-200 shadow-sm active:scale-95"
+                    >
+                      Refer Client <ArrowRight size={16} />
+                    </button>
                   </div>
                 </div>
               </div>
             </motion.div>
           );
         })}
+
+        {/* Empty State */}
+        {businessUnits.length === 0 && !loading && (
+           <div className={`col-span-full py-20 flex flex-col items-center justify-center rounded-2xl border ${surfaceClass}`}>
+              <Briefcase size={40} className={`mb-4 opacity-30 ${textSecondary}`} />
+              <p className={`text-base font-semibold ${textPrimary}`}>No Businesses Found</p>
+              <p className={`text-sm mt-1 ${textSecondary}`}>There are currently no active business units available.</p>
+           </div>
+        )}
       </div>
     </div>
   );

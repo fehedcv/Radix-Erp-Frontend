@@ -265,6 +265,7 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
                             }`}
                           >
                             <option value="">Select Service</option>
+                           
                             {servicesForCategory.map(svc => ( <option key={svc} value={svc}>{svc}</option> ))}
                           </select>
                           <ChevronDown className={`absolute right-3.5 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />

@@ -3,72 +3,71 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { Wallet, Clock, ArrowRight, BarChart3, TrendingUp, Zap, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Chart from 'react-apexcharts';
-import frappeApi from '../../api/frappeApi'; 
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; 
+import { supabase } from '../../supabase/supabaseClient'; 
 
 // ==========================================
-// SKELETON COMPONENT (MATCHED LAYOUT)
+// 1:1 STRUCTURAL SKELETON (BENTO STYLE)
 // ==========================================
 const DashboardSkeleton = ({ theme }) => {
-  const bgColor = theme === 'light' ? 'bg-gray-200' : 'bg-white/5';
-  const pulseClass = "animate-pulse";
+  const isLight = theme === 'light';
+  const pulseColor = isLight ? 'bg-[#E2E8F0]' : 'bg-[#334155]';
+  const cardBg = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10';
 
   return (
-    <div className="space-y-6 px-2">
+    <div className="space-y-4 pb-24">
+      {/* Separator to match the actual layout */}
+      <div className={`w-full h-[1px] mb-6 ${isLight ? 'bg-[#E2E8F0]' : 'bg-white/10'}`} />
+      
       {/* Title Skeleton */}
-      <div className={`h-8 w-40 rounded-lg ${bgColor} ${pulseClass}`} />
+      <div className={`h-8 w-40 rounded-xl ${pulseColor} animate-pulse`} />
 
       {/* Hero Card Skeleton */}
-      <div className={`rounded-[2rem] p-8 h-56 flex flex-col justify-between ${theme === 'light' ? 'bg-white' : 'bg-[#18181B]'}`}>
-        <div className="flex justify-between">
-          <div className={`w-12 h-12 rounded-full ${bgColor} ${pulseClass}`} />
-          <div className={`h-6 w-16 rounded-full ${bgColor} ${pulseClass}`} />
+      <div className={`rounded-3xl p-6 h-48 border flex flex-col justify-between animate-pulse ${cardBg}`}>
+        <div className="flex justify-between items-start">
+          <div className={`w-12 h-12 rounded-xl ${pulseColor}`} />
+          <div className={`h-6 w-16 rounded-lg ${pulseColor}`} />
         </div>
-        <div className="space-y-2">
-          <div className={`h-3 w-24 rounded-lg ${bgColor} ${pulseClass}`} />
-          <div className={`h-12 w-48 rounded-lg ${bgColor} ${pulseClass}`} />
+        <div className="space-y-3">
+          <div className={`h-3 w-24 rounded-md ${pulseColor}`} />
+          <div className={`h-12 w-48 rounded-xl ${pulseColor}`} />
         </div>
       </div>
 
       {/* Grid Stats Skeleton */}
       <div className="grid grid-cols-2 gap-4">
         {[1, 2].map((i) => (
-          <div key={i} className={`rounded-[1.5rem] p-5 aspect-square flex flex-col justify-between ${theme === 'light' ? 'bg-white' : 'bg-[#18181B]'}`}>
-            <div className={`w-10 h-10 rounded-full ${bgColor} ${pulseClass}`} />
+          <div key={i} className={`rounded-2xl p-5 aspect-square border flex flex-col justify-between animate-pulse ${cardBg}`}>
+            <div className={`w-10 h-10 rounded-xl ${pulseColor}`} />
             <div className="space-y-2">
-              <div className={`h-2 w-16 rounded-lg ${bgColor} ${pulseClass}`} />
-              <div className={`h-6 w-20 rounded-lg ${bgColor} ${pulseClass}`} />
+              <div className={`h-2 w-16 rounded-md ${pulseColor}`} />
+              <div className={`h-8 w-20 rounded-lg ${pulseColor}`} />
             </div>
           </div>
         ))}
       </div>
 
-      {/* Progress Card Skeleton */}
-      <div className={`rounded-[2rem] p-6 h-24 ${theme === 'light' ? 'bg-white' : 'bg-[#18181B]'}`}>
+      {/* Progress & Charts Skeleton */}
+      <div className={`rounded-2xl p-6 h-24 border animate-pulse ${cardBg}`}>
         <div className="flex justify-between mb-4">
-          <div className={`h-3 w-32 rounded-lg ${bgColor} ${pulseClass}`} />
-          <div className={`h-6 w-12 rounded-lg ${bgColor} ${pulseClass}`} />
+          <div className={`h-3 w-32 rounded-md ${pulseColor}`} />
+          <div className={`h-6 w-12 rounded-lg ${pulseColor}`} />
         </div>
-        <div className={`h-2 w-full rounded-full ${bgColor} ${pulseClass}`} />
-      </div>
-
-      {/* Chart Skeleton */}
-      <div className={`rounded-[2rem] p-6 h-56 ${theme === 'light' ? 'bg-white' : 'bg-[#18181B]'}`}>
-        <div className={`h-4 w-32 rounded-lg ${bgColor} ${pulseClass} mb-8`} />
-        <div className={`h-32 w-full rounded-lg ${bgColor} ${pulseClass}`} />
+        <div className={`h-2 w-full rounded-full ${pulseColor}`} />
       </div>
     </div>
   );
 };
 
+// ==========================================
+// MAIN DASHBOARD COMPONENT
+// ==========================================
 const DashboardOverviewApp = () => {
-  // ==========================================
-  // EXACT SAME LOGIC & STATE
-  // ==========================================
   const navigate = useNavigate();
   const { setIsModalOpen } = useOutletContext();
   const { theme } = useTheme(); 
+  const isLight = theme === 'light';
   
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -78,37 +77,26 @@ const DashboardOverviewApp = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        const { data, error } = await supabase.rpc('get_agent_dashboard');
         
-        // DUMMY DATA: Simulating dashboard data
-        await new Promise(resolve => setTimeout(resolve, 600));
+        if (error) {
+          setError('Failed to fetch dashboard data. Please try again.');
+          console.error(error);
+          return;
+        }
 
-        const dummyDashboardData = {
-          walletBalance: 25500,
-          totalPayouts: 50000,
-          activeLeads: 12,
-          earningActivity: [
-            [1200], [1500], [1300], [1800], [2100], [1900], [2400], [2200]
-          ],
-          recentActivity: [
-            ['Client A', 'Completed'],
-            ['Client B', 'In Progress'],
-            ['Client C', 'Verified'],
-            ['Client D', 'Pending'],
-            ['Client E', 'Completed'],
-            ['Client F', 'Verified'],
-            ['Client G', 'In Progress'],
-            ['Client H', 'Completed']
-          ]
+        const transformedData = {
+          ...data,
+          earningActivity: (data.earningActivity || []).map(val => [val])
         };
 
-        setDashboardData(dummyDashboardData);
+        setDashboardData(transformedData);
         setError(null);
       } catch (err) {
         setError('Failed to fetch dashboard data. Please try again.');
         console.error(err);
       } finally {
-        // Small delay to ensure smooth transition from skeleton
-        setTimeout(() => setLoading(false), 800);
+        setTimeout(() => setLoading(false), 300);
       }
     };
     fetchData();
@@ -133,6 +121,7 @@ const DashboardOverviewApp = () => {
     
     const stats = { walletBalance, totalPayouts, activeLeads, successRate };
 
+    // BENTO CHART CONFIG (Using Sage Green #81B398)
     const areaChartConfig = {
       series: [{
         name: 'Credits Earned',
@@ -140,18 +129,18 @@ const DashboardOverviewApp = () => {
       }],
       options: {
         chart: { type: 'area', toolbar: { show: false }, zoom: { enabled: false }, sparkline: { enabled: true } },
-        colors: ['#38BDF8'],
-        stroke: { curve: 'smooth', width: 4 },
+        colors: ['#81B398'],
+        stroke: { curve: 'smooth', width: 3 },
         fill: { 
           type: 'gradient', 
           gradient: { 
             shadeIntensity: 1, 
-            opacityFrom: theme === 'light' ? 0.3 : 0.4, 
+            opacityFrom: isLight ? 0.3 : 0.4, 
             opacityTo: 0, 
             stops: [0, 100] 
           } 
         },
-        tooltip: { theme: theme === 'light' ? 'light' : 'dark', x: { show: false } },
+        tooltip: { theme: isLight ? 'light' : 'dark', x: { show: false } },
         grid: { show: false }
       }
     };
@@ -162,44 +151,44 @@ const DashboardOverviewApp = () => {
         chart: { height: 250, type: 'radialBar' },
         plotOptions: {
           radialBar: {
-            hollow: { size: '60%' },
+            hollow: { size: '65%' },
             dataLabels: {
               name: { show: false },
               value: { 
                 fontSize: '24px', 
-                fontWeight: 900, 
-                color: theme === 'light' ? '#000000' : '#FFFFFF', 
+                fontWeight: 800,
+                fontFamily: 'Plus Jakarta Sans', 
+                color: isLight ? '#1A202C' : '#F4F5F7', 
                 offsetY: 8, 
                 formatter: (val) => `${val}%` 
               }
             },
-            track: { background: theme === 'light' ? '#F4F5F9' : 'rgba(255,255,255,0.05)' }
+            track: { background: isLight ? '#F4F5F7' : 'rgba(255,255,255,0.05)' }
           }
         },
-        colors: ['#4ADE80'],
+        colors: ['#81B398'],
         stroke: { lineCap: 'round' }
       }
     };
 
     return { stats, areaChartConfig, radialChartConfig, recentActivity: activities, totalLeads: totalCount };
-  }, [dashboardData, theme]);
+  }, [dashboardData, isLight]);
 
-  // --- LOADING STATE TRIGGER ---
+  // --- LOADING STATE ---
   if (loading) return <DashboardSkeleton theme={theme} />;
 
+  // --- ERROR STATE (Coral Red #F0524F) ---
   if (error) {
     return (
-      <div className="flex items-center justify-center w-full h-[60vh] px-6 font-['Plus_Jakarta_Sans',sans-serif]">
-        <div className={`w-full text-center p-8 rounded-[2rem] shadow-xl ${theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'}`}>
-          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-            <Zap size={32} className="text-red-500" />
+      <div className="flex items-center justify-center w-full h-[60vh]">
+        <div className={`w-full text-center p-8 rounded-3xl border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-[#F0524F]/10 text-[#F0524F] border border-[#F0524F]/20">
+            <Zap size={32} />
           </div>
-          <p className={`text-sm font-black uppercase tracking-tight mb-6 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{error}</p>
+          <p className={`text-sm font-bold tracking-tight mb-6 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{error}</p>
           <button 
             onClick={() => window.location.reload()} 
-            className={`w-full py-4 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${
-              theme === 'light' ? 'bg-black text-white active:bg-gray-800' : 'bg-white text-black active:bg-gray-200'
-            }`}
+            className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-95 bg-[#F0524F] text-white hover:bg-[#D44846]"
           >
             Retry Connection
           </button>
@@ -209,40 +198,40 @@ const DashboardOverviewApp = () => {
   }
 
   return (
-    <div className={`space-y-6 font-['Plus_Jakarta_Sans',sans-serif] ${theme === 'light' ? 'text-black' : 'text-white'}`}>
+    <div className="space-y-5 pb-8">
       
-      {/* Title */}
-      <h1 className="text-2xl font-extrabold tracking-tight uppercase px-2 ">Overview</h1>
+      {/* 
+        PROFESSIONAL SEPARATOR
+        This 1px border visually disconnects the scrollable dashboard from the fixed header. 
+      */}
+      <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+        <h1 className={`text-3xl font-extrabold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+          Dashboard
+        </h1>
+      </div>
 
-      {/* Hero Bento Card */}
-      <div className="">
-        <div className={`rounded-[2rem] p-8 relative overflow-hidden shadow-sm ${
-          theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'
-        }`}>
-          <div className="flex justify-between items-start mb-6">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-inner ${
-              theme === 'light' ? 'bg-[#F4F5F9]' : 'bg-white/5'
-            }`}>
-              <Wallet size={20} className={theme === 'light' ? 'text-black' : 'text-white'} />
-            </div>
-            <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${
-              theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
-            }`}>WALLET</span>
+      {/* HERO BENTO CARD (Wallet) */}
+      <div className={`rounded-3xl p-7 relative overflow-hidden border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+        <div className="flex justify-between items-start mb-6">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
+            <Wallet size={20} className={isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'} />
           </div>
-          
-          <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>Wallet Balance</p>
-          <div className="flex items-baseline gap-2">
-            <h3 className="text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[#38BDF8] to-[#4ADE80]">
-              {stats.walletBalance.toLocaleString()}
-            </h3>
-            <span className={`text-xs font-black uppercase tracking-tighter ${theme === 'light' ? 'text-gray-300' : 'text-gray-600'}`}>CR</span>
-          </div>
-          <p className={`text-[10px] font-bold mt-2 uppercase tracking-widest ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>Total Credits Earned</p>
+          <span className="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-md bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20">
+            WALLET
+          </span>
+        </div>
+        
+        <p className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Available Balance</p>
+        <div className="flex items-baseline gap-2">
+          <h3 className={`text-5xl font-extrabold tracking-tighter ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+            {stats.walletBalance.toLocaleString()}
+          </h3>
+          <span className={`text-sm font-bold tracking-tight ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>CR</span>
         </div>
       </div>
 
-      {/* Grid Stats */}
-      <div className="grid grid-cols-2 gap-4 ">
+      {/* GRID STATS */}
+      <div className="grid grid-cols-2 gap-4">
         <StatCardApp 
           icon={<TrendingUp size={18} />} 
           label="Total Payouts" 
@@ -258,45 +247,41 @@ const DashboardOverviewApp = () => {
         />
       </div>
 
-      {/* Success Score Progress Card */}
-      <div className="">
-        <div className={`rounded-[2rem] p-6 relative overflow-hidden shadow-sm ${
-          theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'
-        }`}>
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-2">
-              <Target size={16} className="text-[#38BDF8]" />
-              <p className={`text-[10px] font-bold uppercase tracking-widest ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>Success Score</p>
-            </div>
-            <h3 className="text-2xl font-black">{stats.successRate}%</h3>
+      {/* PROGRESS CARD (Success Score) */}
+      <div className={`rounded-2xl p-6 relative overflow-hidden border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2">
+            <Target size={16} className="text-[#81B398]" />
+            <p className={`text-[11px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Success Score</p>
           </div>
-          <div className={`w-full rounded-full h-2 overflow-hidden ${theme === 'light' ? 'bg-[#F4F5F9]' : 'bg-white/5'}`}>
-              <motion.div 
-                initial={{ width: 0 }} 
-                animate={{ width: `${stats.successRate}%` }} 
-                transition={{ duration: 1.5, ease: "easeOut" }} 
-                className="bg-gradient-to-r from-[#38BDF8] to-[#4ADE80] h-full rounded-full" 
-              />
-          </div>
+          <h3 className={`text-xl font-bold ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{stats.successRate}%</h3>
+        </div>
+        <div className={`w-full rounded-full h-2 overflow-hidden ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
+            <motion.div 
+              initial={{ width: 0 }} 
+              animate={{ width: `${stats.successRate}%` }} 
+              transition={{ duration: 1.2, ease: "easeOut" }} 
+              className="bg-[#81B398] h-full rounded-full" 
+            />
         </div>
       </div>
 
-      {/* Charts Section */}
+      {/* CHARTS SECTION */}
       <div className="space-y-4">
-        <div className={`rounded-[2rem] p-6 pb-2 shadow-sm ${theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-xs font-black uppercase tracking-tight">Earning Trend</h4>
-            <span className="text-[#38BDF8]"><TrendingUp size={16} /></span>
+        <div className={`rounded-2xl p-6 pb-2 border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className={`text-sm font-bold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>Earning Trend</h4>
+            <span className="text-[#81B398]"><TrendingUp size={16} /></span>
           </div>
           <div className="w-full -ml-2">
-            <Chart options={areaChartConfig.options} series={areaChartConfig.series} type="area" height={180} />
+            <Chart options={areaChartConfig.options} series={areaChartConfig.series} type="area" height={160} />
           </div>
         </div>
 
-        <div className={`rounded-[2rem] p-6 shadow-sm ${theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'}`}>
-          <h4 className="text-xs font-black uppercase tracking-tight mb-1">Pipeline Ratio</h4>
-          <p className={`text-[9px] uppercase font-bold tracking-widest ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Total Submissions: <span className={theme === 'light' ? 'text-black' : 'text-white'}>{totalLeads}</span>
+        <div className={`rounded-2xl p-6 border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+          <h4 className={`text-sm font-bold tracking-tight mb-1 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>Pipeline Ratio</h4>
+          <p className={`text-[11px] font-bold tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+            Total Submissions: <span className={isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}>{totalLeads}</span>
           </p>
           <div className="flex justify-center mt-2">
             <Chart options={radialChartConfig.options} series={radialChartConfig.series} type="radialBar" height={220} />
@@ -304,68 +289,85 @@ const DashboardOverviewApp = () => {
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <div className="pt-4  pb-16 ">
+      {/* RECENT ACTIVITY BENTO LIST */}
+      <div className="pt-2">
         <div className="flex justify-between items-end mb-4 px-1">
-          <h4 className="font-extrabold text-lg uppercase tracking-tight">Activity</h4>
+          <h4 className={`text-xl font-bold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>Activity</h4>
           <button 
             onClick={() => navigate('/agent/history')} 
-            className="text-[9px] font-black uppercase tracking-widest text-[#38BDF8] flex items-center gap-1"
+            className="text-[11px] font-bold uppercase tracking-wider text-[#81B398] flex items-center gap-1 hover:opacity-80 transition-opacity"
           >
-            View All <ArrowRight size={12} />
+            View All <ArrowRight size={14} />
           </button>
         </div>
         
         <div className="space-y-3">
-          {recentActivity.slice(0, 5).map((activity, index) => (
-            <div key={index} className={`rounded-2xl p-4 flex items-center justify-between shadow-sm active:scale-[0.98] transition-transform ${
-              theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'
-            }`}>
-              <div className="flex items-center gap-4">
-                 <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-xs uppercase ${
-                   theme === 'light' ? 'bg-[#F4F5F9] text-gray-500' : 'bg-white/5 text-gray-400'
-                 }`}>
-                  {activity[0].substring(0, 2)}
+          {recentActivity.slice(0, 5).map((activity, index) => {
+             // Bento 10/100/20 Opacity Status Logic
+             let statusStyle = 'bg-[#DAC18A]/10 text-[#DAC18A] border-[#DAC18A]/20'; // Pending / Default
+             if (activity[1] === 'Completed') statusStyle = 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20';
+             if (activity[1] === 'Rejected') statusStyle = 'bg-[#F0524F]/10 text-[#F0524F] border-[#F0524F]/20';
+
+             return (
+              <div key={index} className={`rounded-2xl p-4 flex items-center justify-between border transition-all duration-200 active:scale-95 ${
+                isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+              }`}>
+                <div className="flex items-center gap-4">
+                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm uppercase border ${
+                     isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/10 text-[#9CA3AF]'
+                   }`}>
+                    {activity[0].substring(0, 2)}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`text-sm font-bold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{activity[0]}</span>
+                    <span className={`text-[10px] font-medium tracking-wide mt-0.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                      {new Date(activity[2]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold uppercase tracking-tight">{activity[0]}</span>
-                  <span className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {new Date(activity[2]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
-                </div>
-              </div>
-              
-              <div className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                  activity[1] === 'Completed' ? 'bg-[#4ADE80]/10 text-[#4ADE80]' : 
-                  activity[1] === 'Rejected' ? 'bg-[#EF4444]/10 text-[#EF4444]' : 'bg-[#F59E0B]/10 text-[#F59E0B]'
-                }`}>
+                
+                <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${statusStyle}`}>
                   {activity[1]}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
+          
+          {recentActivity.length === 0 && (
+              <div className={`flex flex-col items-center justify-center py-10 rounded-2xl border ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+                 <Zap size={24} className={isLight ? 'text-[#E2E8F0]' : 'text-white/10'} />
+                 <p className={`text-[11px] mt-2 font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>No activity yet</p>
+              </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-const StatCardApp = ({ icon, label, value, unit, theme }) => (
-  <div className={`rounded-[1.5rem] p-5 relative overflow-hidden shadow-sm flex flex-col justify-between aspect-square ${
-    theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'
-  }`}>
-    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 shadow-inner ${
-      theme === 'light' ? 'bg-[#F4F5F9] text-gray-500' : 'bg-white/5 text-gray-400'
+// ==========================================
+// BENTO STAT CARD
+// ==========================================
+const StatCardApp = ({ icon, label, value, unit, theme }) => {
+  const isLight = theme === 'light';
+  return (
+    <div className={`rounded-2xl p-5 border flex flex-col justify-between aspect-square ${
+      isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
     }`}>
-      {icon}
-    </div>
-    <div>
-      <p className={`text-[8px] font-bold uppercase tracking-widest mb-1 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>{label}</p>
-      <div className="flex items-baseline gap-1">
-        <h3 className="text-2xl font-black tracking-tighter truncate">{value}</h3>
-        {unit && <span className={`text-[9px] font-black uppercase tracking-tighter ${theme === 'light' ? 'text-gray-300' : 'text-gray-600'}`}>{unit}</span>}
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 border ${
+        isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C]' : 'bg-[#131720] border-white/10 text-[#F4F5F7]'
+      }`}>
+        {icon}
+      </div>
+      <div>
+        <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>{label}</p>
+        <div className="flex items-baseline gap-1">
+          <h3 className={`text-2xl font-extrabold tracking-tighter truncate ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{value}</h3>
+          {unit && <span className={`text-[11px] font-bold tracking-tight ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>{unit}</span>}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default DashboardOverviewApp;

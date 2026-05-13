@@ -3,12 +3,11 @@ import { motion } from 'framer-motion';
 import {
   Search, Calendar, Building2,
   CheckCircle2, Wallet, Clock, BarChart3, PieChart,
-  Activity, User, AlertCircle
+  Activity, User, AlertCircle, Loader2
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import { supabase } from '../../supabase/supabaseClient';
-import Loader from '../../components/Loader';
-import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
+import { useTheme } from '../../context/ThemeContext';
 
 const normalizeStatus = (status) => {
   if (!status) return "";
@@ -23,11 +22,36 @@ const normalizeStatus = (status) => {
 };
 
 const LeadHistory = () => {
-  const { theme } = useTheme(); // Access Theme
+  const { theme } = useTheme(); 
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+
+  const isLight = theme === 'light';
+
+  // Design System Utility Classes
+  const surfaceClass = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5';
+  const textPrimary = isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]';
+  const textSecondary = isLight ? 'text-[#718096]' : 'text-[#9CA3AF]';
+  const pulseClass = isLight ? 'bg-[#E2E8F0]' : 'bg-[#334155]';
+
+  // Earth-Tech Semantic Status Mapping
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Pending': return '#DAC18A'; // Sand
+      case 'Verified': return '#48477A'; // Muted Indigo
+      case 'In Progress': return '#38BDF8'; // Muted Blue 
+      case 'Completed': return '#81B398'; // Sage Green
+      case 'Rejected': return '#F0524F'; // Coral Red
+      default: return isLight ? '#718096' : '#9CA3AF'; // Slate
+    }
+  };
+
+  const getStatusPill = (status) => {
+    const colorHex = getStatusColor(status);
+    return `bg-[${colorHex}]/10 text-[${colorHex}] border border-[${colorHex}]/20`;
+  };
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -35,15 +59,8 @@ const LeadHistory = () => {
         const { data, error } = await supabase
           .from('leads')
           .select(`
-            id,
-            customer_name,
-            status,
-            service,
-            created_at,
-            credit_status,
-            business_units (
-              business_name
-            )
+            id, customer_name, status, service, created_at, credit_status,
+            business_units ( business_name )
           `)
           .order('created_at', { ascending: false });
 
@@ -57,7 +74,7 @@ const LeadHistory = () => {
           clientName: lead.customer_name,
           status: lead.status,
           service: lead.service,
-          date: new Date(lead.created_at).toLocaleDateString(),
+          date: new Date(lead.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           creditStatus: lead.credit_status,
           businessUnit: lead.business_units?.business_name || 'Unknown'
         }));
@@ -92,6 +109,9 @@ const LeadHistory = () => {
     return counts;
   }, [leads]);
 
+  // Chart Configurations injected with Earth-Tech Palette
+  const chartColors = ['#DAC18A', '#48477A', '#38BDF8', '#81B398', '#F0524F'];
+  
   const barChartConfig = {
     series: [{
       name: 'Deals',
@@ -99,18 +119,18 @@ const LeadHistory = () => {
     }],
     options: {
       chart: { type: 'bar', toolbar: { show: false } },
-      colors: ['#F59E0B', '#3B82F6', '#6366F1', '#4ADE80', '#EF4444'],
+      colors: chartColors,
       plotOptions: { bar: { borderRadius: 4, distributed: true, columnWidth: '40%' } },
       xaxis: {
         categories: ['Pending', 'Verified', 'In Prog.', 'Done', 'Rejected'],
-        labels: { style: { colors: theme === 'light' ? '#64748B' : '#94A3B8', fontWeight: 600, fontSize: '10px' } },
+        labels: { style: { colors: isLight ? '#718096' : '#9CA3AF', fontWeight: 600, fontSize: '11px', fontFamily: 'Plus Jakarta Sans' } },
         axisBorder: { show: false },
         axisTicks: { show: false }
       },
-      yaxis: { labels: { style: { colors: theme === 'light' ? '#64748B' : '#94A3B8' } } },
+      yaxis: { labels: { style: { colors: isLight ? '#718096' : '#9CA3AF', fontFamily: 'Plus Jakarta Sans' } } },
       legend: { show: false },
-      grid: { borderColor: theme === 'light' ? '#E2E8F0' : 'rgba(255,255,255,0.05)' },
-      tooltip: { theme: theme === 'light' ? 'light' : 'dark' }
+      grid: { borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' },
+      tooltip: { theme: isLight ? 'light' : 'dark' }
     }
   };
 
@@ -119,185 +139,212 @@ const LeadHistory = () => {
     options: {
       chart: { type: 'donut' },
       labels: ['Pending', 'Verified', 'In Progress', 'Completed', 'Rejected'],
-      colors: ['#F59E0B', '#3B82F6', '#6366F1', '#4ADE80', '#EF4444'],
+      colors: chartColors,
       stroke: { show: false },
       legend: { 
         position: 'bottom', 
-        fontSize: '10px', 
+        fontSize: '12px', 
         fontWeight: 600, 
-        labels: { colors: theme === 'light' ? '#475569' : '#94A3B8' } 
+        fontFamily: 'Plus Jakarta Sans',
+        labels: { colors: isLight ? '#1A202C' : '#F4F5F7' } 
       },
       dataLabels: { enabled: false },
       plotOptions: { pie: { donut: { size: '75%' } } },
-      tooltip: { theme: theme === 'light' ? 'light' : 'dark' }
+      tooltip: { theme: isLight ? 'light' : 'dark' }
     }
   };
 
-  const getStatusStyle = (status) => {
-    const isLight = theme === 'light';
-    switch (status) {
-      case 'Pending': return isLight ? 'text-amber-700 bg-amber-100 border-amber-200' : 'text-amber-400 bg-amber-400/10 border-amber-400/20';
-      case 'Verified': return isLight ? 'text-blue-700 bg-blue-100 border-blue-200' : 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-      case 'In Progress': return isLight ? 'text-indigo-700 bg-indigo-100 border-indigo-200' : 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
-      case 'Completed': return isLight ? 'text-emerald-700 bg-emerald-100 border-emerald-200' : 'text-[#4ADE80] bg-[#4ADE80]/10 border-[#4ADE80]/20';
-      case 'Rejected': return isLight ? 'text-rose-700 bg-rose-100 border-rose-200' : 'text-rose-400 bg-rose-400/10 border-rose-400/20';
-      default: return isLight ? 'text-slate-500 bg-slate-100 border-slate-200' : 'text-slate-400 bg-white/5 border-white/10';
-    }
-  };
-
+  // SKELETON LOADER
   if (loading) {
     return (
-      <div className="flex items-center justify-center w-full min-h-[70vh] font-['Plus_Jakarta_Sans',sans-serif]">
-        <Loader fullScreen={false} text="Loading History..." />
+      <div className="max-w-[1400px] mx-auto space-y-6 lg:space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] mt-2  lg:px-0">
+        <div className={`h-10 w-48 rounded-md mb-6 ${pulseClass} animate-pulse`} />
+        
+        {/* Charts Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 animate-pulse">
+          <div className={`h-[300px] rounded-2xl border ${surfaceClass}`} />
+          <div className={`h-[300px] rounded-2xl border ${surfaceClass}`} />
+        </div>
+
+        {/* Action Bar Skeleton */}
+        <div className={`h-16 rounded-xl border animate-pulse ${surfaceClass}`} />
+
+        {/* List Skeleton */}
+        <div className="space-y-4">
+          {[1,2,3,4].map(i => (
+            <div key={i} className={`h-24 rounded-2xl border animate-pulse ${surfaceClass}`} />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`space-y-10 font-['Plus_Jakarta_Sans',sans-serif] relative z-0 transition-colors duration-500 ${theme === 'light' ? 'text-slate-900' : 'text-[#E2E8F0]'}`}>
+    <div className={`max-w-[1400px] mx-auto space-y-6 lg:space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] relative z-0 transition-colors duration-300 mt-2  lg:px-0 ${textPrimary}`}>
       
-      {/* AMBIENT BACKGROUND BLOBS (Dark Mode Only) */}
-      {theme === 'dark' && (
-        <>
-          <div className="fixed top-[0%] left-[10%] w-[400px] h-[400px] bg-lime-400/10 rounded-full blur-[120px] pointer-events-none -z-20" />
-          <div className="fixed top-[30%] left-[40%] w-[500px] h-[500px] bg-[#38BDF8]/10 rounded-full blur-[140px] pointer-events-none -z-20" />
-          <div className="fixed bottom-[-10%] right-[-5%] w-[450px] h-[450px] bg-orange-400/10 rounded-full blur-[130px] pointer-events-none -z-20" />
-        </>
-      )}
-
       {/* 1. HEADER */}
-      <div className="space-y-6">
-        <h2 className="text-3xl font-black tracking-tight uppercase">My Leads</h2>
+      <div className="space-y-1.5 ">
+        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Lead Tracker</h2>
+        <p className={`text-sm font-medium max-w-xl ${textSecondary}`}>
+          Monitor the status of your submitted referrals in real-time.
+        </p>
+      </div>
 
-        <div className={`flex items-start gap-4 p-6 border rounded-xl shadow-sm backdrop-blur-md max-w-3xl transition-all ${
-          theme === 'light' ? 'bg-blue-50 border-blue-100' : 'bg-[#38BDF8]/5 border-[#38BDF8]/20 shadow-lg'
+      <div className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 lg:p-6 rounded-xl border transition-all ${
+        isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/5'
+      }`}>
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+          isLight ? 'bg-[#FFFFFF] border border-[#E2E8F0]' : 'bg-[#222938] border border-white/5'
         }`}>
-          <AlertCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
-          <div>
-            <h5 className="text-sm font-bold uppercase tracking-wider">Payout Information</h5>
-            <p className={`text-xs mt-2 leading-relaxed ${theme === 'light' ? 'text-slate-600' : 'text-[#94A3B8]'}`}>
-              Credits are only added to your wallet <strong>after</strong> the lead is officially marked as <span className={`px-2 py-0.5 rounded-xl text-[10px] font-black uppercase ${theme === 'light' ? 'bg-emerald-100 text-emerald-700' : 'bg-[#4ADE80]/20 text-[#4ADE80]'}`}>Completed</span>.
-            </p>
+          <AlertCircle size={18} className="text-[#81B398]" />
+        </div>
+        <div>
+          <h5 className="text-sm font-bold tracking-tight">Payout Information</h5>
+          <p className={`text-xs mt-1 leading-relaxed ${textSecondary}`}>
+            Credits are only added to your wallet <strong>after</strong> the lead is officially marked as <span className="font-bold text-[#81B398]">Completed</span>.
+          </p>
+        </div>
+      </div>
+
+      {/* 2. ANALYTICS (Charts moved to top) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        <div className={`p-6 lg:p-8 rounded-2xl border transition-all ${surfaceClass}`}>
+          <div className="flex items-center gap-3 mb-6">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isLight ? 'bg-[#F4F5F7] text-[#1A202C]' : 'bg-[#131720] text-[#F4F5F7]'}`}>
+              <BarChart3 size={16} />
+            </div>
+            <span className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>Deal Distribution</span>
+          </div>
+          <div className="flex-1 min-h-[220px]">
+            <Chart options={barChartConfig.options} series={barChartConfig.series} type="bar" height={220} />
+          </div>
+        </div>
+
+        <div className={`p-6 lg:p-8 rounded-2xl border transition-all ${surfaceClass}`}>
+          <div className="flex items-center gap-3 mb-6">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isLight ? 'bg-[#F4F5F7] text-[#1A202C]' : 'bg-[#131720] text-[#F4F5F7]'}`}>
+               <PieChart size={16} />
+            </div>
+            <span className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>Status Breakdown</span>
+          </div>
+          <div className="flex-1 flex items-center justify-center min-h-[220px]">
+            <Chart options={donutChartConfig.options} series={donutChartConfig.series} type="donut" height={240} />
           </div>
         </div>
       </div>
 
-      {/* 2. ANALYTICS (Charts) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className={`p-8 rounded-xl border transition-all ${theme === 'light' ? 'bg-[#F1F5F9] border-slate-200' : 'bg-white/[0.02] backdrop-blur-3xl border-white/10 shadow-xl'}`}>
-          <div className="flex items-center gap-2 mb-6">
-            <BarChart3 size={18} className="text-[#38BDF8]" />
-            <span className="text-[11px] font-black uppercase tracking-[0.2em]">Deal Distribution</span>
-          </div>
-          <Chart options={barChartConfig.options} series={barChartConfig.series} type="bar" height={220} />
-        </div>
-
-        <div className={`p-8 rounded-xl border transition-all ${theme === 'light' ? 'bg-[#F1F5F9] border-slate-200' : 'bg-white/[0.02] backdrop-blur-3xl border-white/10 shadow-xl'}`}>
-          <div className="flex items-center gap-2 mb-6">
-            <PieChart size={18} className="text-[#38BDF8]" />
-            <span className="text-[11px] font-black uppercase tracking-[0.2em]">Status Breakdown</span>
-          </div>
-          <Chart options={donutChartConfig.options} series={donutChartConfig.series} type="donut" height={240} />
-        </div>
-      </div>
-
-      {/* 3. SEARCH / FILTER */}
-      <div className={`rounded-xl p-6 border transition-all ${theme === 'light' ? 'bg-[#F1F5F9] border-slate-200' : 'bg-white/[0.02] backdrop-blur-3xl border-white/10 shadow-xl'}`}>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${theme === 'light' ? 'text-slate-400' : 'text-[#64748B]'}`} />
-            <input
-              value={searchTerm}
-              placeholder="Search by client or deal ID..."
-              className={`w-full pl-12 pr-5 py-3.5 border rounded-xl text-sm font-medium transition-all focus:outline-none focus:border-[#38BDF8]/50 ${
-                theme === 'light' ? 'bg-white border-slate-200 text-slate-900' : 'bg-white/5 border-white/5 text-[#E2E8F0] placeholder:text-[#64748B]'
-              }`}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div> 
+      {/* 3. SEARCH / FILTER ACTION BAR */}
+      <div className={`p-4 lg:p-5 rounded-2xl border transition-all flex flex-col md:flex-row gap-4 ${surfaceClass}`}>
+        <div className="relative flex-1">
+          <Search size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${textSecondary}`} />
+          <input
+            value={searchTerm}
+            placeholder="Search by client or deal ID..."
+            className={`w-full pl-10 pr-4 py-2.5 rounded-lg text-sm transition-all outline-none border ${
+              isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] focus:border-[#81B398]' : 'bg-[#131720] border-transparent text-[#F4F5F7] focus:border-[#81B398]'
+            }`}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div> 
+        <div className="relative w-full md:w-56 shrink-0">
           <select
+            value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className={`w-full sm:w-56 pl-4 pr-8 py-3.5 border rounded-xl text-[10px] font-black uppercase tracking-widest appearance-none cursor-pointer focus:outline-none focus:border-[#38BDF8]/50 ${
-              theme === 'light' ? 'bg-white border-slate-200 text-slate-900' : 'bg-white/5 border-white/5 text-[#E2E8F0]'
+            className={`w-full pl-4 pr-10 py-2.5 rounded-lg text-sm font-medium transition-all outline-none appearance-none cursor-pointer border ${
+              isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] focus:border-[#81B398]' : 'bg-[#131720] border-transparent text-[#F4F5F7] focus:border-[#81B398]'
             }`}
           >
-            <option value="All" className={theme === 'light' ? '' : 'bg-[#0F172A]'}>All Status</option>
-            <option value="Pending" className={theme === 'light' ? '' : 'bg-[#0F172A]'}>Pending</option>
-            <option value="Verified" className={theme === 'light' ? '' : 'bg-[#0F172A]'}>Verified</option>
-            <option value="In Progress" className={theme === 'light' ? '' : 'bg-[#0F172A]'}>In Progress</option>
-            <option value="Completed" className={theme === 'light' ? '' : 'bg-[#0F172A]'}>Completed</option>
-            <option value="Rejected" className={theme === 'light' ? '' : 'bg-[#0F172A]'}>Rejected</option>
+            <option value="All">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Verified">Verified</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Rejected">Rejected</option>
           </select>
+          <div className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none ${textSecondary}`}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
         </div>
       </div>
 
-      {/* 4. LIST */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-2">
-        {filteredLeads.length ? filteredLeads.map((lead, i) => (
-          <motion.div
-            key={lead.id}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className={`rounded-xl border p-8 flex flex-col transition-all duration-500 group ${
-              theme === 'light' 
-              ? 'bg-[#F1F5F9] border-slate-200 hover:bg-slate-200/50 hover:border-slate-300 shadow-sm' 
-              : 'bg-white/[0.02] backdrop-blur-3xl border-white/10 shadow-xl hover:bg-white/[0.04] hover:border-white/20'
-            } hover:-translate-y-2`}
-          >
-            <div className="flex justify-between items-start mb-8 gap-4">
-              <div className="flex-1 overflow-hidden">
-                <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${theme === 'light' ? 'text-slate-400' : 'text-[#64748B]'}`}>ID: {lead.id}</p>
-                <h3 className="text-xl font-black uppercase tracking-tight truncate">{lead.clientName}</h3>
-              </div>
-              <div className={`w-14 h-14 border rounded-xl flex items-center justify-center transition-colors ${
-                theme === 'light' ? 'bg-white border-slate-200 text-slate-400' : 'bg-white/5 border-white/5 text-[#94A3B8] group-hover:text-[#38BDF8]'
-              }`}>
-                <User size={24} />
-              </div>
-            </div>
-
-            <div className="flex-1 space-y-4 mb-8">
-              <div className={`flex items-center gap-4 text-xs font-bold p-3 rounded-xl border ${theme === 'light' ? 'bg-white border-slate-200 text-slate-500' : 'bg-white/5 border-white/5 text-[#94A3B8]'}`}>
-                <Building2 size={16} className="text-[#38BDF8] shrink-0" />
-                <span className="truncate">{lead.businessUnit}</span>
-              </div>
-              <div className={`flex items-center gap-4 text-xs font-bold p-3 rounded-xl border ${theme === 'light' ? 'bg-white border-slate-200 text-slate-500' : 'bg-white/5 border-white/5 text-[#94A3B8]'}`}>
-                <Calendar size={16} className="text-[#38BDF8] shrink-0" />
-                <span>{lead.date}</span>
-              </div>
-            </div>
-
-            <div className={`mt-auto pt-6 border-t space-y-4 ${theme === 'light' ? 'border-slate-200' : 'border-white/5'}`}>
-              <div className="flex items-center justify-between">
-                <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-slate-400' : 'text-[#64748B]'}`}>
-                  <Activity size={14} className="text-[#38BDF8]" /> Status
-                </span>
-                <span className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl border ${getStatusStyle(normalizeStatus(lead.status))}`}>
-                  {normalizeStatus(lead.status)}
-                </span>
+      {/* 4. LIST (Horizontal Scannable Rows) */}
+      <div className="space-y-4">
+        {filteredLeads.length ? filteredLeads.map((lead, i) => {
+          const status = normalizeStatus(lead.status);
+          const colorHex = getStatusColor(status);
+          
+          return (
+            <motion.div
+              key={lead.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className={`rounded-2xl border p-5 lg:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6 transition-all duration-300 group ${
+                isLight 
+                ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:shadow-sm hover:border-[#E2E8F0]' 
+                : 'bg-[#222938] border-white/5 hover:bg-[#2A3241]'
+              }`}
+            >
+              {/* Left: Avatar & Identity */}
+              <div className="flex items-center gap-5 lg:w-[35%]">
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 border transition-colors ${
+                  isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/5 text-[#9CA3AF]'
+                }`}>
+                  <User size={20} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold tracking-tight truncate mb-1">{lead.clientName}</h3>
+                  <p className={`text-xs font-medium uppercase tracking-wider ${textSecondary}`}>
+                    ID: {lead.id}
+                  </p>
+                </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-slate-400' : 'text-[#64748B]'}`}>
-                  <Wallet size={14} className="text-[#6366f1]" /> Wallet
+              {/* Middle: Details (Business & Date) */}
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 lg:w-[40%]">
+                <div className="flex items-center gap-3">
+                  <div className={`p-1.5 rounded-md ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
+                    <Building2 size={14} className={textSecondary} />
+                  </div>
+                  <span className={`text-sm font-medium truncate ${textSecondary}`}>{lead.businessUnit}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className={`p-1.5 rounded-md ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
+                    <Calendar size={14} className={textSecondary} />
+                  </div>
+                  <span className={`text-sm font-medium shrink-0 ${textSecondary}`}>{lead.date}</span>
+                </div>
+              </div>
+
+              {/* Right: Status & Wallet */}
+              <div className="flex items-center gap-4 lg:w-[25%] lg:justify-end pt-4 lg:pt-0 border-t lg:border-0 border-inherit" style={{ borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' }}>
+                {/* Status Pill */}
+                <span 
+                  className="px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider border"
+                  style={{ backgroundColor: `${colorHex}15`, color: colorHex, borderColor: `${colorHex}30` }}
+                >
+                  {status}
                 </span>
-                {lead.creditStatus === "Credited" ? (
-                  <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border ${theme === 'light' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'text-[#4ADE80] bg-[#4ADE80]/10 border-[#4ADE80]/20'}`}>
-                    <CheckCircle2 size={12} /> Settled
+
+                {/* Wallet Status */}
+                <div className={`px-3 py-1.5 rounded-md border flex items-center gap-1.5 ${
+                  lead.creditStatus === "Credited" 
+                  ? 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20' 
+                  : (isLight ? 'bg-[#F4F5F7] text-[#718096] border-[#E2E8F0]' : 'bg-[#131720] text-[#9CA3AF] border-white/5')
+                }`}>
+                  {lead.creditStatus === "Credited" ? <CheckCircle2 size={14} /> : <Clock size={14} />}
+                  <span className="text-[11px] font-bold uppercase tracking-wider">
+                    {lead.creditStatus === "Credited" ? "Settled" : "Pending"}
                   </span>
-                ) : (
-                  <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border ${theme === 'light' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'text-amber-500 bg-amber-500/10 border-amber-500/20'}`}>
-                    <Clock size={12} /> Pending
-                  </span>
-                )}
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )) : (
-          <div className={`col-span-full py-28 text-center border rounded-xl transition-all ${theme === 'light' ? 'bg-[#F1F5F9] border-slate-200 shadow-sm' : 'bg-white/[0.02] border-white/10 shadow-xl'}`}>
-            <Activity size={48} className="mx-auto text-slate-400 mb-6 opacity-20" />
-            <p className="text-slate-400 font-bold uppercase text-xs tracking-[0.2em]">No Lead History Found</p>
+            </motion.div>
+          );
+        }) : (
+          <div className={`col-span-full py-20 text-center rounded-2xl border transition-all ${surfaceClass}`}>
+            <Activity size={40} className={`mx-auto mb-4 opacity-30 ${textSecondary}`} />
+            <p className={`text-sm font-semibold mb-1 ${textPrimary}`}>No Lead History Found</p>
+            <p className={`text-xs ${textSecondary}`}>No referrals match your current filters.</p>
           </div>
         )}
       </div>

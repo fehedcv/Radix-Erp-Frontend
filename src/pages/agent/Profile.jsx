@@ -1,15 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Phone, Mail, Edit3, Camera, Save, X, 
-  CheckCircle2, Settings, Loader2 
+  CheckCircle2, Settings, Loader2, Target
 } from 'lucide-react';
 import { supabase } from '../../supabase/supabaseClient';
-import Loader from '../../components/Loader';
-import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
+import { useTheme } from '../../context/ThemeContext';
 
 const ProfilePage = () => {
-  const { theme } = useTheme(); // Access Theme
+  const { theme } = useTheme(); 
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,6 +24,13 @@ const ProfilePage = () => {
   });
 
   const fileInputRef = useRef(null);
+  const isLight = theme === 'light';
+
+  // Design System Utility Classes
+  const surfaceClass = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5';
+  const textPrimary = isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]';
+  const textSecondary = isLight ? 'text-[#718096]' : 'text-[#9CA3AF]';
+  const pulseClass = isLight ? 'bg-[#E2E8F0]' : 'bg-[#334155]';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -146,10 +152,36 @@ const ProfilePage = () => {
     }
   };
 
+  // SKELETON LOADER
   if (loading) {
     return (
-      <div className="flex items-center justify-center w-full min-h-[70vh] font-['Plus_Jakarta_Sans',sans-serif]">
-        <Loader fullScreen={false} text="Loading Profile..." />
+      <div className="max-w-[1400px] mx-auto space-y-6 lg:space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] relative z-0 mt-2  lg:px-0">
+        {/* Header Skeleton */}
+        <div className="flex flex-col md:flex-row justify-between md:items-end gap-5  mb-8 animate-pulse">
+          <div className="space-y-3">
+            <div className={`h-10 w-48 rounded-md ${pulseClass}`} />
+            <div className={`h-4 w-64 rounded-md ${pulseClass}`} />
+          </div>
+          <div className={`h-12 w-36 rounded-lg ${pulseClass}`} />
+        </div>
+
+        {/* Grid Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 animate-pulse">
+          <div className={`lg:col-span-1 p-8 rounded-2xl border flex flex-col items-center justify-center min-h-[300px] ${surfaceClass}`}>
+            <div className={`w-32 h-32 rounded-full mb-6 ${pulseClass}`} />
+            <div className={`h-6 w-48 rounded-md mb-4 ${pulseClass}`} />
+            <div className={`h-8 w-32 rounded-md ${pulseClass}`} />
+          </div>
+          
+          <div className={`lg:col-span-2 p-8 rounded-2xl border ${surfaceClass}`}>
+            <div className={`h-6 w-40 rounded-md mb-8 ${pulseClass}`} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="space-y-2"><div className={`h-4 w-24 rounded-md ${pulseClass}`} /><div className={`h-12 w-full rounded-lg ${pulseClass}`} /></div>
+               <div className="space-y-2"><div className={`h-4 w-24 rounded-md ${pulseClass}`} /><div className={`h-12 w-full rounded-lg ${pulseClass}`} /></div>
+               <div className="space-y-2 md:col-span-2"><div className={`h-4 w-32 rounded-md ${pulseClass}`} /><div className={`h-12 w-full rounded-lg ${pulseClass}`} /></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -158,118 +190,136 @@ const ProfilePage = () => {
     <motion.div 
       initial={{ opacity: 0, y: 10 }} 
       animate={{ opacity: 1, y: 0 }}
-      className={`max-w-[1400px] mx-auto space-y-8 font-['Plus_Jakarta_Sans',sans-serif] relative z-0 transition-colors duration-500 ${theme === 'light' ? 'text-slate-900' : 'text-[#E2E8F0]'}`}
+      className={`max-w-[1400px] mx-auto space-y-6 lg:space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] relative z-0 transition-colors duration-300 mt-2  lg:px-0 ${textPrimary}`}
     >
-      {/* AMBIENT BLOBS - Dark Mode Only */}
-      {theme === 'dark' && (
-        <>
-          <div className="fixed top-[0%] left-[10%] w-[400px] h-[400px] bg-lime-400/10 rounded-full blur-[120px] pointer-events-none -z-20" />
-          <div className="fixed top-[30%] left-[40%] w-[500px] h-[500px] bg-[#38BDF8]/10 rounded-full blur-[140px] pointer-events-none -z-20" />
-          <div className="fixed bottom-[-10%] right-[-5%] w-[450px] h-[450px] bg-orange-400/10 rounded-full blur-[130px] pointer-events-none -z-20" />
-        </>
-      )}
-
-      {/* 1. HEADER BAR */}
-      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-8 rounded-xl border transition-all ${
-        theme === 'light' ? 'bg-[#F1F5F9] border-slate-200 shadow-sm' : 'bg-white/[0.02] backdrop-blur-3xl border-white/10 shadow-xl'
-      }`}>
-        <div>
-          <h2 className="text-3xl font-black tracking-tight uppercase">My Profile</h2>
-          <p className={`text-[10px] font-bold uppercase tracking-[0.25em] mt-2 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Verified Partner Management System</p>
+      {/* 1. HEADER (Borderless, Extracted from Card) */}
+      <div className="flex flex-col md:flex-row justify-between md:items-end gap-5  mb-8">
+        <div className="space-y-1.5">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">My Profile</h1>
+          <p className={`text-sm font-medium ${textSecondary}`}>Verified Partner Management System</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           {!isEditing ? (
             <button 
               onClick={() => setIsEditing(true)}
-              className={`flex items-center gap-3 px-8 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest border ${
-                theme === 'light' ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50' : 'bg-white/5 border-white/10 hover:bg-white/10 text-white'
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all border ${
+                isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C] hover:bg-[#F4F5F7]' : 'bg-[#222938] border-white/5 text-[#F4F5F7] hover:bg-[#131720]'
               }`}
             >
-              <Edit3 size={14} className="text-[#38BDF8]" /> Edit Profile
+              <Edit3 size={16} className="text-[#81B398]" /> Edit Profile
             </button>
           ) : (
-            <div className="flex gap-3">
+            <div className="flex gap-3 w-full md:w-auto">
               <button 
-                onClick={() => setIsEditing(false)}
-                className={`p-3 rounded-xl border transition-all ${theme === 'light' ? 'bg-white border-slate-200 text-rose-500 hover:bg-rose-50' : 'bg-white/5 border-white/10 text-rose-400'}`}
+                onClick={() => {
+                  setIsEditing(false);
+                  setProfile(prev => ({ ...prev, avatarFile: null })); // Reset pending image
+                }}
+                className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-all border ${
+                  isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#F0524F] hover:bg-[#F0524F]/10' : 'bg-[#222938] border-white/5 text-[#F0524F] hover:bg-[#F0524F]/10'
+                }`}
               >
-                <X size={18} />
+                Cancel
               </button>
               <button 
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-3 bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20 px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-[#38BDF8]/20 disabled:opacity-50 transition-all"
+                className="flex items-center justify-center gap-2 bg-[#81B398] text-[#FFFFFF] px-8 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#6FA085] disabled:opacity-50 transition-all shadow-sm flex-1 md:flex-none"
               >
-                 {saving ? <Loader2 size={14} className="animate-spin" /> : <><Save size={14} /> Save</>}
+                 {saving ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} /> Save</>}
               </button>
             </div>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* 2. LEFT SIDEBAR */}
-        <div className="lg:col-span-4 space-y-8">
-          <div className={`p-10 text-center relative overflow-hidden transition-all border rounded-xl ${
-            theme === 'light' ? 'bg-[#F1F5F9] border-slate-200 shadow-sm' : 'bg-white/[0.02] backdrop-blur-3xl border-white/10 shadow-xl'
-          }`}>
-            <div className="relative z-10">
-              <div className="relative w-40 h-40 mx-auto mb-8">
-                <div 
-                  onClick={handleImageClick}
-                  className={`w-full h-full rounded-xl overflow-hidden border flex items-center justify-center transition-all ${
-                    isEditing ? 'cursor-pointer border-[#38BDF8] border-dashed bg-[#38BDF8]/5' : (theme === 'light' ? 'bg-white border-slate-200' : 'bg-white/5 border-white/10')
-                  }`}
-                >
-                  {profile.avatar ? (
-                    <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={64} className={theme === 'light' ? 'text-slate-200' : 'text-slate-800'} />
-                  )}
-                  {isEditing && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-[#38BDF8] backdrop-blur-[2px]">
-                      <Camera size={28} />
-                      <span className="text-[9px] font-black uppercase mt-2">Update</span>
-                    </div>
-                  )}
-                </div>
-                <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
+      {/* 2. MAIN BENTO GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        
+        {/* LEFT COLUMN: Avatar & Stats */}
+        <div className={`lg:col-span-1 p-8 rounded-2xl border flex flex-col items-center justify-center transition-all ${surfaceClass}`}>
+          <div className="relative z-10 w-full flex flex-col items-center">
+            
+            {/* Interactive Avatar with Floating Stats Badge */}
+            <div className="relative mb-6">
+              <div 
+                onClick={handleImageClick}
+                className={`w-32 h-32 rounded-full overflow-hidden border-2 flex items-center justify-center transition-all group ${
+                  isEditing 
+                  ? `cursor-pointer border-dashed ${isLight ? 'border-[#81B398] bg-[#81B398]/5' : 'border-[#81B398] bg-[#81B398]/10'}` 
+                  : (isLight ? 'border-[#E2E8F0] bg-[#F4F5F7]' : 'border-white/10 bg-[#131720]')
+                }`}
+              >
+                {profile.avatar ? (
+                  <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={48} className={textSecondary} />
+                )}
+                
+                {isEditing && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-[#FFFFFF] backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera size={24} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider mt-2">Update</span>
+                  </div>
+                )}
               </div>
+              <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
 
-              <h3 className="text-2xl font-black uppercase tracking-tight">{profile.name}</h3>
-              
-              <div className="mt-8 flex justify-center">
-                <span className={`inline-flex items-center gap-2 px-5 py-2 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                  theme === 'light' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-[#4ADE80]/10 text-[#4ADE80] border-[#4ADE80]/20'
-                }`}>
-                  <CheckCircle2 size={12} /> {profile.status} Partner
-                </span>
+              {/* Floating Lead Count Badge */}
+              <div className={`absolute -bottom-2 -right-2 px-3 py-1.5 rounded-lg border shadow-sm flex items-center gap-1.5 ${
+                isLight ? 'bg-white border-[#E2E8F0] text-[#1A202C]' : 'bg-[#222938] border-white/10 text-[#F4F5F7]'
+              }`}>
+                <Target size={14} className="text-[#81B398]" />
+                <span className="text-sm font-extrabold tracking-tight">{profile.totalLeads} <span className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary}`}>Leads</span></span>
               </div>
+            </div>
 
-              <div className={`mt-10 py-10 border-t ${theme === 'light' ? 'border-slate-200' : 'border-white/5'}`}>
-                <p className="text-4xl font-black tracking-tighter">{profile.totalLeads}</p>
-                <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mt-2 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>Total Submissions</p>
-              </div>
+            <h3 className="text-2xl font-bold tracking-tight text-center mt-2">{profile.name}</h3>
+            
+            <div className="mt-4 flex justify-center">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider border ${
+                isLight ? 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20' : 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20'
+              }`}>
+                <CheckCircle2 size={14} /> {profile.status} Partner
+              </span>
             </div>
           </div>
         </div>
 
-        {/* 3. MAIN CONTENT AREA */}
-        <div className="lg:col-span-8">
-          <div className={`rounded-xl p-8 md:p-12 border transition-all ${
-            theme === 'light' ? 'bg-[#F1F5F9] border-slate-200 shadow-sm' : 'bg-white/[0.02] backdrop-blur-3xl border-white/10 shadow-xl'
-          }`}>
-            <h4 className={`text-[11px] font-black uppercase tracking-[0.3em] mb-10 flex items-center gap-3 border-b pb-6 ${theme === 'light' ? 'border-slate-200 text-slate-400' : 'border-white/5 text-slate-500'}`}>
-              <Settings size={16} className="text-[#38BDF8]" /> Partner Data
-            </h4>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <ProfileField theme={theme} isEditing={isEditing} label="Full Legal Name" value={profile.name} onChange={(v) => setProfile({...profile, name: v})} icon={<User size={18} />} />
-              <ProfileField theme={theme} isEditing={isEditing} label="Direct Contact" value={profile.phone} onChange={(v) => setProfile({...profile, phone: v})} icon={<Phone size={18} />} />
-              <div className="md:col-span-2">
-                <ProfileField theme={theme} isEditing={false} label="Primary Network Email (READ ONLY)" value={profile.email} onChange={() => {}} icon={<Mail size={18} />} />
-              </div>
+        {/* RIGHT COLUMN: Profile Data Form */}
+        <div className={`lg:col-span-2 rounded-2xl p-8 border transition-all ${surfaceClass}`}>
+          <h4 className={`text-sm font-bold uppercase tracking-wider mb-8 flex items-center gap-2 border-b pb-4 ${isLight ? 'border-[#E2E8F0] text-[#1A202C]' : 'border-white/5 text-[#F4F5F7]'}`}>
+            <Settings size={18} className="text-[#81B398]" /> Partner Data
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+            <ProfileField 
+              isLight={isLight} 
+              isEditing={isEditing} 
+              label="Full Legal Name" 
+              value={profile.name} 
+              onChange={(v) => setProfile({...profile, name: v})} 
+              icon={<User size={18} />} 
+            />
+            <ProfileField 
+              isLight={isLight} 
+              isEditing={isEditing} 
+              label="Direct Contact" 
+              value={profile.phone} 
+              onChange={(v) => setProfile({...profile, phone: v})} 
+              icon={<Phone size={18} />} 
+            />
+            <div className="md:col-span-2">
+              <ProfileField 
+                isLight={isLight} 
+                isEditing={false} 
+                label="Primary Network Email" 
+                value={profile.email} 
+                onChange={() => {}} 
+                icon={<Mail size={18} />} 
+                readOnlyTag={true}
+              />
             </div>
           </div>
         </div>
@@ -278,30 +328,38 @@ const ProfilePage = () => {
   );
 };
 
-const ProfileField = ({ theme, isEditing, label, value, onChange, icon }) => (
-  <div className="space-y-3">
-    <label className={`text-[10px] font-black uppercase tracking-widest ml-1 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>{label}</label>
-    {isEditing ? (
-      <div className="relative">
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#38BDF8]">{icon}</div>
-        <input 
-          type="text" 
-          value={value} 
-          onChange={(e) => onChange(e.target.value)} 
-          className={`w-full pl-12 pr-5 py-4 border rounded-xl outline-none font-bold text-sm transition-all ${
-            theme === 'light' ? 'bg-white border-slate-300 text-slate-900 focus:border-[#38BDF8]' : 'bg-white/5 border-white/10 text-white focus:border-[#38BDF8]/50'
-          }`} 
-        />
+// Extracted Subcomponent for cleaner rendering
+const ProfileField = ({ isLight, isEditing, label, value, onChange, icon, readOnlyTag }) => {
+  const textSecondary = isLight ? 'text-[#718096]' : 'text-[#9CA3AF]';
+  const textPrimary = isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]';
+  const inputSurface = isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] focus:bg-[#FFFFFF] focus:border-[#81B398]' : 'bg-[#131720] border-transparent text-[#F4F5F7] focus:bg-[#222938] focus:border-[#81B398]';
+  const displaySurface = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5';
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between items-center ml-1">
+        <label className={`text-xs font-semibold ${textSecondary}`}>{label}</label>
+        {readOnlyTag && <span className={`text-[10px] font-bold uppercase tracking-widest ${isLight ? 'text-[#F0524F]' : 'text-[#F0524F]/80'}`}>Read Only</span>}
       </div>
-    ) : (
-      <div className={`flex items-center gap-4 p-5 border rounded-xl transition-all ${
-        theme === 'light' ? 'bg-white border-slate-200' : 'bg-white/[0.03] border-white/5'
-      }`}>
-        <div className="text-[#38BDF8] opacity-60">{icon}</div>
-        <span className="text-sm font-bold uppercase tracking-tight">{value}</span>
-      </div>
-    )}
-  </div>
-);
+
+      {isEditing && !readOnlyTag ? (
+        <div className="relative">
+          <div className={`absolute left-4 top-1/2 -translate-y-1/2 ${textSecondary}`}>{icon}</div>
+          <input 
+            type="text" 
+            value={value} 
+            onChange={(e) => onChange(e.target.value)} 
+            className={`w-full pl-11 pr-4 py-3 border rounded-lg outline-none font-medium text-sm transition-all ${inputSurface}`} 
+          />
+        </div>
+      ) : (
+        <div className={`flex items-center gap-4 p-4 border rounded-lg transition-all ${displaySurface} ${readOnlyTag ? 'opacity-80' : ''}`}>
+          <div className={`${textSecondary}`}>{icon}</div>
+          <span className={`text-sm font-medium truncate ${textPrimary}`}>{value || 'Not provided'}</span>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default ProfilePage;

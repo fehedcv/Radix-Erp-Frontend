@@ -4,52 +4,55 @@ import {
   User, Phone, Mail, Edit3, Camera, Save, X, 
   CheckCircle2, Settings, Loader2 
 } from 'lucide-react';
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient'; // Added Supabase Client
 import { useTheme } from '../../context/ThemeContext'; 
 
 // ==========================================
-// SKELETON COMPONENT (MATCHED LAYOUT)
+// 1:1 STRUCTURAL SKELETON (BENTO STYLE)
 // ==========================================
 const ProfileSkeleton = ({ theme }) => {
-  const bgColor = theme === 'light' ? 'bg-gray-200' : 'bg-white/5';
-  const pulseClass = "animate-pulse";
+  const isLight = theme === 'light';
+  const pulseColor = isLight ? 'bg-[#E2E8F0]' : 'bg-[#334155]';
+  const cardBg = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10';
 
   return (
-    <div className="space-y-6 px-2 ">
+    <div className="w-full max-w-[1200px] mx-auto  space-y-5 pb-16 pt-4">
+      {/* Separator */}
+             <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`} />
+
+
       {/* Header Skeleton */}
-      <div className="flex justify-between items-end mb-8">
+      <div className="flex justify-between items-end mb-6 px-2">
         <div className="space-y-2">
-          <div className={`h-8 w-32 rounded-lg ${bgColor} ${pulseClass}`} />
-          <div className={`h-3 w-24 rounded-lg ${bgColor} ${pulseClass}`} />
+          <div className={`h-8 w-32 rounded-xl ${pulseColor} animate-pulse`} />
+          <div className={`h-3 w-24 rounded-md ${pulseColor} animate-pulse`} />
         </div>
-        <div className={`h-10 w-20 rounded-full ${bgColor} ${pulseClass}`} />
+        <div className={`h-10 w-24 rounded-xl ${pulseColor} animate-pulse`} />
       </div>
 
       {/* Hero Card Skeleton */}
-      <div className={`rounded-[2rem] p-8 flex flex-col items-center space-y-4 ${theme === 'light' ? 'bg-white' : 'bg-[#18181B]'}`}>
-        <div className={`w-32 h-32 rounded-[2.5rem] ${bgColor} ${pulseClass}`} />
-        <div className={`h-6 w-40 rounded-lg ${bgColor} ${pulseClass}`} />
-        <div className={`h-8 w-32 rounded-full ${bgColor} ${pulseClass}`} />
+      <div className={`rounded-3xl p-8 border flex flex-col items-center space-y-5 animate-pulse ${cardBg}`}>
+        <div className={`w-32 h-32 rounded-2xl ${pulseColor}`} />
+        <div className={`h-6 w-48 rounded-lg ${pulseColor}`} />
+        <div className={`h-8 w-36 rounded-lg ${pulseColor}`} />
       </div>
 
       {/* Stats Card Skeleton */}
-      <div className={`rounded-[2rem] p-6 flex justify-between items-center ${theme === 'light' ? 'bg-white' : 'bg-[#18181B]'}`}>
+      <div className={`rounded-2xl p-6 border flex justify-between items-center animate-pulse ${cardBg}`}>
         <div className="space-y-2">
-          <div className={`h-3 w-20 rounded-lg ${bgColor} ${pulseClass}`} />
-          <div className={`h-8 w-28 rounded-lg ${bgColor} ${pulseClass}`} />
+          <div className={`h-3 w-24 rounded-md ${pulseColor}`} />
+          <div className={`h-8 w-32 rounded-lg ${pulseColor}`} />
         </div>
-        <div className={`w-12 h-12 rounded-[1.25rem] ${bgColor} ${pulseClass}`} />
+        <div className={`w-12 h-12 rounded-xl ${pulseColor}`} />
       </div>
 
       {/* Data Card Skeleton */}
-      <div className={`rounded-[2rem] p-6 space-y-6 ${theme === 'light' ? 'bg-white' : 'bg-[#18181B]'}`}>
-        <div className={`h-4 w-full border-b pb-4 ${theme === 'light' ? 'border-gray-50' : 'border-white/5'}`}>
-          <div className={`h-3 w-24 rounded-lg ${bgColor} ${pulseClass}`} />
-        </div>
+      <div className={`rounded-2xl p-6 border space-y-6 animate-pulse ${cardBg}`}>
+        <div className={`h-4 w-32 rounded-md ${pulseColor} mb-6`} />
         {[1, 2, 3].map((i) => (
           <div key={i} className="space-y-2">
-            <div className={`h-2 w-16 rounded-lg ${bgColor} ${pulseClass} ml-1`} />
-            <div className={`h-14 w-full rounded-[1.25rem] ${bgColor} ${pulseClass}`} />
+            <div className={`h-3 w-20 rounded-md ${pulseColor}`} />
+            <div className={`h-14 w-full rounded-xl ${pulseColor}`} />
           </div>
         ))}
       </div>
@@ -57,11 +60,17 @@ const ProfileSkeleton = ({ theme }) => {
   );
 };
 
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
 const ProfilePageApp = () => {
   const { theme } = useTheme(); 
+  const isLight = theme === 'light';
+  
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [user, setUser] = useState(null); // Added user state for Supabase Auth
   const [profile, setProfile] = useState({
     name: "",
     phone: "",
@@ -78,35 +87,53 @@ const ProfilePageApp = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
-        // DUMMY DATA: Simulating profile fetch
-        await new Promise(resolve => setTimeout(resolve, 600));
 
-        const dummyAgentData = {
-          fullName: 'Muhammed Shahad T.',
-          phone: '+91 9876543210',
-          email: 'shahad@radix.com',
-          profilePicture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Shahad&backgroundColor=F4F5F7'
-        };
+        // Supabase Logic replacing Dummy Data
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+          console.error('Auth error:', authError);
+          return;
+        }
+        if (!authData.user) {
+          console.error('No authenticated user');
+          return;
+        }
+        setUser(authData.user);
 
-        const dummyDashboardData = {
-          recentActivity: [
-            ['Client A'], ['Client B'], ['Client C'], ['Client D'], ['Client E']
-          ]
-        };
+        const { data: profileData, error: profileError } = await supabase
+          .from('users')
+          .select('full_name, phone, role, avatar_url')
+          .eq('id', authData.user.id)
+          .single();
 
-        setProfile(prev => ({
-          ...prev,
-          name: dummyAgentData.fullName,
-          phone: dummyAgentData.phone,
-          email: dummyAgentData.email,
-          avatar: dummyAgentData.profilePicture,
-          totalLeads: dummyDashboardData.recentActivity.length,
-        }));
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          return;
+        }
+
+        const { count, error: countError } = await supabase
+          .from('leads')
+          .select('*', { count: 'exact', head: true });
+
+        if (countError) {
+          console.error('Lead count error:', countError);
+          return;
+        }
+
+        setProfile({
+          name: profileData.full_name || '',
+          phone: profileData.phone || '',
+          email: authData.user.email || '',
+          status: profileData.role || 'Active',
+          totalLeads: count || 0,
+          avatar: profileData.avatar_url || null,
+          avatarFile: null
+        });
+
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
-        setTimeout(() => setLoading(false), 800); // Slight delay for smooth skeleton transition
+        setTimeout(() => setLoading(false), 800); 
       }
     };
     fetchData();
@@ -126,24 +153,55 @@ const ProfilePageApp = () => {
   };
 
   const handleSave = async () => {
+    if (!user) return;
     setSaving(true);
     try {
-      // DUMMY DATA: Simulating profile update
-      await new Promise(resolve => setTimeout(resolve, 800));
+      let avatarUrl = profile.avatar;
 
-      // Log the updated data (dummy)
-      console.log('Profile updated successfully (DUMMY):', {
-        full_name: profile.name,
-        phone: profile.phone
-      });
-
+      // Supabase Avatar Upload Logic
       if (profile.avatarFile) {
-        console.log('Profile picture uploaded (DUMMY):', profile.avatarFile);
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(`${user.id}.jpg`, profile.avatarFile, {
+            upsert: true
+          });
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          return;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(`${user.id}.jpg`);
+
+        avatarUrl = publicUrlData?.publicUrl || profile.avatar;
       }
+
+      // Supabase Profile Update Logic
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          full_name: profile.name,
+          phone: profile.phone,
+          avatar_url: avatarUrl
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Update error:', updateError);
+        return;
+      }
+
+      setProfile(prev => ({
+        ...prev,
+        avatarFile: null,
+        avatar: avatarUrl
+      }));
       
       setIsEditing(false);
     } catch (error) {
-      console.error(error);
+      console.error('Unexpected error:', error);
     } finally {
       setSaving(false);
     }
@@ -152,183 +210,200 @@ const ProfilePageApp = () => {
   if (loading) return <ProfileSkeleton theme={theme} />;
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }}
-      className={`space-y-6 font-['Plus_Jakarta_Sans',sans-serif] pb-16 ${theme === 'light' ? 'text-black' : 'text-white'}`}
-    >
-      
-      {/* Header Section */}
-      <div className="flex justify-between items-end px-2 ">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight uppercase">Profile</h1>
-          <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>
-            Partner Identity
-          </p>
-        </div>
+    <div className={`min-h-screen font-['Plus_Jakarta_Sans',sans-serif] pb-16 transition-colors duration-200 overflow-x-hidden ${
+      isLight ? 'bg-[#F4F5F7] text-[#1A202C]' : 'bg-[#131720] text-[#F4F5F7]'
+    }`}>
+      <main className="w-full max-w-[1200px] mx-auto  space-y-5 ">
         
-        {!isEditing ? (
-          <button 
-            onClick={() => setIsEditing(true)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-full shadow-sm text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 ${
-              theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
-            }`}
-          >
-            <Edit3 size={12} /> Edit
-          </button>
-        ) : (
-          <div className="flex gap-2">
-            <button 
-              onClick={() => setIsEditing(false)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${
-                theme === 'light' ? 'bg-rose-500/10 text-rose-500' : 'bg-rose-500/20 text-rose-400'
-              }`}
-            >
-              <X size={16} strokeWidth={3} />
-            </button>
-            <button 
-              onClick={handleSave}
-              disabled={saving}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${
-                theme === 'light' ? 'bg-[#38BDF8] text-white shadow-lg' : 'bg-[#38BDF8] text-black shadow-lg'
-              }`}
-            >
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            </button>
-          </div>
-        )}
-      </div>
+        {/* PROFESSIONAL SEPARATOR */}
+                <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
 
-      <div className=" space-y-4">
-        
-        {/* HERO CARD */}
-        <div className={`rounded-[2rem] p-8 text-center relative overflow-hidden shadow-sm flex flex-col items-center ${
-          theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'
-        }`}>
-          <div className="relative w-32 h-32 mb-5">
-            <div 
-              onClick={handleImageClick}
-              className={`w-full h-full rounded-[2.5rem] overflow-hidden border-2 flex items-center justify-center transition-all ${
-                isEditing 
-                ? 'border-[#38BDF8] border-dashed bg-[#38BDF8]/10' 
-                : (theme === 'light' ? 'bg-[#F4F5F9] border-white' : 'bg-white/5 border-white/5')
-              }`}
-            >
-              {profile.avatar ? (
-                <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <User size={48} className={theme === 'light' ? 'text-gray-300' : 'text-gray-600'} />
-              )}
-              
-              {isEditing && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white backdrop-blur-[2px]">
-                  <Camera size={24} />
-                  <span className="text-[8px] font-black uppercase mt-1">Change</span>
-                </div>
-              )}
+          {/* Header Section */}
+          <div className="flex justify-between items-end px-2 mb-2">
+            <div>
+              <h1 className={`text-3xl font-extrabold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+                Profile
+              </h1>
+              <p className={`text-[11px] font-bold uppercase tracking-wider mt-0.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                Partner Identity
+              </p>
             </div>
-            <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
+            
+            {!isEditing ? (
+              <button 
+                onClick={() => setIsEditing(true)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider border transition-all duration-200 active:scale-95 ${
+                  isLight 
+                    ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] hover:border-[#81B398]' 
+                    : 'bg-[#131720] border-white/10 text-[#F4F5F7] hover:border-[#81B398]'
+                }`}
+              >
+                <Edit3 size={14} strokeWidth={2.5} /> Edit
+              </button>
+            ) : (
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setIsEditing(false)}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center border transition-all duration-200 active:scale-95 bg-[#F0524F]/10 text-[#F0524F] border-[#F0524F]/20 hover:bg-[#F0524F]/20"
+                >
+                  <X size={18} strokeWidth={2.5} />
+                </button>
+                <button 
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center border transition-all duration-200 active:scale-95 bg-[#81B398] text-white hover:bg-[#6FA085] disabled:opacity-50"
+                >
+                  {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} strokeWidth={2.5} />}
+                </button>
+              </div>
+            )}
           </div>
+        </div>
 
-          <h3 className="text-xl font-black uppercase tracking-tight">{profile.name}</h3>
+        <div className="space-y-5">
           
-          <div className="mt-4 flex justify-center">
-            <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[8px] font-black uppercase tracking-widest ${
-              theme === 'light' ? 'bg-[#4ADE80]/10 text-[#4ADE80]' : 'bg-[#4ADE80]/10 text-[#4ADE80]'
+          {/* HERO CARD BENTO */}
+          <div className={`rounded-3xl p-8 text-center relative overflow-hidden border flex flex-col items-center transition-colors ${
+            isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+          }`}>
+            <div className="relative w-32 h-32 mb-5">
+              <div 
+                onClick={handleImageClick}
+                className={`w-full h-full rounded-2xl overflow-hidden border flex items-center justify-center transition-all ${
+                  isEditing 
+                  ? (isLight ? 'border-[#81B398] border-dashed bg-[#81B398]/10 cursor-pointer' : 'border-[#81B398] border-dashed bg-[#81B398]/10 cursor-pointer') 
+                  : (isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10')
+                }`}
+              >
+                {profile.avatar ? (
+                  <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={48} className={isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'} />
+                )}
+                
+                {isEditing && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-white backdrop-blur-[2px]">
+                    <Camera size={24} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider mt-1.5">Change</span>
+                  </div>
+                )}
+              </div>
+              <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
+            </div>
+
+            <h3 className={`text-2xl font-extrabold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+              {profile.name}
+            </h3>
+            
+            <div className="mt-4 flex justify-center">
+               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20">
+                 <CheckCircle2 size={12} strokeWidth={3} /> {profile.status} Partner
+               </span>
+            </div>
+          </div>
+
+          {/* STATS CARD BENTO */}
+          <div className={`rounded-2xl p-6 border flex items-center justify-between ${
+            isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+          }`}>
+            <div>
+              <h4 className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                Activity Level
+              </h4>
+              <p className={`text-3xl font-extrabold tracking-tighter ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+                {profile.totalLeads} <span className="text-[11px] font-bold tracking-tight text-[#81B398]">Submissions</span>
+              </p>
+            </div>
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${
+              isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#81B398]' : 'bg-[#131720] border-white/10 text-[#81B398]'
             }`}>
-              <CheckCircle2 size={12} /> {profile.status} Partner
-            </span>
+              <Settings size={20} />
+            </div>
           </div>
-        </div>
 
-        {/* STATS CARD */}
-        <div className={`rounded-[2rem] p-6 shadow-sm flex items-center justify-between ${
-          theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'
-        }`}>
-          <div>
-            <h4 className="text-[9px] font-black uppercase tracking-widest text-gray-500">Activity Level</h4>
-            <p className="text-2xl font-black tracking-tighter mt-1">
-              {profile.totalLeads} <span className="text-[10px] text-[#38BDF8]">Submissions</span>
-            </p>
-          </div>
-          <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center ${
-            theme === 'light' ? 'bg-[#F4F5F9] text-[#38BDF8]' : 'bg-white/5 text-[#38BDF8]'
+          {/* FIELDS CARD BENTO */}
+          <div className={`rounded-2xl p-6 border space-y-6 ${
+            isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
           }`}>
-            <Settings size={20} />
+            <h4 className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 border-b pb-4 ${
+              isLight ? 'border-[#E2E8F0] text-[#718096]' : 'border-white/10 text-[#9CA3AF]'
+            }`}>
+              <User size={14} className="text-[#81B398]" /> Personal Data
+            </h4>
+
+            <div className="space-y-5">
+              <ProfileField 
+                theme={theme} 
+                isEditing={isEditing} 
+                label="Legal Name" 
+                value={profile.name} 
+                onChange={(v) => setProfile({...profile, name: v})} 
+                icon={<User size={16} />} 
+              />
+              <ProfileField 
+                theme={theme} 
+                isEditing={isEditing} 
+                label="Contact Number" 
+                value={profile.phone} 
+                onChange={(v) => setProfile({...profile, phone: v})} 
+                icon={<Phone size={16} />} 
+              />
+              <ProfileField 
+                theme={theme} 
+                isEditing={false} 
+                label="Email Address (No Editable)" 
+                value={profile.email} 
+                onChange={() => {}} 
+                icon={<Mail size={16} />} 
+              />
+            </div>
           </div>
         </div>
-
-        {/* FIELDS CARD */}
-        <div className={`rounded-[2rem] p-6 shadow-sm space-y-6 ${
-          theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'
-        }`}>
-          <h4 className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border-b pb-4 ${
-            theme === 'light' ? 'border-gray-50 text-gray-400' : 'border-white/5 text-gray-500'
-          }`}>
-            <User size={14} className="text-[#38BDF8]" /> Personal Data
-          </h4>
-
-          <div className="space-y-5">
-            <ProfileField 
-              theme={theme} 
-              isEditing={isEditing} 
-              label="Legal Name" 
-              value={profile.name} 
-              onChange={(v) => setProfile({...profile, name: v})} 
-              icon={<User size={16} />} 
-            />
-            <ProfileField 
-              theme={theme} 
-              isEditing={isEditing} 
-              label="Contact Number" 
-              value={profile.phone} 
-              onChange={(v) => setProfile({...profile, phone: v})} 
-              icon={<Phone size={16} />} 
-            />
-            <ProfileField 
-              theme={theme} 
-              isEditing={false} 
-              label="Email Address (Locked)" 
-              value={profile.email} 
-              onChange={() => {}} 
-              icon={<Mail size={16} />} 
-            />
-          </div>
-        </div>
-      </div>
-    </motion.div>
+      </main>
+    </div>
   );
 };
 
-const ProfileField = ({ theme, isEditing, label, value, onChange, icon }) => (
-  <div className="space-y-2">
-    <label className={`text-[8px] font-black uppercase tracking-widest ml-1 ${
-      theme === 'light' ? 'text-gray-400' : 'text-gray-500'
-    }`}>{label}</label>
-    
-    {isEditing && label !== "Email Address (Locked)" ? (
-      <div className="relative">
-        <div className={`absolute left-4 top-1/2 -translate-y-1/2 ${
-          theme === 'light' ? 'text-gray-300' : 'text-gray-600'
-        }`}>{icon}</div>
-        <input 
-          type="text" 
-          value={value} 
-          onChange={(e) => onChange(e.target.value)} 
-          className={`w-full pl-11 pr-4 py-4 rounded-[1.25rem] text-xs font-bold outline-none transition-all shadow-inner ${
-            theme === 'light' ? 'bg-[#F4F5F9] focus:ring-1 focus:ring-black' : 'bg-[#09090B] text-white focus:ring-1 focus:ring-white'
-          }`} 
-        />
-      </div>
-    ) : (
-      <div className={`flex items-center gap-3 p-4 rounded-[1.25rem] border transition-all ${
-        theme === 'light' ? 'bg-[#F4F5F9] border-transparent' : 'bg-white/5 border-transparent'
-      }`}>
-        <div className={`shrink-0 ${theme === 'light' ? 'text-gray-300' : 'text-gray-600'}`}>{icon}</div>
-        <span className="text-[11px] font-bold tracking-tight uppercase truncate">{value}</span>
-      </div>
-    )}
-  </div>
-);
+// ==========================================
+// BENTO PROFILE FIELD
+// ==========================================
+const ProfileField = ({ theme, isEditing, label, value, onChange, icon }) => {
+  const isLight = theme === 'light';
+  
+  return (
+    <div className="space-y-2">
+      <label className={`text-[10px] font-bold uppercase tracking-wider block ${
+        isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'
+      }`}>{label}</label>
+      
+      {isEditing && !label.includes("Locked") && !label.includes("No Editable") ? (
+        <div className="relative">
+          <div className={`absolute left-4 top-1/2 -translate-y-1/2 ${
+            isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'
+          }`}>{icon}</div>
+          <input 
+            type="text" 
+            value={value} 
+            onChange={(e) => onChange(e.target.value)} 
+            className={`w-full pl-11 pr-4 py-3.5 rounded-xl text-sm font-medium outline-none border transition-all ${
+              isLight 
+                ? 'bg-[#F4F5F7] border-[#E2E8F0] focus:border-[#81B398] text-[#1A202C]' 
+                : 'bg-[#131720] border-white/10 focus:border-[#81B398] text-[#F4F5F7]'
+            }`} 
+          />
+        </div>
+      ) : (
+        <div className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
+          isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'
+        }`}>
+          <div className={`shrink-0 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>{icon}</div>
+          <span className={`text-sm font-bold tracking-tight truncate ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+            {value}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default ProfilePageApp;

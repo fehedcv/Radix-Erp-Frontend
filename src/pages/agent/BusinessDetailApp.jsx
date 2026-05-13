@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
@@ -17,13 +18,93 @@ import frappeApi from '../../api/frappeApi';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; 
 
+// ==========================================
+// 1:1 STRUCTURAL SKELETON (BENTO STYLE)
+// ==========================================
+const DirectorySkeleton = ({ theme }) => {
+  const isLight = theme === 'light';
+  const pulseColor = isLight ? 'bg-[#E2E8F0]' : 'bg-[#334155]';
+  const cardBg = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10';
+
+  return (
+    <div className={` space-y-5   border-t  ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'} pb-32 pt-4 `}>
+                  {/* <div className={`w-full border-t pb-28 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`} />  */}
+
+      {/* HERO BENTO SKELETON */}
+      <div className={`rounded-3xl p-6 border relative overflow-hidden animate-pulse ${cardBg}`}>
+        <div className="flex items-start gap-4 mb-6">
+          <div className={`h-16 w-16 rounded-xl shrink-0 ${pulseColor}`} />
+          <div className="flex-1 pt-0.5 space-y-2">
+            <div className={`h-6 w-3/4 rounded-lg ${pulseColor}`} />
+            <div className={`h-3 w-1/2 rounded-md ${pulseColor}`} />
+          </div>
+        </div>
+        <div className={`h-6 w-24 rounded-lg mb-6 ${pulseColor}`} />
+        <div className={`h-12 w-full rounded-xl ${pulseColor}`} />
+      </div>
+
+      {/* GALLERY BENTO SKELETON */}
+      <div className={`rounded-2xl p-6 border animate-pulse ${cardBg}`}>
+        <div className={`h-3 w-16 rounded-md mb-4 ${pulseColor}`} />
+        <div className="flex gap-3 overflow-hidden">
+          <div className={`h-32 w-32 rounded-xl shrink-0 ${pulseColor}`} />
+          <div className={`h-32 w-32 rounded-xl shrink-0 ${pulseColor}`} />
+          <div className={`h-32 w-32 rounded-xl shrink-0 ${pulseColor}`} />
+        </div>
+      </div>
+
+      {/* ABOUT BENTO SKELETON */}
+      <div className={`rounded-2xl p-6 border animate-pulse ${cardBg}`}>
+        <div className={`h-3 w-20 rounded-md mb-3 ${pulseColor}`} />
+        <div className="space-y-2">
+          <div className={`h-3 w-full rounded-md ${pulseColor}`} />
+          <div className={`h-3 w-5/6 rounded-md ${pulseColor}`} />
+          <div className={`h-3 w-4/6 rounded-md ${pulseColor}`} />
+        </div>
+      </div>
+
+      {/* SERVICES BENTO SKELETON */}
+      <div className={`rounded-2xl p-6 border animate-pulse ${cardBg}`}>
+        <div className={`h-3 w-24 rounded-md mb-4 ${pulseColor}`} />
+        <div className="space-y-3">
+          {[1, 2].map((i) => (
+            <div key={i} className={`p-4 rounded-xl border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
+              <div className={`h-4 w-1/3 rounded-md mb-2 ${pulseColor}`} />
+              <div className={`h-2 w-2/3 rounded-md ${pulseColor}`} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CONTACT INFO BENTO SKELETON */}
+      <div className={`rounded-2xl p-6 border animate-pulse ${cardBg}`}>
+        <div className={`h-3 w-24 rounded-md mb-5 ${pulseColor}`} />
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-4">
+              <div className={`w-10 h-10 rounded-lg shrink-0 ${pulseColor}`} />
+              <div className="flex-1 space-y-2">
+                <div className={`h-2 w-16 rounded-md ${pulseColor}`} />
+                <div className={`h-3 w-1/2 rounded-md ${pulseColor}`} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
 const BusinessDetailApp = () => {
-  // ==========================================
-  // EXACT SAME LOGIC & STATE
-  // ==========================================
   const { id } = useParams();
   const navigate = useNavigate();
   const { theme } = useTheme(); 
+  const isLight = theme === 'light';
+  const isBrowser = typeof document !== 'undefined'; // Safe check for React Portal
 
   const [unit, setUnit] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +124,8 @@ const BusinessDetailApp = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const getFrappeImage = (path) => {
     if (!path) return null;
@@ -58,7 +141,6 @@ const BusinessDetailApp = () => {
   useEffect(() => {
     const fetchUnit = async () => {
       try {
-        // DUMMY DATA: Simulating business unit fetch
         await new Promise(resolve => setTimeout(resolve, 600));
 
         const dummyData = {
@@ -81,9 +163,9 @@ const BusinessDetailApp = () => {
             { name: 'Property Management', description: 'Full property management services' }
           ],
           gallery: [
-            'https://images.unsplash.com/photo-1545654711-cd4628902c4d?w=400',
-            'https://images.unsplash.com/photo-1560518883-b1e6e4fcd3b0?w=400',
-            'https://images.unsplash.com/photo-1449844908441-8829872d2607?w=400'
+            'https://images.unsplash.com/photo-1545654711-cd4628902c4d?w=800',
+            'https://images.unsplash.com/photo-1560518883-b1e6e4fcd3b0?w=800',
+            'https://images.unsplash.com/photo-1449844908441-8829872d2607?w=800'
           ]
         };
 
@@ -130,11 +212,8 @@ const BusinessDetailApp = () => {
 
     try {
       setSubmitting(true);
-      
-      // DUMMY DATA: Simulating lead submission
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Log the submitted data (dummy)
       console.log('Lead submitted successfully (DUMMY):', {
         business_unit: unit.id,
         ...formData,
@@ -188,403 +267,510 @@ const BusinessDetailApp = () => {
     return nameMatch || phoneMatch;
   });
 
-  // ==========================================
-  // REFINED NATIVE UI 
-  // ==========================================
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center w-full h-[80vh] font-['Plus_Jakarta_Sans',sans-serif]">
-        <Loader2 className={`animate-spin mb-4 ${theme === 'light' ? 'text-black' : 'text-white'}`} size={32} />
-        <p className={`text-[10px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>Loading Profile...</p>
-      </div>
-    );
-  }
+  if (loading) return <DirectorySkeleton theme={theme} />;
 
   return (
-    <div className={`min-h-screen font-['Plus_Jakarta_Sans',sans-serif] flex flex-col transition-colors duration-300 ${
-      theme === 'light' ? 'bg-[#F4F5F9] text-black' : 'bg-[#09090B] text-white'
+    <div className={`min-h-screen border-t ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'} font-['Plus_Jakarta_Sans',sans-serif] flex flex-col transition-colors duration-200 overflow-x-hidden ${
+      isLight ? 'bg-[#F4F5F7] text-[#1A202C]' : 'bg-[#131720] text-[#F4F5F7]'
     }`}>
       
       {/* NATIVE APP BAR */}
-      <header className="flex items-center gap-3 px-4  pb-4 z-50 sticky top-0 bg-transparent shrink-0 backdrop-blur-md">
+      <header className={`flex items-center gap-3 mt-8 pb-2 z-50 sticky top-0 shrink-0 transition-colors ${
+        isLight ? 'bg-[#F4F5F7]/90 backdrop-blur-md' : 'bg-[#131720]/90 backdrop-blur-md'
+      }`}>
         <button 
           onClick={() => navigate('/agent/units')}
-          className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm active:scale-90 transition-transform ${
-            theme === 'light' ? 'bg-white text-black' : 'bg-white/10 text-white'
+          className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all duration-200 active:scale-95 ${
+            isLight 
+              ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:border-[#81B398] text-[#1A202C]' 
+              : 'bg-[#222938] border-white/10 hover:border-[#81B398] text-[#F4F5F7]'
           }`}
         >
-          <ChevronLeft size={20} strokeWidth={3} />
+          <ChevronLeft size={20} strokeWidth={2.5} />
         </button>
-        <h1 className="text-sm mb-2 font-extrabold tracking-tight uppercase truncate flex-1">
+        <h1 className="text-base font-extrabold tracking-tight truncate flex-1">
           {unit.name}
         </h1>
       </header>
 
-      {/* MATCHED PADDING WRAPPER (px-4) */}
-      <main className="flex-1 w-full overflow-y-auto no-scrollbar px-0 space-y-5 pb-32">
+      {/* MAIN SCROLLABLE CONTENT */}
+      <main className="flex-1 w-full max-w-[1200px] mx-auto overflow-y-auto no-scrollbar space-y-5 py-4 pb-16">
         
-        {/* Hero Bento Card */}
-        <div className={`rounded-[2rem] p-5 relative overflow-hidden shadow-sm ${
-          theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'
-        }`}>
-          <div className="flex items-center gap-4 mb-5">
-            {unit.logo ? (
-              <img
-                src={getFrappeImage(unit.logo)}
-                alt="logo"
-                className={`h-16 w-16 rounded-[1.25rem] object-cover shrink-0 shadow-sm ${
-                  theme === 'light' ? 'bg-[#F4F5F9]' : 'bg-white/5'
-                }`}
-              />
-            ) : (
-              <div className={`h-16 w-16 flex items-center justify-center rounded-[1.25rem] shrink-0 ${
-                theme === 'light' ? 'bg-[#F4F5F9] text-gray-400' : 'bg-white/5 text-gray-500'
-              }`}>
-                <Briefcase size={24} />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-extrabold tracking-tight uppercase truncate">{unit.name}</h2>
-              <p className={`text-[10px] font-bold mt-1 uppercase tracking-widest flex items-center gap-1 ${
-                theme === 'light' ? 'text-gray-500' : 'text-gray-400'
-              }`}>
-                <MapPin size={12} className="text-[#38BDF8]" /> {unit.location}
-              </p>
-            </div>
-          </div>
+        {/* PROFESSIONAL SEPARATOR */}
+        <div className={`w-full  ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
           
-          <div className="flex items-center justify-between mb-6">
-             <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1 ${
-                theme === 'light' ? 'bg-[#4ADE80]/10 text-[#4ADE80]' : 'bg-[#4ADE80]/10 text-[#4ADE80]'
-             }`}>
-                <CheckCircle2 size={12} /> Verified
-             </span>
-          </div>
+          {/* HERO BENTO CARD */}
+          <div className={`rounded-3xl p-6 border relative overflow-hidden ${
+            isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+          }`}>
+            <div className="flex items-start gap-4 mb-6">
+              {unit.logo ? (
+                <img
+                  src={getFrappeImage(unit.logo)}
+                  alt="logo"
+                  className={`h-16 w-16 rounded-xl object-cover shrink-0 border ${
+                    isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'
+                  }`}
+                />
+              ) : (
+                <div className={`h-16 w-16 flex items-center justify-center rounded-xl shrink-0 border ${
+                  isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/10 text-[#9CA3AF]'
+                }`}>
+                  <Briefcase size={24} />
+                </div>
+              )}
+              <div className="flex-1 min-w-0 pt-0.5">
+                <h2 className={`text-xl font-extrabold tracking-tight truncate ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{unit.name}</h2>
+                <p className={`text-[11px] font-bold mt-1 uppercase tracking-wider flex items-center gap-1.5 ${
+                  isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'
+                }`}>
+                  <MapPin size={12} className="text-[#81B398]" /> {unit.location}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between mb-6">
+               <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20">
+                  <CheckCircle2 size={12} strokeWidth={3} /> Verified
+               </span>
+            </div>
 
-          <button
-            onClick={() => setShowModal(true)}
-            className={`w-full py-4 rounded-[1.25rem] font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md ${
-              theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
-            }`}
-          >
-            <Plus size={16} /> Submit Lead
-          </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 bg-[#81B398] text-white hover:bg-[#6FA085]"
+            >
+              <Plus size={18} strokeWidth={2.5} /> Submit Lead
+            </button>
+          </div>
         </div>
 
-        {/* Gallery Bento */}
-        <div className={`rounded-[2rem] p-5 shadow-sm ${theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'}`}>
-          <h4 className="text-[10px] font-black uppercase tracking-widest mb-3 px-1">Gallery</h4>
+        {/* GALLERY BENTO */}
+        <div className={`rounded-2xl p-6 border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+          <h4 className={`text-[11px] font-bold uppercase tracking-wider mb-4 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Gallery</h4>
           {unit.gallery?.length > 0 ? (
-            <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar -mx-1 px-1">
+            <div className="flex overflow-x-auto gap-3 pb-2 no-scrollbar -mx-2 px-2">
               {unit.gallery.map((img, i) => (
-                <img key={i} src={img} alt="gallery" className="h-32 w-32 rounded-2xl object-cover shrink-0 shadow-sm" />
+                <img 
+                  key={i} 
+                  src={img} 
+                  alt="gallery" 
+                  onClick={() => setSelectedImage(img)}
+                  className={`h-32 w-32 rounded-xl object-cover shrink-0 border cursor-pointer hover:opacity-80 transition-opacity active:scale-95 ${
+                    isLight ? 'border-[#E2E8F0]' : 'border-white/10'
+                  }`} 
+                />
               ))}
             </div>
           ) : (
-            <div className={`h-24 rounded-2xl flex flex-col items-center justify-center ${theme === 'light' ? 'bg-[#F4F5F9] text-gray-400' : 'bg-white/5 text-gray-500'}`}>
+            <div className={`h-24 rounded-xl flex flex-col items-center justify-center border ${
+              isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/10 text-[#9CA3AF]'
+            }`}>
               <ImageIcon size={24} className="mb-2 opacity-50" />
-              <span className="text-[9px] font-black uppercase tracking-widest">No Imagery</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider">No Imagery</span>
             </div>
           )}
         </div>
 
-        {/* About Bento */}
-        <div className={`rounded-[2rem] p-5 shadow-sm ${theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'}`}>
-          <h4 className="text-[10px] font-black uppercase tracking-widest mb-3 flex items-center gap-1.5">
-            <Info size={14} className="text-[#38BDF8]" /> About
+        {/* ABOUT BENTO */}
+        <div className={`rounded-2xl p-6 border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+          <h4 className={`text-[11px] font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+            <Info size={14} className="text-[#81B398]" /> About
           </h4>
-          <p className={`text-xs leading-relaxed font-medium ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+          <p className={`text-sm font-medium leading-relaxed ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
             {unit.description || "No specific description provided."}
           </p>
         </div>
 
-        {/* Services Bento */}
-        <div className={`rounded-[2rem] p-5 shadow-sm ${theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'}`}>
-          <h4 className="text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-1.5">
-            <Star size={14} className="text-[#38BDF8]" /> Services
+        {/* SERVICES BENTO */}
+        <div className={`rounded-2xl p-6 border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+          <h4 className={`text-[11px] font-bold uppercase tracking-wider mb-4 flex items-center gap-1.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+            <Star size={14} className="text-[#81B398]" /> Services
           </h4>
           <div className="space-y-3">
             {unit.services?.length > 0 ? unit.services.map((s, i) => (
-              <div key={i} className={`p-4 rounded-[1.25rem] ${theme === 'light' ? 'bg-[#F4F5F9]' : 'bg-white/5'}`}>
-                <p className="font-extrabold text-sm uppercase tracking-tight">{s.name}</p>
-                {s.description && <p className={`text-[10px] mt-1.5 font-medium leading-relaxed ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>{s.description}</p>}
+              <div key={i} className={`p-4 rounded-xl border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
+                <p className={`font-bold text-sm tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{s.name}</p>
+                {s.description && <p className={`text-[11px] font-medium mt-1.5 leading-relaxed ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>{s.description}</p>}
               </div>
-            )) : <p className="text-[10px] italic font-bold uppercase tracking-widest opacity-50">No services listed.</p>}
+            )) : <p className={`text-[11px] font-bold uppercase tracking-wider opacity-50 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>No services listed.</p>}
           </div>
         </div>
 
-        {/* Contact Bento */}
-        <div className={`rounded-[2rem] p-5 shadow-sm ${theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'}`}>
-          <h4 className="text-[10px] font-black uppercase tracking-widest mb-4">Contact Info</h4>
+        {/* CONTACT INFO BENTO */}
+        <div className={`rounded-2xl p-6 border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+          <h4 className={`text-[11px] font-bold uppercase tracking-wider mb-5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Contact Info</h4>
           <div className="space-y-4">
             {unit.website && (
-              <div className="flex items-center gap-3">
-                <Globe size={18} className={theme === 'light' ? 'text-gray-400' : 'text-gray-500'} />
+              <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/10 text-[#9CA3AF]'}`}>
+                  <Globe size={16} />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-[8px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>Website</p>
-                  <a href={unit.website} target="_blank" rel="noreferrer" className="text-xs font-extrabold truncate block text-[#38BDF8]">{unit.website}</a>
+                  <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Website</p>
+                  <a href={unit.website} target="_blank" rel="noreferrer" className="text-sm font-bold truncate block text-[#81B398] hover:underline">{unit.website}</a>
                 </div>
               </div>
             )}
             
-            <div className="flex items-center gap-3">
-              <Mail size={18} className={theme === 'light' ? 'text-gray-400' : 'text-gray-500'} />
+            <div className="flex items-center gap-4">
+               <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/10 text-[#9CA3AF]'}`}>
+                <Mail size={16} />
+              </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-[8px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>Email</p>
-                <p className="text-xs font-extrabold truncate">{unit.email || 'N/A'}</p>
+                <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Email</p>
+                <p className={`text-sm font-bold truncate ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{unit.email || 'N/A'}</p>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              <Phone size={18} className={theme === 'light' ? 'text-gray-400' : 'text-gray-500'} />
+            <div className="flex items-center gap-4">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/10 text-[#9CA3AF]'}`}>
+                <Phone size={16} />
+              </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-[8px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>Phone</p>
-                <p className="text-xs font-extrabold">{unit.contact || 'N/A'}</p>
+                <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Phone</p>
+                <p className={`text-sm font-bold truncate ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{unit.contact || 'N/A'}</p>
               </div>
             </div>
 
             {unit.contact && (
-              <div className="flex gap-3 pt-3">
-                <a href={`tel:${unit.contact}`} className={`flex-1 flex items-center justify-center gap-1.5 py-3.5 rounded-[1rem] text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${
-                  theme === 'light' ? 'bg-[#F4F5F9] text-black' : 'bg-white/10 text-white'
+              <div className="flex gap-3 pt-4 mt-2 border-t border-transparent">
+                <a href={`tel:${unit.contact}`} className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95 border ${
+                  isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C]' : 'bg-[#131720] border-white/10 text-[#F4F5F7]'
                 }`}>
                   <Phone size={14} /> Call
                 </a>
-                <a href={`https://wa.me/${unit.contact.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className={`flex-1 flex items-center justify-center gap-1.5 py-3.5 rounded-[1rem] text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${
-                  theme === 'light' ? 'bg-[#4ADE80]/10 text-[#4ADE80]' : 'bg-[#4ADE80]/20 text-[#4ADE80]'
-                }`}>
+                <a href={`https://wa.me/${unit.contact.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95 bg-[#81B398] text-white hover:bg-[#6FA085]">
                   <MessageCircle size={14} /> Chat
                 </a>
               </div>
             )}
           </div>
 
+          {/* Social Links */}
           {(unit.facebook || unit.instagram || unit.linkedin) && (
-            <div className={`mt-5 pt-5 border-t flex justify-center gap-4 ${theme === 'light' ? 'border-gray-100' : 'border-white/5'}`}>
-              {unit.instagram && <a href={unit.instagram} target="_blank" rel="noreferrer" className={`w-10 h-10 rounded-full flex items-center justify-center text-pink-500 shadow-sm active:scale-90 transition-transform ${theme === 'light' ? 'bg-[#F4F5F9]' : 'bg-white/5'}`}><Instagram size={18} /></a>}
-              {unit.facebook && <a href={unit.facebook} target="_blank" rel="noreferrer" className={`w-10 h-10 rounded-full flex items-center justify-center text-[#38BDF8] shadow-sm active:scale-90 transition-transform ${theme === 'light' ? 'bg-[#F4F5F9]' : 'bg-white/5'}`}><Facebook size={18} /></a>}
-              {unit.linkedin && <a href={unit.linkedin} target="_blank" rel="noreferrer" className={`w-10 h-10 rounded-full flex items-center justify-center text-blue-400 shadow-sm active:scale-90 transition-transform ${theme === 'light' ? 'bg-[#F4F5F9]' : 'bg-white/5'}`}><Linkedin size={18} /></a>}
+            <div className={`mt-5 pt-5 border-t flex justify-center gap-4 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+              {unit.instagram && <a href={unit.instagram} target="_blank" rel="noreferrer" className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all active:scale-95 text-pink-500 ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}><Instagram size={18} /></a>}
+              {unit.facebook && <a href={unit.facebook} target="_blank" rel="noreferrer" className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all active:scale-95 text-blue-500 ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}><Facebook size={18} /></a>}
+              {unit.linkedin && <a href={unit.linkedin} target="_blank" rel="noreferrer" className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all active:scale-95 text-blue-700 ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}><Linkedin size={18} /></a>}
             </div>
           )}
         </div>
       </main>
 
       {/* =========================================
-          NATIVE STICKY FOOTER BOTTOM SHEETS
+          PORTALS: Modals Break Out of Stacking Context
           ========================================= */}
-
-      <AnimatePresence>
-        {showModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex flex-col justify-end">
-            <div className="flex-1" onClick={() => setShowModal(false)} /> 
-            
+      
+      {/* 1. FULL SCREEN GALLERY LIGHTBOX */}
+      {/* 1. FULL SCREEN GALLERY LIGHTBOX (WITH SLIDER) */}
+      {isBrowser && createPortal(
+        <AnimatePresence>
+          {selectedImage && (
             <motion.div 
-              initial={{ y: "100%" }} 
-              animate={{ y: 0 }} 
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className={`w-full rounded-t-[2rem] flex flex-col max-h-[85vh] shadow-2xl ${
-                theme === 'light' ? 'bg-white' : 'bg-[#18181B] border-t border-white/10'
-              }`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/65"
+              onClick={() => setSelectedImage(null)} // Click background to close
             >
-              {/* Drag Handle & Header with Close Button */}
-              <div className="shrink-0 px-4 pt-3 pb-2 relative">
-                <div className={`w-10 h-1.5 rounded-full mx-auto mb-4 ${theme === 'light' ? 'bg-gray-300' : 'bg-gray-600'}`} />
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="text-xl font-extrabold tracking-tight uppercase text-left">New Lead</h3>
-                    <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 text-left ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>For {unit.name}</p>
-                  </div>
-                  <button onClick={() => setShowModal(false)} className={`w-8 h-8 rounded-full flex items-center justify-center ${theme === 'light' ? 'bg-gray-100' : 'bg-white/10'}`}>
-                    <X size={14} strokeWidth={3} />
+              <motion.div 
+                initial={{ scale: 0.95, y: 10 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 10 }}
+                className="relative w-full max-w-5xl flex items-center justify-center"
+                onClick={(e) => e.stopPropagation()} // Prevent close when clicking inside
+              >
+                
+                {/* PREVIOUS BUTTON */}
+                {unit?.gallery?.length > 1 && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const currentIndex = unit.gallery.indexOf(selectedImage);
+                      const prevIndex = (currentIndex - 1 + unit.gallery.length) % unit.gallery.length;
+                      setSelectedImage(unit.gallery[prevIndex]);
+                    }}
+                    className="absolute left-2 md:-left-12 z-50 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center bg-black/50 border border-white/20 text-white hover:bg-black/80 active:scale-95 transition-all backdrop-blur-md"
+                  >
+                    <ChevronLeft size={24} strokeWidth={2.5} />
                   </button>
-                </div>
-              </div>
-
-              {/* Scrollable Form Body */}
-              <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 space-y-5">
-                <div>
-                  <label className={`text-[9px] font-black uppercase tracking-widest mb-2 block ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>Client Name *</label>
-                  <div className="relative">
-                    <User size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`} />
-                    <input required name="client_name" value={formData.client_name} onChange={handleInputChange} 
-                      className={`w-full pl-11 pr-4 py-4 rounded-[1.25rem] text-sm font-bold outline-none transition-all shadow-inner ${
-                        theme === 'light' ? 'bg-[#F4F5F9] focus:ring-2 focus:ring-black' : 'bg-[#09090B] text-white focus:ring-2 focus:ring-white'
-                      }`} placeholder="Enter client name" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className={`text-[9px] font-black uppercase tracking-widest mb-2 block ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>Client Phone *</label>
-                  <div className="flex gap-2 items-center">
-                    <div className="relative flex-grow">
-                      <Phone size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`} />
-                      <input required type="tel" name="client_phone" value={formData.client_phone} onChange={handleInputChange}
-                        className={`w-full pl-11 pr-4 py-4 rounded-[1.25rem] text-sm font-bold outline-none transition-all shadow-inner ${
-                          theme === 'light' ? 'bg-[#F4F5F9] focus:ring-2 focus:ring-black' : 'bg-[#09090B] text-white focus:ring-2 focus:ring-white'
-                        }`} placeholder="98765 43210" />
-                    </div>
-                    {Capacitor.isNativePlatform() && (
-                      <button type="button" onClick={handleOpenContactList} className={`p-4 rounded-[1.25rem] shrink-0 active:scale-95 transition-transform ${
-                        theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
-                      }`}>
-                        <BookUser size={18} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className={`text-[9px] font-black uppercase tracking-widest mb-2 block ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>Location</label>
-                  <div className="relative">
-                    <MapPin size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`} />
-                    <input name="customer_location" value={formData.customer_location} onChange={handleInputChange}
-                      className={`w-full pl-11 pr-4 py-4 rounded-[1.25rem] text-sm font-bold outline-none transition-all shadow-inner ${
-                        theme === 'light' ? 'bg-[#F4F5F9] focus:ring-2 focus:ring-black' : 'bg-[#09090B] text-white focus:ring-2 focus:ring-white'
-                      }`} placeholder="City/Area" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className={`text-[9px] font-black uppercase tracking-widest mb-2 block ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>Service *</label>
-                  <div className="relative">
-                    <select required name="service" value={formData.service} onChange={handleInputChange}
-                      className={`w-full pl-4 pr-11 py-4 rounded-[1.25rem] text-sm font-bold outline-none transition-all appearance-none shadow-inner ${
-                        theme === 'light' ? 'bg-[#F4F5F9] focus:ring-2 focus:ring-black' : 'bg-[#09090B] text-white focus:ring-2 focus:ring-white'
-                      }`}>
-                      <option value="" disabled>Select a service</option>
-                      {unit.services?.map((s, i) => <option key={i} value={s.name}>{s.name}</option>)}
-                    </select>
-                    <ChevronDown size={16} className={`absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`} />
-                  </div>
-                </div>
-
-                <div>
-                  <label className={`text-[9px] font-black uppercase tracking-widest mb-2 block ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>Notes</label>
-                  <textarea name="notes" value={formData.notes} onChange={handleInputChange} rows={3}
-                    className={`w-full px-4 py-4 rounded-[1.25rem] text-sm font-bold outline-none transition-all resize-none shadow-inner ${
-                      theme === 'light' ? 'bg-[#F4F5F9] focus:ring-2 focus:ring-black' : 'bg-[#09090B] text-white focus:ring-2 focus:ring-white'
-                    }`} placeholder="Any special requirements..." />
-                </div>
-              </div>
-
-              {/* SAFE AREA FOOTER - Button is pinned above bottom nav */}
-              <div className={`shrink-0 px-4 pt-4 pb-28 border-t ${
-                theme === 'light' ? 'border-gray-100 bg-white' : 'border-white/5 bg-[#18181B]'
-              }`}>
-                <button 
-                  onClick={handleSubmitReferral} 
-                  disabled={submitting} 
-                  className={`w-full py-5 rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
-                    theme === 'light' ? 'bg-[#38BDF8] text-white shadow-lg' : 'bg-[#38BDF8] text-black shadow-lg'
-                  }`}
-                >
-                  {submitting ? <Loader2 size={18} className="animate-spin" /> : <>Confirm Submission <ChevronRight size={16} /></>}
-                </button>
-              </div>
-
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Contacts Picker Bottom Sheet */}
-      <AnimatePresence>
-        {showContactsModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex flex-col justify-end">
-            <div className="flex-1" onClick={() => setShowContactsModal(false)} />
-            <motion.div 
-              initial={{ y: "100%" }} 
-              animate={{ y: 0 }} 
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className={`w-full rounded-t-[2rem] flex flex-col max-h-[85vh] shadow-2xl ${
-                theme === 'light' ? 'bg-white' : 'bg-[#18181B] border-t border-white/10'
-              }`}
-            >
-              <div className="shrink-0 px-4 pt-4 pb-2 flex flex-col gap-4 border-b border-transparent">
-                <div className="w-10 h-1.5 rounded-full mx-auto mb-2 bg-gray-300 dark:bg-gray-600" />
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-extrabold tracking-tight uppercase">Phonebook</h3>
-                  <button onClick={() => setShowContactsModal(false)} className={`w-8 h-8 rounded-full flex items-center justify-center ${theme === 'light' ? 'bg-gray-100' : 'bg-white/10'}`}>
-                    <X size={14} strokeWidth={3} />
-                  </button>
-                </div>
-                <div className="relative">
-                  <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`} size={16} />
-                  <input type="text" placeholder="Search contacts..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                    className={`w-full pl-11 pr-4 py-3.5 rounded-[1rem] text-sm font-bold outline-none shadow-inner ${
-                      theme === 'light' ? 'bg-[#F4F5F9]' : 'bg-[#09090B] text-white'
-                    }`} />
-                </div>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto px-2 no-scrollbar pb-28">
-                {isLoadingContacts ? (
-                   <div className="flex flex-col items-center justify-center h-full gap-3 pt-10">
-                     <Loader2 className="animate-spin text-[#38BDF8]" size={24} />
-                   </div>
-                ) : filteredContacts.length > 0 ? (
-                  <ul className="space-y-1 px-2 mt-2">
-                    {filteredContacts.map((contact, index) => (
-                      <li key={index}>
-                        <button onClick={() => handleSelectContact(contact)} className={`w-full text-left p-4 rounded-[1rem] flex items-center justify-between active:scale-[0.98] transition-transform ${
-                          theme === 'light' ? 'hover:bg-[#F4F5F9]' : 'hover:bg-white/5'
-                        }`}>
-                          <div>
-                            <p className="font-extrabold text-sm">{contact.name?.display || "Unknown"}</p>
-                            <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>
-                              {contact.phones[0].number}
-                            </p>
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="flex items-center justify-center h-full pt-10">
-                    <p className={`text-[10px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-gray-400' : 'text-gray-600'}`}>No contacts found</p>
-                  </div>
                 )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
-      <AnimatePresence>
-        {showSuccessModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-center justify-center p-6">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }} 
-              animate={{ opacity: 1, scale: 1 }} 
-              exit={{ opacity: 0, scale: 0.9 }}
-              className={`w-full max-w-xs rounded-[2rem] p-8 text-center shadow-2xl ${
-                theme === 'light' ? 'bg-white' : 'bg-[#18181B] border border-white/5'
-              }`}
-            >
-              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
-                theme === 'light' ? 'bg-[#4ADE80]/10' : 'bg-[#4ADE80]/10'
-              }`}>
-                <CheckCircle2 size={40} className="text-[#4ADE80]" />
-              </div>
-              <h3 className="text-2xl font-black uppercase tracking-tight mb-2">Success!</h3>
-              <p className={`text-[11px] font-bold uppercase tracking-widest leading-relaxed mb-8 ${theme === 'light' ? 'text-gray-400' : 'text-gray-500'}`}>
-                Lead for <span className={theme === 'light' ? 'text-black' : 'text-white'}>{unit.name}</span> has been submitted.
-              </p>
-              <button 
-                onClick={() => setShowSuccessModal(false)} 
-                className={`w-full py-4 rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest active:scale-95 transition-transform ${
-                  theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
+                {/* IMAGE & CLOSE BUTTON WRAPPER */}
+                <div className="relative inline-flex items-center justify-center max-w-full max-h-[85vh]">
+                  
+                  {/* CLOSE BUTTON (Inside Image Top-Right) */}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImage(null);
+                    }}
+                    className="absolute top-4 right-4 z-50 w-8 h-8 rounded-full flex items-center justify-center bg-black/50 border border-white/20 text-white hover:bg-black/80 active:scale-95 transition-all backdrop-blur-md"
+                  >
+                    <X size={16} strokeWidth={3} />
+                  </button>
+
+                  <img 
+                    src={selectedImage} 
+                    alt="Enlarged gallery view" 
+                    className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+                  />
+                </div> 
+
+                {/* NEXT BUTTON */}
+                {unit?.gallery?.length > 1 && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const currentIndex = unit.gallery.indexOf(selectedImage);
+                      const nextIndex = (currentIndex + 1) % unit.gallery.length;
+                      setSelectedImage(unit.gallery[nextIndex]);
+                    }}
+                    className="absolute right-2 md:-right-12 z-50 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center bg-black/50 border border-white/20 text-white hover:bg-black/80 active:scale-95 transition-all backdrop-blur-md"
+                  >
+                    <ChevronRight size={24} strokeWidth={2.5} />
+                  </button>
+                )}
+
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* 2. SUBMIT LEAD MODAL */}
+      {isBrowser && createPortal(
+        <AnimatePresence>
+          {showModal && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-hidden box-border">
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                onClick={() => setShowModal(false)} 
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+                animate={{ opacity: 1, scale: 1, y: 0 }} 
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ duration: 0.2 }}
+                className={`w-full max-w-lg max-h-[90vh] rounded-3xl relative flex flex-col overflow-x-hidden border shadow-sm ${
+                  isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
                 }`}
               >
-                Close
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                <div className={`shrink-0 px-6 py-5 flex justify-between items-center border-b ${
+                  isLight ? 'border-[#E2E8F0]' : 'border-white/10'
+                }`}>
+                  <div>
+                    <h3 className={`text-xl font-bold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>New Lead</h3>
+                    <p className={`text-[11px] font-bold uppercase tracking-wider mt-0.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>For {unit.name}</p>
+                  </div>
+                  <button 
+                    onClick={() => setShowModal(false)} 
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-95 border ${
+                      isLight ? 'bg-[#F4F5F7] border-transparent text-[#1A202C] hover:border-[#E2E8F0]' : 'bg-[#131720] border-transparent text-[#F4F5F7] hover:border-white/10'
+                    }`}
+                  >
+                    <X size={18} strokeWidth={2.5} />
+                  </button>
+                </div>
+
+                <form id="lead-form" onSubmit={handleSubmitReferral} className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar p-6 space-y-5">
+                  <div>
+                    <label className={`text-[11px] font-bold uppercase tracking-wider mb-2 block ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Client Name *</label>
+                    <div className="relative">
+                      <User size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} />
+                      <input required name="client_name" value={formData.client_name} onChange={handleInputChange} 
+                        className={`w-full pl-11 pr-4 py-3.5 rounded-xl text-sm font-medium outline-none border transition-all box-border ${
+                          isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] focus:border-[#81B398] text-[#1A202C]' : 'bg-[#131720] border-white/10 focus:border-[#81B398] text-[#F4F5F7]'
+                        }`} placeholder="Enter client name" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`text-[11px] font-bold uppercase tracking-wider mb-2 block ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Client Phone *</label>
+                    <div className="flex gap-2 items-center">
+                      <div className="relative flex-grow min-w-0">
+                        <Phone size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} />
+                        <input required type="tel" name="client_phone" value={formData.client_phone} onChange={handleInputChange}
+                          className={`w-full pl-11 pr-4 py-3.5 rounded-xl text-sm font-medium outline-none border transition-all box-border ${
+                            isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] focus:border-[#81B398] text-[#1A202C]' : 'bg-[#131720] border-white/10 focus:border-[#81B398] text-[#F4F5F7]'
+                          }`} placeholder="98765 43210" />
+                      </div>
+                      {Capacitor.isNativePlatform() && (
+                        <button type="button" onClick={handleOpenContactList} className={`w-12 h-12 rounded-xl shrink-0 flex items-center justify-center active:scale-95 transition-all border ${
+                          isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] hover:border-[#81B398]' : 'bg-[#131720] border-white/10 text-[#F4F5F7] hover:border-[#81B398]'
+                        }`}>
+                          <BookUser size={18} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`text-[11px] font-bold uppercase tracking-wider mb-2 block ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Location</label>
+                    <div className="relative">
+                      <MapPin size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} />
+                      <input name="customer_location" value={formData.customer_location} onChange={handleInputChange}
+                        className={`w-full pl-11 pr-4 py-3.5 rounded-xl text-sm font-medium outline-none border transition-all box-border ${
+                          isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] focus:border-[#81B398] text-[#1A202C]' : 'bg-[#131720] border-white/10 focus:border-[#81B398] text-[#F4F5F7]'
+                        }`} placeholder="City/Area" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`text-[11px] font-bold uppercase tracking-wider mb-2 block ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Service *</label>
+                    <div className="relative">
+                      <select required name="service" value={formData.service} onChange={handleInputChange}
+                        className={`w-full pl-4 pr-11 py-3.5 rounded-xl text-sm font-medium appearance-none outline-none border transition-all box-border ${
+                          isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] focus:border-[#81B398] text-[#1A202C]' : 'bg-[#131720] border-white/10 focus:border-[#81B398] text-[#F4F5F7]'
+                        }`}>
+                        <option value="" disabled>Select a service</option>
+                        {unit.services?.map((s, i) => <option key={i} value={s.name}>{s.name}</option>)}
+                      </select>
+                      <ChevronDown size={16} className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`text-[11px] font-bold uppercase tracking-wider mb-2 block ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Notes</label>
+                    <textarea name="notes" value={formData.notes} onChange={handleInputChange} rows={3}
+                      className={`w-full px-4 py-3.5 rounded-xl text-sm font-medium outline-none resize-none border transition-all box-border ${
+                        isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] focus:border-[#81B398] text-[#1A202C]' : 'bg-[#131720] border-white/10 focus:border-[#81B398] text-[#F4F5F7]'
+                      }`} placeholder="Any special requirements..." />
+                  </div>
+                </form>
+
+                <div className={`shrink-0 px-6 py-4 border-t ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+                  <button 
+                    type="submit" 
+                    form="lead-form"
+                    disabled={submitting} 
+                    className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-all bg-[#81B398] text-white hover:bg-[#6FA085] disabled:opacity-50"
+                  >
+                    {submitting ? <Loader2 size={18} className="animate-spin" /> : <>Confirm Submission <ChevronRight size={16} /></>}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* 3. CONTACTS PICKER MODAL */}
+      {isBrowser && createPortal(
+        <AnimatePresence>
+          {showContactsModal && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-hidden box-border">
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                onClick={() => setShowContactsModal(false)} 
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.95 }}
+                className={`w-full max-w-md max-h-[85vh] rounded-3xl relative flex flex-col overflow-x-hidden border shadow-sm ${
+                  isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+                }`}
+              >
+                <div className={`shrink-0 p-5 border-b space-y-4 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+                  <div className="flex justify-between items-center">
+                    <h3 className={`text-lg font-bold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>Phonebook</h3>
+                    <button onClick={() => setShowContactsModal(false)} className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-all active:scale-95 ${
+                      isLight ? 'bg-[#F4F5F7] border-transparent hover:border-[#E2E8F0]' : 'bg-[#131720] border-transparent hover:border-white/10'
+                    }`}>
+                      <X size={16} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />
+                    <input type="text" placeholder="Search contacts..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                      className={`w-full pl-11 pr-4 py-3.5 rounded-xl text-sm font-medium outline-none border transition-all box-border ${
+                        isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] focus:border-[#81B398] text-[#1A202C]' : 'bg-[#131720] border-white/10 focus:border-[#81B398] text-[#F4F5F7]'
+                      }`} />
+                  </div>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar p-4 space-y-2">
+                  {isLoadingContacts ? (
+                     <div className="flex flex-col items-center justify-center h-full gap-3 py-10">
+                       <Loader2 className="animate-spin text-[#81B398]" size={24} />
+                       <p className={`text-[11px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Fetching Contacts</p>
+                     </div>
+                  ) : filteredContacts.length > 0 ? (
+                    filteredContacts.map((contact, index) => (
+                      <button key={index} onClick={() => handleSelectContact(contact)} className={`w-full text-left p-4 rounded-2xl flex items-center justify-between border transition-all active:scale-95 ${
+                        isLight ? 'bg-[#FFFFFF] border-transparent hover:border-[#81B398]' : 'bg-[#131720] border-white/10 hover:border-[#81B398]'
+                      }`}>
+                        {/* Fix: min-w-0 and truncate stops the text from expanding the container horizontally */}
+                        <div className="flex-1 min-w-0 pr-3">
+                          <p className={`font-bold text-sm truncate ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{contact.name?.display || "Unknown"}</p>
+                          <p className={`text-[11px] font-bold uppercase tracking-wider mt-0.5 truncate ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                            {contact.phones[0].number}
+                          </p>
+                        </div>
+                        <div className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center border ${
+                          isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+                        }`}>
+                           <User size={16} className={isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'} />
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-center py-10">
+                      <p className={`text-[11px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>No contacts found</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* 4. SUCCESS MODAL */}
+      {isBrowser && createPortal(
+        <AnimatePresence>
+          {showSuccessModal && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-6 box-border">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.95 }}
+                className={`w-full max-w-sm rounded-3xl p-8 text-center border shadow-sm ${
+                  isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+                }`}
+              >
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20">
+                  <CheckCircle2 size={40} />
+                </div>
+                <h3 className={`text-2xl font-bold tracking-tight mb-2 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>Success!</h3>
+                <p className={`text-sm font-medium leading-relaxed mb-8 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                  Lead for <span className={`font-bold ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{unit.name}</span> has been submitted.
+                </p>
+                <button 
+                  onClick={() => setShowSuccessModal(false)} 
+                  className={`w-full py-3.5 rounded-xl font-bold text-sm active:scale-95 transition-all border ${
+                    isLight ? 'bg-[#F4F5F7] text-[#1A202C] border-transparent hover:border-[#E2E8F0]' : 'bg-[#131720] text-[#F4F5F7] border-white/10 hover:bg-[#222938]'
+                  }`}
+                >
+                  Close
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
     </div>
   );

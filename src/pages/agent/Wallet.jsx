@@ -6,14 +6,15 @@ import {
   CreditCard,
   ClockArrowDown,
   History,
-  Loader2
+  Loader2,
+  ArrowUpRight,
+  ArrowDownLeft
 } from 'lucide-react';
 import { supabase } from '../../supabase/supabaseClient';
-import Loader from '../../components/Loader';
-import { useTheme } from '../../context/ThemeContext'; // Import Global Theme
+import { useTheme } from '../../context/ThemeContext'; 
 
 const WalletPage = () => {
-  const { theme } = useTheme(); // Access Theme
+  const { theme } = useTheme(); 
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [withdrawalRequests, setWithdrawalRequests] = useState([]);
@@ -23,15 +24,27 @@ const WalletPage = () => {
   const [filterStatus, setFilterStatus] = useState('All');
   const [ledgerFilter, setLedgerFilter] = useState('All');
 
-  // Status Styles adjusted for light/dark
+  const isLight = theme === 'light';
+
+  // Earth-Tech Utility Classes
+  const surfaceClass = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5';
+  const textPrimary = isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]';
+  const textSecondary = isLight ? 'text-[#718096]' : 'text-[#9CA3AF]';
+  const pulseClass = isLight ? 'bg-[#E2E8F0]' : 'bg-[#334155]';
+
+  // Earth-Tech Semantic Status Styles
   const getStatusStyles = (status) => {
-    const styles = {
-      Pending: theme === 'light' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-amber-400/10 text-amber-400 border-amber-400/20',
-      Approved: theme === 'light' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-[#4ADE80]/10 text-[#4ADE80] border-[#4ADE80]/20',
-      Rejected: theme === 'light' ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-rose-400/10 text-rose-400 border-rose-400/20',
-      default: theme === 'light' ? 'bg-slate-100 text-slate-500 border-slate-200' : 'bg-white/5 text-[#94A3B8] border-white/10',
-    };
-    return styles[status] || styles.default;
+    const s = status?.toLowerCase();
+    if (s === 'approved' || s === 'credited' || s === 'completed') {
+      return 'bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20';
+    }
+    if (s === 'rejected') {
+      return 'bg-[#F0524F]/10 text-[#F0524F] border border-[#F0524F]/20';
+    }
+    if (s === 'pending') {
+      return 'bg-[#DAC18A]/10 text-[#DAC18A] border border-[#DAC18A]/20';
+    }
+    return isLight ? 'bg-[#F4F5F7] text-[#718096] border-[#E2E8F0]' : 'bg-[#131720] text-[#9CA3AF] border-white/5';
   };
 
   useEffect(() => {
@@ -124,15 +137,10 @@ const WalletPage = () => {
   const handlePayout = async () => {
     setProcessing(true);
     try {
-      // DUMMY DATA: Simulating withdrawal request
       await new Promise(resolve => setTimeout(resolve, 800));
-
-      // Log the requested payout (dummy)
       console.log('Withdrawal request submitted (DUMMY):', {
         requested_credits: wallet.summary.available_cash
       });
-
-      // Update wallet with dummy data
       setWallet(prev => ({
         ...prev,
         summary: {
@@ -141,16 +149,54 @@ const WalletPage = () => {
           total_withdrawn: prev.summary.total_withdrawn + prev.summary.available_cash
         }
       }));
-
       setShowConfirm(false);
     } catch (err) { console.error(err); }
     finally { setProcessing(false); }
   };
 
+  // SKELETON LOADER
   if (loading || !wallet) {
     return (
-      <div className="flex items-center justify-center w-full min-h-[70vh] font-['Plus_Jakarta_Sans',sans-serif]">
-        <Loader fullScreen={false} text="Loading Wallet..." />
+      <div className="max-w-[1400px] mx-auto space-y-6 lg:space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] mt-2  px-0 lg:px-0">
+        
+        {/* Wallet Header Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-pulse">
+          <div className={`lg:col-span-2 p-8 lg:p-10 rounded-2xl border flex flex-col justify-between ${surfaceClass}`}>
+             <div className={`h-14 w-14 rounded-xl mb-10 ${pulseClass}`} />
+             <div className="space-y-4">
+               <div className={`h-4 w-32 rounded-md ${pulseClass}`} />
+               <div className={`h-12 w-64 rounded-lg ${pulseClass}`} />
+             </div>
+             <div className={`h-12 w-48 rounded-lg mt-8 ${pulseClass}`} />
+          </div>
+          <div className="flex flex-col gap-6">
+            <div className={`flex-1 p-6 rounded-2xl border ${surfaceClass}`}>
+              <div className={`h-4 w-24 rounded-md mb-4 ${pulseClass}`} />
+              <div className={`h-8 w-32 rounded-md ${pulseClass}`} />
+            </div>
+            <div className={`flex-1 p-6 rounded-2xl border ${surfaceClass}`}>
+              <div className={`h-4 w-24 rounded-md mb-4 ${pulseClass}`} />
+              <div className={`h-8 w-32 rounded-md ${pulseClass}`} />
+            </div>
+          </div>
+        </div>
+
+        {/* List Skeleton */}
+        <div className={`rounded-2xl border animate-pulse ${surfaceClass}`}>
+          <div className={`p-6 border-b flex justify-between ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>
+            <div className={`h-6 w-48 rounded-md ${pulseClass}`} />
+            <div className={`h-8 w-64 rounded-md ${pulseClass}`} />
+          </div>
+          {[1,2,3].map(i => (
+            <div key={i} className={`p-6 border-b flex justify-between items-center ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>
+               <div className="space-y-3">
+                 <div className={`h-6 w-32 rounded-md ${pulseClass}`} />
+                 <div className={`h-4 w-64 rounded-md ${pulseClass}`} />
+               </div>
+               <div className={`h-8 w-24 rounded-md ${pulseClass}`} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -158,240 +204,274 @@ const WalletPage = () => {
   const { summary, ledger } = wallet;
 
   return (
-    <div className={`space-y-8 font-['Plus_Jakarta_Sans',sans-serif] relative z-0 transition-colors duration-500 ${theme === 'light' ? 'text-slate-900' : 'text-[#E2E8F0]'}`}>
+    <div className={`max-w-[1400px] mx-auto space-y-6 lg:space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] relative z-0 transition-colors duration-300 mt-2 px-0 lg:px-0 ${textPrimary}`}>
       
-      {/* AMBIENT BLOBS - Dark Mode Only */}
-      {theme === 'dark' && (
-        <>
-          <div className="fixed top-[0%] left-[10%] w-[400px] h-[400px] bg-lime-400/10 rounded-full blur-[120px] pointer-events-none -z-20" />
-          <div className="fixed top-[30%] left-[40%] w-[500px] h-[500px] bg-[#38BDF8]/10 rounded-full blur-[140px] pointer-events-none -z-20" />
-          <div className="fixed bottom-[-10%] right-[-5%] w-[450px] h-[450px] bg-orange-400/10 rounded-full blur-[130px] pointer-events-none -z-20" />
-        </>
-      )}
+      {/* HEADER */}
+      <div className="space-y-1.5 ">
+        <h1 className={`text-3xl md:text-4xl font-extrabold tracking-tight ${textPrimary}`}>
+          Wallet
+        </h1>
+        <p className={`text-sm font-medium ${textSecondary}`}>
+          Manage your earnings, track transactions, and request payouts.
+        </p>
+      </div>
 
-      {/* ================= WALLET HEADER ================= */}
-      <div className={`p-8 sm:p-12 rounded-xl border shadow-sm relative flex flex-col transition-all ${
-        theme === 'light' ? 'bg-[#F1F5F9] border-slate-200' : 'bg-white/[0.02] backdrop-blur-3xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]'
-      }`}>
-        <div className={`w-14 h-14 rounded-xl flex items-center justify-center border ${
-          theme === 'light' ? 'bg-white border-slate-200 text-[#38BDF8]' : 'bg-white/5 border-white/5 text-[#38BDF8]'
-        }`}>
-          <Wallet size={28} />
-        </div>
-
-        <div className="mt-10">
-          <p className={`text-xs font-bold uppercase tracking-[0.2em] mb-3 ${theme === 'light' ? 'text-slate-500' : 'text-[#94A3B8]'}`}>
-            Available Balance
-          </p>
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-            <h2 className={`text-6xl sm:text-7xl font-black tracking-tighter ${theme === 'light' ? 'text-slate-900' : 'text-[#E2E8F0] drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]'}`}>
-              <span className={`text-3xl sm:text-4xl mr-2 ${theme === 'light' ? 'text-slate-400' : 'text-[#64748B]'}`}>CR</span> 
-              {summary.available_cash.toLocaleString()}
-            </h2>
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border sm:mb-3 w-fit backdrop-blur-md ${
-              theme === 'light' ? 'bg-white border-slate-200 text-[#38BDF8]' : 'bg-white/5 border-white/10 text-[#38BDF8]'
+      {/* ================= WALLET SUMMARY (Bento Grid) ================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Main Balance Card */}
+        <div className={`lg:col-span-2 p-8 lg:p-10 rounded-2xl border flex flex-col justify-between transition-all ${surfaceClass}`}>
+          <div className="flex justify-between items-start mb-8 lg:mb-12">
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center border ${
+              isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C]' : 'bg-[#131720] border-white/5 text-[#F4F5F7]'
             }`}>
-              <span className="text-[10px] font-black uppercase tracking-widest">1 Credit = ₹1 INR</span>
+              <Wallet size={24} />
+            </div>
+            <div className={`px-3 py-1.5 rounded-lg border text-xs font-semibold ${
+              isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/5 text-[#9CA3AF]'
+            }`}>
+              1 Credit = ₹1 INR
             </div>
           </div>
+
+          <div>
+            <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${textSecondary}`}>
+              Available Balance
+            </p>
+            <div className="flex items-baseline gap-2">
+              <span className={`text-2xl font-bold ${textSecondary}`}>CR</span>
+              <h2 className="text-5xl lg:text-6xl font-extrabold tracking-tight">
+                {summary.available_cash.toLocaleString()}
+              </h2>
+            </div>
+          </div>
+
+          <button
+            disabled={summary.available_cash <= 0}
+            onClick={() => setShowConfirm(true)}
+            className="mt-8 lg:mt-10 w-full sm:w-fit px-8 py-3.5 rounded-xl font-semibold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 bg-[#81B398] text-[#FFFFFF] hover:bg-[#6FA085] active:scale-95 shadow-sm"
+          >
+            Request Payout <HandCoins size={18} />
+          </button>
         </div>
 
-        <button
-          disabled={summary.available_cash <= 0}
-          onClick={() => setShowConfirm(true)}
-          className={`mt-10 w-full sm:w-fit px-10 py-4 rounded-xl font-black uppercase tracking-[0.2em] text-[11px] border shadow-lg transition-all disabled:opacity-20 flex items-center justify-center gap-3 ${
-            theme === 'light' ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white/5 border-white/10 text-[#E2E8F0] hover:bg-white/10 hover:border-[#38BDF8]/50'
-          }`}
-        >
-          Request Payout <HandCoins size={18} className="text-[#38BDF8]" />
-        </button>
+        {/* Secondary Stats */}
+        <div className="flex flex-col gap-6">
+          <div className={`flex-1 p-6 lg:p-8 rounded-2xl border flex flex-col justify-center transition-all ${surfaceClass}`}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isLight ? 'bg-[#81B398]/10 text-[#81B398]' : 'bg-[#81B398]/20 text-[#81B398]'}`}>
+                <ArrowUpRight size={16} />
+              </div>
+              <p className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>Total Earned</p>
+            </div>
+            <h3 className="text-3xl font-bold tracking-tight">
+              {summary.earned_credits.toLocaleString()} <span className={`text-lg font-medium ${textSecondary}`}>CR</span>
+            </h3>
+          </div>
+
+          <div className={`flex-1 p-6 lg:p-8 rounded-2xl border flex flex-col justify-center transition-all ${surfaceClass}`}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isLight ? 'bg-[#48477A]/10 text-[#48477A]' : 'bg-[#48477A]/20 text-[#81B398]'}`}>
+                <ArrowDownLeft size={16} />
+              </div>
+              <p className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>Total Withdrawn</p>
+            </div>
+            <h3 className="text-3xl font-bold tracking-tight">
+              {summary.total_withdrawn.toLocaleString()} <span className={`text-lg font-medium ${textSecondary}`}>CR</span>
+            </h3>
+          </div>
+        </div>
       </div>
 
       {/* ================= WITHDRAWAL REQUESTS ================= */}
-   <div className={`rounded-xl border shadow-sm overflow-hidden transition-all ${
-    theme === 'light' ? 'bg-[#F1F5F9] border-slate-200' : 'bg-white/[0.02] backdrop-blur-3xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]'
-  }`}>
-    
-    {/* HEADER & FILTERS */}
-    <div className={`p-6 sm:p-8 border-b bg-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-5 ${theme === 'light' ? 'border-slate-200' : 'border-white/5'}`}>
-      <div className="flex items-center gap-3 shrink-0">
-        <ClockArrowDown size={20} className="text-[#38BDF8]" />
-        <span className="font-black uppercase tracking-[0.15em] text-xs">Current Withdrawal Requests</span>
-      </div>
-
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-        {['All', 'Pending', 'Credited', 'Rejected'].map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilterStatus(status)}
-            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${
-              filterStatus === status 
-              ? 'bg-[#38BDF8] text-white border-[#38BDF8] shadow-sm' 
-              : (theme === 'light' ? 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50' : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10')
-            }`}
-          >
-            {status}
-          </button>
-        ))}
-      </div>
-    </div>
-
-    {/* LIST SECTION */}
-    <div className="flex flex-col">
-      {(() => {
-        // 1. If loading, show nothing (or add a spinner here)
-        if (requestsLoading) return null;
-
-        // 2. Filter the data
-        const filteredRequests = withdrawalRequests.filter(
-          req => filterStatus === 'All' || req.status === filterStatus
-        );
-
-        // 3. If no data matches the filter, show EXACTLY ONE empty state
-        if (filteredRequests.length === 0) {
-          return (
-            <div className="py-24 text-center">
-              <ClockArrowDown size={40} className="text-slate-400 mx-auto mb-4 opacity-20" />
-              <span className="text-slate-400 uppercase font-bold text-[10px] tracking-widest">
-                No {filterStatus === 'All' ? 'withdrawal' : filterStatus} requests found
-              </span>
-            </div>
-          );
-        }
-
-        // 4. Otherwise, map through the filtered results
-        return filteredRequests.map((req) => (
-          <div key={req.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-8 border-b last:border-0 gap-6 transition-colors ${
-            theme === 'light' ? 'border-slate-200 hover:bg-slate-200/50' : 'border-white/5 hover:bg-white/[0.02]'
-          }`}>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-4">
-                <p className="font-black text-xl sm:text-2xl tracking-tight">₹{Number(req.requested_credits).toLocaleString()}</p>
-                <span className={`text-[9px] uppercase font-black px-3 py-1.5 rounded-xl tracking-widest border ${getStatusStyles(req.status)}`}>
-                  {req.status}
-                </span>
-              </div>
-              {req.remarks && (
-                <p className={`text-xs font-medium flex items-start gap-2 max-w-xl ${theme === 'light' ? 'text-slate-500' : 'text-[#94A3B8]'}`}>
-                  <span className="w-1 h-1 rounded-full bg-[#38BDF8] shrink-0 mt-1.5"></span>{req.remarks}
-                </p>
-              )}
-            </div>
-            <div className="shrink-0">
-              <p className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border ${theme === 'light' ? 'bg-slate-200 border-slate-300 text-slate-500' : 'bg-white/5 border-white/5 text-[#64748B]'}`}>
-                {req.date}
-              </p>
-            </div>
+      <div className={`rounded-2xl border overflow-hidden transition-all ${surfaceClass}`}>
+        
+        {/* HEADER & FILTERS */}
+        <div className={`p-6 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-5 ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>
+          <div className="flex items-center gap-3 shrink-0">
+            <ClockArrowDown size={20} className={isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'} />
+            <h3 className="font-bold text-lg tracking-tight">Withdrawal Requests</h3>
           </div>
-        ));
-      })()}
-    </div>
-</div>
-     {/* ================= LEDGER ================= */}
-{/* ================= LEDGER ================= */}
-<div className={`rounded-xl border shadow-sm overflow-hidden transition-all ${
-    theme === 'light' ? 'bg-[#F1F5F9] border-slate-200' : 'bg-white/[0.02] backdrop-blur-3xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]'
-  }`}>
-    
-    {/* HEADER & FILTERS */}
-    <div className={`p-6 sm:p-8 border-b bg-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-5 ${theme === 'light' ? 'border-slate-200' : 'border-white/5'}`}>
-      <div className="flex items-center gap-3 shrink-0">
-        <History size={20} className="text-[#38BDF8]" />
-        <span className="font-black uppercase tracking-[0.15em] text-xs">Transaction History</span>
-      </div>
 
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-        {/* Updated Filter Buttons: "Credits" changed to "Pending" */}
-        {['All', 'Credited', 'Approved', 'Pending', 'Withdrawal'].map((filterOption) => (
-          <button
-            key={filterOption}
-            onClick={() => setLedgerFilter(filterOption)}
-            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${
-              ledgerFilter === filterOption 
-              ? 'bg-[#38BDF8] text-white border-[#38BDF8] shadow-sm' 
-              : (theme === 'light' ? 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50' : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10')
-            }`}
-          >
-            {filterOption}
-          </button>
-        ))}
-      </div>
-    </div>
-
-    {/* LIST SECTION */}
-    <div className="flex flex-col">
-      {(() => {
-        // 1. Filter the data based on the entry status OR type
-        const filteredLedger = ledger.filter(entry => {
-          if (ledgerFilter === 'All') return true;
-          // Check both fields just in case the backend returns these terms in either field
-          const matchStatus = entry.status && entry.status.toLowerCase() === ledgerFilter.toLowerCase();
-          const matchType = entry.type && entry.type.toLowerCase() === ledgerFilter.toLowerCase();
-          return matchStatus || matchType;
-        });
-
-        // 2. If no data matches the filter, show EXACTLY ONE empty state
-        if (filteredLedger.length === 0) {
-          return (
-            <div className="py-24 text-center">
-              <History size={40} className="text-slate-400 mx-auto mb-4 opacity-20" />
-              <span className="text-slate-400 uppercase font-bold text-[10px] tracking-widest">
-                No {ledgerFilter === 'All' ? 'transaction' : ledgerFilter} activity
-              </span>
-            </div>
-          );
-        }
-
-        // 3. Otherwise, map through the filtered results
-        return filteredLedger.map((entry) => (
-          <div key={entry.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-8 border-b last:border-0 gap-6 transition-colors ${
-            theme === 'light' ? 'border-slate-200 hover:bg-slate-200/50' : 'border-white/5 hover:bg-white/[0.02]'
-          }`}>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-4">
-                <p className="font-black text-lg sm:text-xl tracking-tight uppercase">{entry.type}</p>
-                <span className={`text-[9px] uppercase font-black px-3 py-1.5 rounded-xl tracking-widest border ${entry.status === 'Credited' || entry.status === 'Approved' ? (theme === 'light' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-[#4ADE80]/10 text-[#4ADE80] border-[#4ADE80]/20') : getStatusStyles(entry.status || 'default')}`}>
-                  {entry.status || 'Completed'}
-                </span>
-              </div>
-              {entry.remarks && (
-                <p className={`text-xs font-medium flex items-start gap-2 max-w-xl ${theme === 'light' ? 'text-slate-500' : 'text-[#94A3B8]'}`}>
-                  <span className="w-1 h-1 rounded-full bg-[#38BDF8] shrink-0 mt-1.5"></span>{entry.remarks}
-                </p>
-              )}
-            </div>
-            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-4">
-              <p className={`font-black text-2xl tracking-tighter ${entry.credits > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                {entry.credits > 0 ? '+' : ''}{entry.credits} <span className="text-sm">CR</span>
-              </p>
-              <p className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border ${theme === 'light' ? 'bg-slate-200 border-slate-300 text-slate-500' : 'bg-white/5 border-white/5 text-[#64748B]'}`}>
-                {entry.date}
-              </p>
-            </div>
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+            {['All', 'Pending', 'Credited', 'Rejected'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setFilterStatus(status)}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+                  filterStatus === status 
+                  ? 'bg-[#81B398] text-[#FFFFFF]' 
+                  : (isLight ? 'bg-[#F4F5F7] text-[#718096] hover:bg-[#E2E8F0]' : 'bg-[#131720] text-[#9CA3AF] hover:bg-[#1A202C]')
+                }`}
+              >
+                {status}
+              </button>
+            ))}
           </div>
-        ));
-      })()}
-    </div>
-</div>
+        </div>
+
+        {/* LIST SECTION */}
+        <div className="flex flex-col divide-y transition-colors divide-inherit" style={{ borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' }}>
+          {(() => {
+            if (requestsLoading) return null;
+
+            const filteredRequests = withdrawalRequests.filter(
+              req => filterStatus === 'All' || req.status === filterStatus
+            );
+
+            if (filteredRequests.length === 0) {
+              return (
+                <div className="py-16 text-center">
+                  <ClockArrowDown size={32} className={`mx-auto mb-3 opacity-30 ${textSecondary}`} />
+                  <span className={`text-sm font-medium ${textSecondary}`}>
+                    No {filterStatus === 'All' ? 'withdrawal' : filterStatus} requests found.
+                  </span>
+                </div>
+              );
+            }
+
+            return filteredRequests.map((req) => (
+              <div key={req.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-6 gap-4 transition-colors ${
+                isLight ? 'hover:bg-[#F4F5F7]/50' : 'hover:bg-[#131720]/30'
+              }`}>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <p className="font-bold text-lg tracking-tight">₹{Number(req.requested_credits).toLocaleString()}</p>
+                    <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-md tracking-wider border ${getStatusStyles(req.status)}`}>
+                      {req.status}
+                    </span>
+                  </div>
+                  {req.remarks && (
+                    <p className={`text-sm font-medium line-clamp-1 ${textSecondary}`}>
+                      {req.remarks}
+                    </p>
+                  )}
+                </div>
+                <div className="shrink-0">
+                  <p className={`text-xs font-medium px-3 py-1.5 rounded-lg border ${
+                    isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/5 text-[#9CA3AF]'
+                  }`}>
+                    {new Date(req.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                </div>
+              </div>
+            ));
+          })()}
+        </div>
+      </div>
+
+      {/* ================= LEDGER ================= */}
+      <div className={`rounded-2xl border overflow-hidden transition-all ${surfaceClass}`}>
+        
+        {/* HEADER & FILTERS */}
+        <div className={`p-6 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-5 ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>
+          <div className="flex items-center gap-3 shrink-0">
+            <History size={20} className={isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'} />
+            <h3 className="font-bold text-lg tracking-tight">Transaction History</h3>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+            {['All', 'Credited', 'Approved', 'Pending', 'Withdrawal'].map((filterOption) => (
+              <button
+                key={filterOption}
+                onClick={() => setLedgerFilter(filterOption)}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+                  ledgerFilter === filterOption 
+                  ? 'bg-[#81B398] text-[#FFFFFF]' 
+                  : (isLight ? 'bg-[#F4F5F7] text-[#718096] hover:bg-[#E2E8F0]' : 'bg-[#131720] text-[#9CA3AF] hover:bg-[#1A202C]')
+                }`}
+              >
+                {filterOption}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* LIST SECTION */}
+        <div className="flex flex-col divide-y transition-colors divide-inherit" style={{ borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' }}>
+          {(() => {
+            const filteredLedger = ledger.filter(entry => {
+              if (ledgerFilter === 'All') return true;
+              const matchStatus = entry.status && entry.status.toLowerCase() === ledgerFilter.toLowerCase();
+              const matchType = entry.type && entry.type.toLowerCase() === ledgerFilter.toLowerCase();
+              return matchStatus || matchType;
+            });
+
+            if (filteredLedger.length === 0) {
+              return (
+                <div className="py-16 text-center">
+                  <History size={32} className={`mx-auto mb-3 opacity-30 ${textSecondary}`} />
+                  <span className={`text-sm font-medium ${textSecondary}`}>
+                    No {ledgerFilter === 'All' ? 'transaction' : ledgerFilter} activity found.
+                  </span>
+                </div>
+              );
+            }
+
+            return filteredLedger.map((entry) => (
+              <div key={entry.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-6 gap-4 transition-colors ${
+                isLight ? 'hover:bg-[#F4F5F7]/50' : 'hover:bg-[#131720]/30'
+              }`}>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <p className="font-bold text-base tracking-tight capitalize">{entry.type}</p>
+                    <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-md tracking-wider border ${
+                      entry.status === 'Credited' || entry.status === 'Approved' || !entry.status 
+                      ? 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20' 
+                      : getStatusStyles(entry.status)
+                    }`}>
+                      {entry.status || 'Completed'}
+                    </span>
+                  </div>
+                  {entry.remarks && (
+                    <p className={`text-sm font-medium line-clamp-1 ${textSecondary}`}>
+                      {entry.remarks}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
+                  <p className={`font-bold text-xl tracking-tight ${entry.credits > 0 ? 'text-[#81B398]' : textPrimary}`}>
+                    {entry.credits > 0 ? '+' : ''}{entry.credits} <span className="text-xs font-semibold opacity-70">CR</span>
+                  </p>
+                  <p className={`text-xs font-medium ${textSecondary}`}>
+                    {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                </div>
+              </div>
+            ));
+          })()}
+        </div>
+      </div>
 
       {/* ================= CONFIRM PAYOUT MODAL ================= */}
       <AnimatePresence>
         {showConfirm && (
-          <div className="fixed inset-0 flex items-center justify-center z-[500] bg-black/40 backdrop-blur-md p-6">
-            <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.98, opacity: 0 }}
-              className={`p-10 rounded-xl w-full max-w-sm text-center border shadow-2xl relative overflow-hidden transition-all ${
-                theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#0F172A] border-white/10'
-              }`}
+          <div className="fixed inset-0 flex items-center justify-center z-[500] bg-black/50 backdrop-blur-sm p-4">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className={`p-8 rounded-2xl w-full max-w-sm text-center border shadow-xl relative overflow-hidden transition-all ${surfaceClass}`}
             >
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#38BDF8] to-[#4ADE80]" />
-              <CreditCard size={48} className="mx-auto text-[#38BDF8] mb-6" />
-              <h3 className="font-black uppercase tracking-widest text-lg">Confirm Payout</h3>
-              <p className={`text-sm mt-4 font-medium ${theme === 'light' ? 'text-slate-500' : 'text-[#94A3B8]'}`}>
-                Withdraw <span className="font-black text-[#38BDF8]">₹{summary.available_cash.toLocaleString()}</span> to your settled account?
+              <div className="w-16 h-16 rounded-xl mx-auto flex items-center justify-center mb-5 bg-[#81B398]/10 text-[#81B398]">
+                 <CreditCard size={32} />
+              </div>
+              <h3 className={`font-bold text-xl tracking-tight mb-2 ${textPrimary}`}>Confirm Payout</h3>
+              <p className={`text-sm font-medium leading-relaxed mb-8 ${textSecondary}`}>
+                Withdraw <span className="font-bold text-[#81B398]">₹{summary.available_cash.toLocaleString()}</span> to your settled account?
               </p>
-              <div className="grid grid-cols-2 gap-4 mt-10">
-                <button onClick={() => setShowConfirm(false)} className={`py-4 rounded-xl font-black uppercase tracking-widest text-[10px] border transition-all ${theme === 'light' ? 'bg-slate-100 text-slate-500 border-slate-200' : 'bg-white/5 text-[#94A3B8] border-white/5'}`}>Cancel</button>
-                <button onClick={handlePayout} disabled={processing} className="py-4 bg-[#38BDF8]/10 text-[#38BDF8] rounded-xl font-black uppercase tracking-widest text-[10px] border border-[#38BDF8]/20 hover:bg-[#38BDF8]/20 transition-all shadow-sm">
+              
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={() => setShowConfirm(false)} 
+                  className={`py-2.5 rounded-lg font-semibold text-sm transition-colors border ${
+                    isLight ? 'bg-[#F4F5F7] text-[#1A202C] border-[#E2E8F0] hover:bg-[#E2E8F0]' : 'bg-[#131720] text-[#F4F5F7] border-transparent hover:bg-[#1A202C]'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handlePayout} 
+                  disabled={processing} 
+                  className="py-2.5 rounded-lg font-semibold text-sm transition-colors bg-[#81B398] text-white hover:bg-[#6FA085] disabled:opacity-50"
+                >
                   {processing ? 'Processing…' : 'Confirm'}
                 </button>
               </div>
