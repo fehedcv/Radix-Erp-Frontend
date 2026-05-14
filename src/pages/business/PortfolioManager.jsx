@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -25,17 +26,15 @@ import {
   AlertTriangle
 } from "lucide-react";
 
-import frappeApi from "../../api/frappeApi";
+import { supabase } from "../../supabase/supabaseClient";
 import { useTheme } from "../../context/ThemeContext"; // Theme Context
-
-const SITE_URL = import.meta.env.VITE_FRAPPE_URL?.replace(/\/api$/, "") || "http://16.171.38.6:8000/";
 
 const EMPTY_UNIT = {
   id: "",
   name: "",
   website: "",
   email: "",
-  contact: "",
+  primary_phone: "",
   location: "",
   address: "",
   description: "",
@@ -45,11 +44,6 @@ const EMPTY_UNIT = {
   instagram: "",
   facebook: "",
   linkedin: ""
-};
-
-const resolveUrl = (url) => {
-  if (!url) return "";
-  return url.startsWith("http") ? url : SITE_URL + url;
 };
 
 const PortfolioManager = () => {
@@ -64,8 +58,8 @@ const PortfolioManager = () => {
   const { theme } = useTheme();
   const isLight = theme === 'light';
 
-  // Frozen snapshot of the last-saved state — used to compute the diff
-  const originalUnit = useRef(null);
+  const originalServices = useRef([]);
+  const galleryItemsRef = useRef([]);
 
   const fileInputRef = useRef(null);
   const logoInputRef = useRef(null);
@@ -76,31 +70,83 @@ const PortfolioManager = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await frappeApi.get(
-          "/method/business_chain.api.business_unit.get_my_business_unit"
-        );
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+          console.error("Supabase auth error", authError);
+          return;
+        }
 
-        const d = res.data.message;
+        const userId = authData?.user?.id;
+        if (!userId) {
+          console.error("No authenticated user found");
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('business_units')
+          .select(`
+            id,
+            business_name,
+            website,
+            email,
+            primary_phone,
+            location,
+            address,
+            description,
+            logo_url,
+            instagram,
+            facebook,
+            linkedin,
+
+            business_unit_services (
+              id,
+              service_name,
+              description
+            ),
+
+            business_unit_gallery (
+              id,
+              image_url
+            )
+          `)
+          .eq('manager_id', userId)
+          .single();
+
+        if (error) {
+          console.error("Failed to load business unit", error);
+          return;
+        }
 
         const normalized = {
-          id: d.id,
-          name: d.name ?? "",
-          website: d.website ?? "",
-          email: d.email ?? "",
-          contact: d.contact ?? "",
-          location: d.location ?? "",
-          address: d.address ?? "",
-          description: d.description ?? "",
-          services: d.services ?? [],
-          gallery: d.gallery ?? [],
-          logo: d.logo ?? "",
-          instagram: d.instagram ?? "",
-          facebook: d.facebook ?? "",
-          linkedin: d.linkedin ?? "",
+          id: data.id,
+          name: data.business_name || '',
+          website: data.website || '',
+          email: data.email || '',
+          primary_phone: data.primary_phone || '',
+          location: data.location || '',
+          address: data.address || '',
+          description: data.description || '',
+          services:
+            data.business_unit_services?.map((s) => ({
+              id: s.id,
+              name: s.service_name,
+              description: s.description
+            })) || [],
+          gallery:
+            data.business_unit_gallery?.map((g) => g.image_url) || [],
+          logo: data.logo_url || '',
+          instagram: data.instagram || '',
+          facebook: data.facebook || '',
+          linkedin: data.linkedin || '',
         };
 
+        galleryItemsRef.current = data.business_unit_gallery?.map((g) => ({
+          id: g.id,
+          url: g.image_url,
+        })) || [];
+        originalServices.current = normalized.services.map((service) => ({ ...service }));
+
         setUnit(normalized);
-        originalUnit.current = JSON.parse(JSON.stringify(normalized));
       } catch (e) {
         console.error("Failed to load business unit", e);
       } finally {
@@ -111,74 +157,102 @@ const PortfolioManager = () => {
     load();
   }, []);
 
-  /* =======================
-      DIFF / PATCH HELPERS
-  ======================= */
-  const computePatch = (original, current) => {
-    const patch = {};
-    const scalars = [
-      "website", "contact", "location", "address",
-      "description", "instagram", "facebook", "linkedin",
-    ];
-    for (const key of scalars) {
-      if (original[key] !== current[key]) {
-        patch[key] = current[key];
+  const saveServices = async () => {
+    if (!unit.id) return unit.services;
+
+    const currentIds = new Set(unit.services.filter((s) => s.id).map((s) => s.id));
+    const deletedIds = originalServices.current
+      .filter((s) => s.id && !currentIds.has(s.id))
+      .map((s) => s.id);
+
+    if (deletedIds.length) {
+      const { error } = await supabase
+        .from('business_unit_services')
+        .delete()
+        .in('id', deletedIds);
+      if (error) {
+        console.error('Failed to delete services', error);
       }
     }
 
-    const origById = Object.fromEntries(
-      (original.services ?? []).map((s) => [s.id, s])
-    );
-    const currIds = new Set(current.services.map((s) => s.id).filter(Boolean));
-
-    const upserted = current.services.filter((s) => {
-      if (!s.id) return true;
-      const o = origById[s.id];
-      return !o || o.name !== s.name || o.description !== s.description;
-    });
-
-    const deletedIds = (original.services ?? [])
-      .filter((s) => s.id && !currIds.has(s.id))
-      .map((s) => s.id);
-
-    if (upserted.length || deletedIds.length) {
-      patch.services = { upserted, deleted_ids: deletedIds };
+    for (const service of unit.services.filter((s) => s.id)) {
+      const { error } = await supabase
+        .from('business_unit_services')
+        .update({
+          service_name: service.name,
+          description: service.description,
+        })
+        .eq('id', service.id);
+      if (error) {
+        console.error('Failed to update service', service.id, error);
+      }
     }
 
-    const origGallerySet = new Set(original.gallery ?? []);
-    const currGallerySet = new Set(current.gallery ?? []);
+    let finalServices = unit.services;
+    const newServices = unit.services.filter((s) => !s.id && (s.name || s.description));
+    if (newServices.length) {
+      const { data: insertedServices, error } = await supabase
+        .from('business_unit_services')
+        .insert(
+          newServices.map((s) => ({
+            business_unit_id: unit.id,
+            service_name: s.name,
+            description: s.description,
+          }))
+        )
+        .select();
 
-    const addedGallery   = current.gallery.filter((u) => !origGallerySet.has(u));
-    const removedGallery = (original.gallery ?? []).filter((u) => !currGallerySet.has(u));
-
-    if (addedGallery.length || removedGallery.length) {
-      patch.gallery = { added: addedGallery, removed: removedGallery };
+      if (error) {
+        console.error('Failed to insert new services', error);
+      } else if (insertedServices?.length) {
+        const updatedServices = [...unit.services];
+        let insertOffset = 0;
+        for (let i = 0; i < updatedServices.length; i += 1) {
+          if (!updatedServices[i].id && insertOffset < insertedServices.length) {
+            updatedServices[i] = {
+              ...updatedServices[i],
+              id: insertedServices[insertOffset].id,
+            };
+            insertOffset += 1;
+          }
+        }
+        finalServices = updatedServices;
+        setUnit((prev) => ({ ...prev, services: updatedServices }));
+      }
     }
 
-    return patch;
+    return finalServices;
   };
 
-  /* =======================
-      SAVE PROFILE (diff-aware)
-  ======================= */
   const saveProfile = async () => {
-    if (!originalUnit.current) return;
-
-    const patch = computePatch(originalUnit.current, unit);
-
-    if (!Object.keys(patch).length) {
-      return;
-    }
+    if (!unit.id) return;
 
     setSaving(true);
     try {
-      await frappeApi.post(
-        "/method/business_chain.api.business_unit.update_my_business_unit",
-        { patch }
-      );
-      originalUnit.current = JSON.parse(JSON.stringify(unit));
+      const { error: updateError } = await supabase
+        .from('business_units')
+        .update({
+          website: unit.website,
+          primary_phone: unit.primary_phone,
+          location: unit.location,
+          address: unit.address,
+          description: unit.description,
+          instagram: unit.instagram,
+          facebook: unit.facebook,
+          linkedin: unit.linkedin,
+          logo_url: unit.logo,
+        })
+        .eq('id', unit.id);
+
+      if (updateError) {
+        console.error('Failed to update business unit', updateError);
+        return;
+      }
+
+      const finalServices = await saveServices();
+      originalServices.current = finalServices.map((service) => ({ ...service }));
     } catch (e) {
-      console.error("Save failed", e);
+      console.error('Save failed', e);
     } finally {
       setSaving(false);
     }
@@ -189,26 +263,44 @@ const PortfolioManager = () => {
   ======================= */
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !unit.id) return;
 
-    const formData = new FormData();
-    formData.append("file", file, file.name);
-    formData.append("is_private", 0);
+    const uploadPath = `logos/${unit.id}-${Date.now()}-${file.name}`;
 
     try {
       setLogoUploading(true);
-      const res = await frappeApi.post(
-        "/method/business_chain.api.business_unit.upload_business_unit_logo",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+      const { error: uploadError } = await supabase
+        .storage
+        .from('business-logos')
+        .upload(uploadPath, file);
 
-      const fileUrl = res.data.message.file_url;
-      setUnit((prev) => ({ ...prev, logo: fileUrl }));
-      originalUnit.current = { ...originalUnit.current, logo: fileUrl };
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: publicData, error: publicUrlError } = supabase
+        .storage
+        .from('business-logos')
+        .getPublicUrl(uploadPath);
+
+      if (publicUrlError) {
+        throw publicUrlError;
+      }
+
+      const logoUrl = publicData.publicUrl;
+      const { error: updateError } = await supabase
+        .from('business_units')
+        .update({ logo_url: logoUrl })
+        .eq('id', unit.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setUnit((prev) => ({ ...prev, logo: logoUrl }));
     } catch (err) {
-      console.error("Logo upload failed", err);
-      alert("Failed to upload logo. Please try again.");
+      console.error('Logo upload failed', err);
+      alert('Failed to upload logo. Please try again.');
     } finally {
       setLogoUploading(false);
       if (logoInputRef.current) logoInputRef.current.value = "";
@@ -232,28 +324,86 @@ const PortfolioManager = () => {
     setUnit({ ...unit, services: unit.services.filter((_, i) => i !== idx) });
   };
 
+  const removeGalleryImage = async (idx) => {
+    const galleryItem = galleryItemsRef.current[idx];
+    if (!galleryItem) return;
+
+    const previousGallery = [...unit.gallery];
+    const previousItems = [...galleryItemsRef.current];
+    const updatedGallery = previousGallery.filter((_, i) => i !== idx);
+    const updatedItems = previousItems.filter((_, i) => i !== idx);
+
+    setUnit((prev) => ({ ...prev, gallery: updatedGallery }));
+    galleryItemsRef.current = updatedItems;
+
+    try {
+      const { error } = await supabase
+        .from('business_unit_gallery')
+        .delete()
+        .eq('id', galleryItem.id);
+
+      if (error) {
+        console.error('Failed to delete gallery image', error);
+        setUnit((prev) => ({ ...prev, gallery: previousGallery }));
+        galleryItemsRef.current = previousItems;
+      }
+    } catch (err) {
+      console.error('Failed to delete gallery image', err);
+      setUnit((prev) => ({ ...prev, gallery: previousGallery }));
+      galleryItemsRef.current = previousItems;
+    }
+  };
+
   /* =======================
       GALLERY UPLOAD
   ======================= */
   const handleFile = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !unit.id) return;
 
-    const formData = new FormData();
-    formData.append("file", file, file.name);
-    formData.append("is_private", 0);
+    const uploadPath = `gallery/${unit.id}-${Date.now()}-${file.name}`;
 
     try {
       setUploading(true);
-      const res = await frappeApi.post("/method/upload_file", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const { error: uploadError } = await supabase
+        .storage
+        .from('business-gallery')
+        .upload(uploadPath, file);
 
-      const fileUrl = res.data.message.file_url;
-      setUnit((prev) => ({ ...prev, gallery: [fileUrl, ...prev.gallery] }));
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: publicData, error: publicUrlError } = supabase
+        .storage
+        .from('business-gallery')
+        .getPublicUrl(uploadPath);
+
+      if (publicUrlError) {
+        throw publicUrlError;
+      }
+
+      const imageUrl = publicData.publicUrl;
+      const { data: insertedRows, error: insertError } = await supabase
+        .from('business_unit_gallery')
+        .insert({
+          business_unit_id: unit.id,
+          image_url: imageUrl,
+        })
+        .select();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      const galleryId = insertedRows?.[0]?.id;
+      if (galleryId) {
+        galleryItemsRef.current = [{ id: galleryId, url: imageUrl }, ...galleryItemsRef.current];
+      }
+      setUnit((prev) => ({ ...prev, gallery: [imageUrl, ...prev.gallery] }));
     } catch (err) {
-      console.error("Upload failed", err);
-      alert("Failed to upload image. Please try again.");
+      console.error('Upload failed', err);
+      alert('Failed to upload image. Please try again.');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -291,7 +441,7 @@ const PortfolioManager = () => {
               <Loader2 size={20} className="text-[#61D9DE] animate-spin" />
             ) : unit.logo ? (
               <img
-                src={resolveUrl(unit.logo)}
+                src={unit.logo}
                 alt="Business Logo"
                 className="w-full h-full object-cover"
               />
@@ -407,9 +557,9 @@ const PortfolioManager = () => {
                 />
                 <Input
                   label="Phone Number"
-                  value={unit.contact}
+                  value={unit.primary_phone}
                   icon={<Phone size={14} />}
-                  onChange={v => setUnit({ ...unit, contact: v })}
+                  onChange={v => setUnit({ ...unit, primary_phone: v })}
                   isLight={isLight}
                 />
               </div>
@@ -496,13 +646,13 @@ const PortfolioManager = () => {
                   {unit.gallery.map((img, i) => (
                     <motion.div layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} key={img} className="relative group aspect-square">
                       <img
-                        src={resolveUrl(img)}
+                        src={img}
                         className={`rounded-xl object-cover w-full h-full border shadow-sm ${isLight ? 'border-[#E8ECEF]' : 'border-slate-100'}`}
                         alt={`Gallery ${i}`}
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all rounded-xl" />
                       <button
-                        onClick={() => setUnit({ ...unit, gallery: unit.gallery.filter((_, idx) => idx !== i) })}
+                        onClick={() => removeGalleryImage(i)}
                         className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-lg text-rose-500 opacity-0 group-hover:opacity-100 transition-all shadow-sm hover:bg-white hover:scale-110"
                       >
                         <X size={14} />
@@ -603,7 +753,7 @@ const PortfolioManager = () => {
               <div className="p-8">
                 <h1 className="text-3xl font-black mb-2">{unit.name || "Business Name"}</h1>
                 <p className={`mb-6 flex items-center gap-2 text-sm ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}><MapPin size={14} /> {unit.location || "Location not set"}</p>
-                {unit.gallery.length > 0 && (<img src={resolveUrl(unit.gallery[0])} className="w-full h-64 object-cover rounded-2xl mb-8 border border-slate-100 shadow-sm" />)}
+                {unit.gallery.length > 0 && (<img src={unit.gallery[0]} className="w-full h-64 object-cover rounded-2xl mb-8 border border-slate-100 shadow-sm" />)}
                 <div className={`prose prose-sm max-w-none mb-8 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
                   <h3 className={`font-bold uppercase text-xs mb-2 ${isLight ? 'text-black' : 'text-white'}`}>About Us</h3>
                   <p>{unit.description || "No description provided."}</p>
