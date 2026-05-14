@@ -1,18 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import gsap from 'gsap';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Loader2, AlertCircle, Eye, EyeOff,
-  ChevronLeft, Wallet, CheckCircle2, Lock
+  ChevronLeft, CheckCircle2, LogIn, UserPlus
 } from 'lucide-react';
 
 import { supabase } from '../../supabase/supabaseClient';
+import { useTheme } from '../../context/ThemeContext'; 
 
 const AuthGatewayApp = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
-  const bgRef = useRef(null);
-  const [tab, setTab] = useState('login');
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  
+  const [tab, setTab] = useState('login'); // 'login' | 'signup' | 'success'
 
   // Login state
   const [loginLoading, setLoginLoading] = useState(false);
@@ -22,7 +24,6 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
   // Signup state
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupError, setSignupError] = useState('');
-  const [signupSuccess, setSignupSuccess] = useState(false);
   const [showSignupPass, setShowSignupPass] = useState(false);
 
   const [signupForm, setSignupForm] = useState({
@@ -33,30 +34,13 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
     confirm: '',
   });
 
-  // Floating GSAP animation
-  useEffect(() => {
-    if (bgRef.current) {
-      gsap.to('.floating-node', {
-        y: -30,
-        x: 15,
-        duration: 4,
-        repeat: -1,
-        yoyo: true,
-        ease: 'sine.inOut',
-        stagger: 0.3,
-      });
-    }
-  }, []);
-
-  // ───────────────── LOGIN ─────────────────
+  // ───────────────── LOGIN LOGIC ─────────────────
   const handleLogin = async (e) => {
     e.preventDefault();
-
     setLoginLoading(true);
     setLoginError('');
 
     const formData = new FormData(e.target);
-
     const email = formData.get('email');
     const password = formData.get('password');
 
@@ -82,10 +66,8 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
         return;
       }
 
-      // Get role from user metadata
       const role = data.user.user_metadata?.role || 'agent';
 
-      // Store local user
       localStorage.setItem(
         'vynx_user',
         JSON.stringify({
@@ -103,16 +85,11 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
 
       onLoginSuccess(role);
 
-      // Navigate based on role
-      if (role === 'agent') {
-        navigate('/agent');
-      } else if (role === 'business') {
-        navigate('/business');
-      } else if (role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/unauthorized');
-      }
+      if (role === 'agent') navigate('/agent');
+      else if (role === 'business') navigate('/business');
+      else if (role === 'admin') navigate('/admin');
+      else navigate('/unauthorized');
+      
     } catch (err) {
       console.error(err);
       setLoginError('Login failed. Please try again.');
@@ -121,16 +98,12 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
     }
   };
 
-  // ───────────────── SIGNUP ─────────────────
+  // ───────────────── SIGNUP LOGIC ─────────────────
   const setField = (k) => (e) =>
-    setSignupForm((prev) => ({
-      ...prev,
-      [k]: e.target.value,
-    }));
+    setSignupForm((prev) => ({ ...prev, [k]: e.target.value }));
 
   const handleSignup = async (e) => {
     e.preventDefault();
-
     setSignupError('');
 
     if (signupForm.password !== signupForm.confirm) {
@@ -164,8 +137,8 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
       }
 
       console.log('Signup successful:', data);
-
-      setSignupSuccess(true);
+      setTab('success'); // Move to success view
+      
     } catch (err) {
       console.error(err);
       setSignupError('Signup failed. Please try again.');
@@ -174,360 +147,258 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
     }
   };
 
-  // Motion Variants
+  // Lightweight Motion Variants (Opacity only for zero-lag)
   const formVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.3, ease: 'easeOut' },
-    },
-    exit: {
-      opacity: 0,
-      y: -10,
-      transition: { duration: 0.2 },
-    },
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.25 } },
+    exit: { opacity: 0, transition: { duration: 0.15 } },
   };
 
   return (
-    <div
-      ref={bgRef}
-      className="h-[100dvh] w-full bg-[#F4F5F9] flex flex-col font-['Plus_Jakarta_Sans',sans-serif] overflow-y-auto no-scrollbar relative"
-    >
-      {/* --- LIGHT AMBIENT BACKGROUND --- */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-20%] w-[70vw] h-[70vw] rounded-full bg-[#38BDF8] filter blur-[120px] opacity-10 floating-node" />
-        <div
-          className="absolute bottom-[20%] right-[-20%] w-[60vw] h-[60vw] rounded-full bg-[#4ADE80] filter blur-[100px] opacity-[0.08] floating-node"
-          style={{ animationDelay: '-2s' }}
-        />
-      </div>
-
-      {/* --- TOP HEADER NAVIGATION --- */}
-      <div className="w-full p-4 pt-12 z-20 flex justify-between items-center shrink-0">
-        <Link
+    <div className={`relative min-h-[100dvh] w-full flex flex-col items-center justify-center font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-200 overflow-y-auto overflow-x-hidden ${
+      isLight ? 'bg-[#FFFFFF] text-[#1A202C]' : 'bg-[#131720] text-[#F4F5F7]'
+    }`}>
+      
+      {/* --- SLEEK FLOATING BACK BUTTON --- */}
+      <div className="absolute top-10 left-6 z-50">
+        <Link 
           to="/"
-          className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-full shadow-sm active:scale-95 transition-all text-slate-500 hover:text-black"
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 ${
+            isLight 
+              ? ' text-[#1A202C] hover:bg-[#E2E8F0]' 
+              : ' text-[#F4F5F7] hover:bg-white/10'
+          }`}
         >
-          <ChevronLeft size={16} strokeWidth={3} />
-          <span className="text-[9px] font-black uppercase tracking-widest">
-            Back
-          </span>
+          <span className='text-emerald-500'>Back</span>
+          
         </Link>
       </div>
 
-      <div className="w-full max-w-[420px] mx-auto px-4 pb-12 flex-1 flex flex-col z-10 relative">
-        {/* --- LOGO & BRANDING SECTION --- */}
-        <div className="flex flex-col items-center mt-6 mb-8 text-center">
-          <div className="w-20 h-20 bg-white rounded-[1.75rem] shadow-sm flex items-center justify-center mb-5 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#38BDF8]/10 to-transparent" />
-
-            <img
-              src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775799844/Stylised__X__logo_on_black_background-removebg-preview_nnmney.png"
-              alt="Logo"
-              className="w-12 h-12 object-contain relative z-10"
+      {/* --- MAIN CONTENT CONTAINER --- */}
+      <main className="w-full max-w-sm mx-auto px-6 py-10 flex flex-col items-center justify-center min-h-[100dvh]">
+        
+        {/* ==================== CENTERED LOGO SECTION ==================== */}
+        <div className="flex flex-col items-center mb-4 w-full shrink-0">
+          <div className={`w-20 h-20 rounded-2xl overflow-hidden flex items-center justify-center p-1  ${
+            isLight ? '' : ''
+          }`}>
+            <img 
+              src="https://res.cloudinary.com/dmtzmgbkj/image/upload/v1775799844/Stylised__X__logo_on_black_background-removebg-preview_nnmney.png" 
+              alt="Radix Logo" 
+              className="w-full h-full object-contain rounded-xl"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center font-extrabold text-2xl text-[#81B398]">R</div>';
+              }}
             />
           </div>
-
-          <h1 className="text-3xl font-black text-black tracking-tight uppercase">
-            Radix
-          </h1>
-
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">
-            Partner Portal
-          </p>
+          {/* <h1 className="text-3xl font-extrabold tracking-tight">Radix</h1> */}
         </div>
 
-        {/* --- TAB SWITCHER --- */}
-        <div className="bg-white p-1.5 rounded-[1.5rem] shadow-sm flex relative mb-4 shrink-0">
-          <div
-            className="absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-[#F4F5F9] rounded-[1.25rem] transition-all duration-300 ease-out"
-            style={{ left: tab === 'login' ? '6px' : 'calc(50%)' }}
-          />
+        <AnimatePresence mode="wait">
+          
+          {/* ==================== LOGIN VIEW ==================== */}
+          {tab === 'login' && (
+            <motion.div key="login" variants={formVariants} initial="hidden" animate="visible" exit="exit" className="w-full shrink-0">
+              
+              {/* Welcome Text */}
+              <div className="mb-8 text-center">
+                <h2 className={`text-2xl font-extrabold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+                  Welcome Back!
+                </h2>
+                <p className={`text-sm font-medium mt-1.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                  Log in to your partner account
+                </p>
+              </div>
 
-          <button
-            onClick={() => {
-              setTab('login');
-              setLoginError('');
-            }}
-            className={`relative z-10 flex-1 py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-colors ${
-              tab === 'login' ? 'text-black' : 'text-slate-400'
-            }`}
-          >
-            Log In
-          </button>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className={`text-[11px] font-bold uppercase tracking-wider mb-2 block pl-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                    Email Address
+                  </label>
+                  <AuthInput isLight={isLight} name="email" type="email" placeholder="name@company.com" required />
+                </div>
 
-          <button
-            onClick={() => {
-              setTab('signup');
-              setSignupError('');
-              setSignupSuccess(false);
-            }}
-            className={`relative z-10 flex-1 py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-colors ${
-              tab === 'signup' ? 'text-black' : 'text-slate-400'
-            }`}
-          >
-            Sign Up
-          </button>
-        </div>
-
-        {/* --- MAIN FORM CARD --- */}
-        <div className="bg-white rounded-[2rem] p-6 shadow-sm relative overflow-hidden shrink-0">
-          <AnimatePresence mode="wait">
-            {/* LOGIN */}
-            {tab === 'login' && (
-              <motion.div
-                key="login"
-                variants={formVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="space-y-5"
-              >
-                <form onSubmit={handleLogin} className="space-y-5">
-                  <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
-                      Email Address
+                <div>
+                  <div className="flex justify-between items-end mb-2 pl-1 pr-1">
+                    <label className={`text-[11px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                      Password
                     </label>
-
-                    <AuthInput
-                      name="email"
-                      type="email"
-                      placeholder="name@company.com"
-                      required
-                    />
+                    
                   </div>
-
-                  <div>
-                    <div className="flex justify-between items-end mb-2">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                        Password
-                      </label>
-
-                      <button
-                        type="button"
-                        className="text-[9px] font-black text-[#38BDF8] uppercase tracking-widest"
-                      >
-                        Forgot?
-                      </button>
-                    </div>
-
-                    <div className="relative">
-                      <AuthInput
-                        name="password"
-                        type={showLoginPass ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        required
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => setShowLoginPass((p) => !p)}
-                        className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-black transition-colors"
-                      >
-                        {showLoginPass ? (
-                          <EyeOff size={18} />
-                        ) : (
-                          <Eye size={18} />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="pt-1">
-                    {loginError && <ErrorMsg msg={loginError} />}
-                  </div>
-
-                  <div className="pt-2">
-                    <SubmitBtn
-                      loading={loginLoading}
-                      label="Sign In"
-                      icon={<Lock size={16} />}
-                    />
-                  </div>
-                </form>
-              </motion.div>
-            )}
-
-            {/* SIGNUP */}
-            {tab === 'signup' && (
-              <motion.div
-                key="signup"
-                variants={formVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="space-y-5"
-              >
-                {signupSuccess ? (
-                  <div className="flex flex-col items-center text-center gap-3 py-4">
-                    <div className="w-20 h-20 bg-[#4ADE80]/10 rounded-[1.5rem] flex items-center justify-center">
-                      <CheckCircle2
-                        size={40}
-                        className="text-[#4ADE80]"
-                      />
-                    </div>
-
-                    <div className="mt-2">
-                      <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
-                        Ready
-                      </h3>
-
-                      <p className="text-xs text-slate-500 mt-2 font-bold leading-relaxed px-2">
-                        Your partner account has been created successfully.
-                      </p>
-                    </div>
-
+                  <div className="relative">
+                    <AuthInput isLight={isLight} name="password" type={showLoginPass ? 'text' : 'password'} placeholder="••••••••" required />
                     <button
-                      onClick={() => {
-                        setTab('login');
-                        setSignupSuccess(false);
-
-                        setSignupForm({
-                          full_name: '',
-                          email: '',
-                          phone: '',
-                          password: '',
-                          confirm: '',
-                        });
-                      }}
-                      className="w-full mt-6 bg-black text-white py-4 rounded-[1.25rem] font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-black/10"
+                      type="button"
+                      onClick={() => setShowLoginPass((p) => !p)}
+                      className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${isLight ? 'text-[#718096] hover:text-[#1A202C]' : 'text-[#9CA3AF] hover:text-[#F4F5F7]'}`}
                     >
-                      Proceed to Login
+                      {showLoginPass ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
-                ) : (
-                  <form onSubmit={handleSignup} className="space-y-5">
-                    <div>
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
-                        Full Name
-                      </label>
+                </div>
 
-                      <AuthInput
-                        value={signupForm.full_name}
-                        onChange={setField('full_name')}
-                        placeholder="John Doe"
-                        required
-                      />
-                    </div>
+                {loginError && <div className="pt-1"><ErrorMsg isLight={isLight} msg={loginError} /></div>}
 
-                    <div>
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
-                        Email Address
-                      </label>
+                <div className="pt-4">
+                  <SubmitBtn loading={loginLoading} label="Sign In" icon={<LogIn size={18} strokeWidth={2.5} />} />
+                </div>
+              </form>
 
-                      <AuthInput
-                        type="email"
-                        value={signupForm.email}
-                        onChange={setField('email')}
-                        placeholder="john@email.com"
-                        required
-                      />
-                    </div>
+              {/* Attractive Toggle to Signup */}
+              <div className={`mt-8 pt-6 border-t flex flex-col items-center ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+                <p className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                  Don't have an account?
+                </p>
+                <button 
+                  onClick={() => { setTab('signup'); setLoginError(''); }}
+                  className="w-full py-3.5 rounded-[1rem] font-bold text-sm transition-all duration-200 active:scale-95 bg-[#81B398]/10 text-[#81B398] hover:bg-[#81B398]/20 border border-[#81B398]/20"
+                >
+                  Join Now Free
+                </button>
+              </div>
 
-                    <div>
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
-                        Phone Number
-                      </label>
+            </motion.div>
+          )}
 
-                      <AuthInput
-                        type="tel"
-                        value={signupForm.phone}
-                        onChange={setField('phone')}
-                        placeholder="+91 98765 43210"
-                        required
-                      />
-                    </div>
+          {/* ==================== SIGNUP VIEW ==================== */}
+          {tab === 'signup' && (
+            <motion.div key="signup" variants={formVariants} initial="hidden" animate="visible" exit="exit" className="w-full shrink-0">
+              
+              {/* Signup Text */}
+              <div className="mb-8 text-center">
+                <h2 className={`text-2xl font-extrabold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+                  Create Account
+                </h2>
+                <p className={`text-sm font-medium mt-1.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                  Join the partner network for free
+                </p>
+              </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
-                          Password
-                        </label>
+              <form onSubmit={handleSignup} className="space-y-4">
+                <div>
+                  <label className={`text-[11px] font-bold uppercase tracking-wider mb-1.5 block pl-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                    Full Name
+                  </label>
+                  <AuthInput isLight={isLight} value={signupForm.full_name} onChange={setField('full_name')} placeholder="John Doe" required />
+                </div>
 
-                        <div className="relative">
-                          <AuthInput
-                            type={showSignupPass ? 'text' : 'password'}
-                            value={signupForm.password}
-                            onChange={setField('password')}
-                            placeholder="Min 8 chars"
-                            required
-                          />
+                <div>
+                  <label className={`text-[11px] font-bold uppercase tracking-wider mb-1.5 block pl-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                    Email Address
+                  </label>
+                  <AuthInput isLight={isLight} type="email" value={signupForm.email} onChange={setField('email')} placeholder="john@email.com" required />
+                </div>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setShowSignupPass((p) => !p)
-                            }
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-black transition-colors"
-                          >
-                            {showSignupPass ? (
-                              <EyeOff size={16} />
-                            ) : (
-                              <Eye size={16} />
-                            )}
-                          </button>
-                        </div>
-                      </div>
+                <div>
+                  <label className={`text-[11px] font-bold uppercase tracking-wider mb-1.5 block pl-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                    Phone Number
+                  </label>
+                  <AuthInput isLight={isLight} type="tel" value={signupForm.phone} onChange={setField('phone')} placeholder="+91 98765 43210" required />
+                </div>
 
-                      <div>
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
-                          Confirm
-                        </label>
+                <div>
+                  <label className={`text-[11px] font-bold uppercase tracking-wider mb-1.5 block pl-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                    Password
+                  </label>
+                  <div className="relative">
+                    <AuthInput isLight={isLight} type={showSignupPass ? 'text' : 'password'} value={signupForm.password} onChange={setField('password')} placeholder="Min 8 characters" required />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignupPass((p) => !p)}
+                      className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${isLight ? 'text-[#718096] hover:text-[#1A202C]' : 'text-[#9CA3AF] hover:text-[#F4F5F7]'}`}
+                    >
+                      {showSignupPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
 
-                        <AuthInput
-                          type="password"
-                          value={signupForm.confirm}
-                          onChange={setField('confirm')}
-                          placeholder="Re-enter"
-                          required
-                        />
-                      </div>
-                    </div>
+                <div>
+                  <label className={`text-[11px] font-bold uppercase tracking-wider mb-1.5 block pl-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                    Confirm Password
+                  </label>
+                  <AuthInput isLight={isLight} type="password" value={signupForm.confirm} onChange={setField('confirm')} placeholder="Re-enter password" required />
+                </div>
 
-                    <div className="pt-1">
-                      {signupError && <ErrorMsg msg={signupError} />}
-                    </div>
+                {signupError && <div className="pt-1"><ErrorMsg isLight={isLight} msg={signupError} /></div>}
 
-                    <div className="pt-2">
-                      <SubmitBtn
-                        loading={signupLoading}
-                        label="Create Account"
-                        icon={<Wallet size={16} />}
-                      />
-                    </div>
-                  </form>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                <div className="pt-4">
+                  <SubmitBtn loading={signupLoading} label="Create Account" icon={<UserPlus size={18} strokeWidth={2.5} />} />
+                </div>
+              </form>
 
-        <p className="text-center text-[9px] text-slate-400 uppercase tracking-widest mt-8 font-black">
-          Secured by Radix Enterprise
-        </p>
-      </div>
+              {/* Attractive Toggle to Login */}
+              <div className={`mt-8 pt-6 border-t flex flex-col items-center ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+                <p className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                  Already have an account?
+                </p>
+                <button 
+                  onClick={() => { setTab('login'); setSignupError(''); }}
+                  className="w-full py-3.5 rounded-[1rem] font-bold text-sm transition-all duration-200 active:scale-95 bg-[#81B398]/10 text-[#81B398] hover:bg-[#81B398]/20 border border-[#81B398]/20"
+                >
+                  Log In Here
+                </button>
+              </div>
+
+            </motion.div>
+          )}
+
+          {/* ==================== SUCCESS VIEW ==================== */}
+          {tab === 'success' && (
+            <motion.div key="success" variants={formVariants} initial="hidden" animate="visible" exit="exit" className="w-full py-6 shrink-0">
+              <div className="text-center w-full flex flex-col items-center">
+                <div className="w-20 h-20 rounded-[1.25rem] flex items-center justify-center mx-auto mb-6 bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20 shadow-xl">
+                  <CheckCircle2 size={40} strokeWidth={2.5} />
+                </div>
+                
+                <h3 className={`text-2xl font-extrabold tracking-tight mb-2 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+                  Ready to Go!
+                </h3>
+                
+                <p className={`text-sm font-medium leading-relaxed mb-10 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                  Your partner account has been created successfully. Log in to start earning.
+                </p>
+
+                <button
+                  onClick={() => {
+                    setTab('login');
+                    setSignupForm({ full_name: '', email: '', phone: '', password: '', confirm: '' });
+                  }}
+                  className="w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 bg-[#81B398] text-white hover:bg-[#6FA085] shadow-lg shadow-[#81B398]/20"
+                >
+                  Proceed to Login <LogIn size={18} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+        </AnimatePresence>
+      </main>
     </div>
   );
 };
 
-// ───────────────── COMPONENTS ─────────────────
+// ───────────────── CARDLESS BENTO COMPONENTS ─────────────────
 
-const AuthInput = ({ ...props }) => (
+const AuthInput = ({ isLight, ...props }) => (
   <input
     {...props}
-    className="w-full text-sm text-slate-900 font-bold outline-none transition-all placeholder:text-slate-400 bg-[#F4F5F9] border border-transparent px-5 py-4 rounded-[1.25rem] focus:border-black focus:bg-white focus:shadow-sm"
+    className={`w-full px-5 py-4 rounded-[1rem] text-sm font-bold outline-none border transition-all placeholder:font-medium ${
+      isLight 
+        ? 'bg-[#FFFFFF] border-[#E2E8F0] focus:border-[#81B398] text-[#1A202C] placeholder:text-[#A0AEC0]' 
+        : 'bg-[#222938] border-white/10 focus:border-[#81B398] text-[#F4F5F7] placeholder:text-[#718096]'
+    }`}
   />
 );
 
 const ErrorMsg = ({ msg }) => (
   <motion.div
-    initial={{ opacity: 0, y: -10 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="flex items-center gap-3 text-rose-500 text-xs bg-rose-50 border border-rose-100 px-4 py-3 rounded-[1rem] font-bold"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="flex items-center gap-2.5 bg-[#F0524F]/10 text-[#F0524F] border border-[#F0524F]/20 px-4 py-3.5 rounded-[1rem]"
   >
-    <AlertCircle size={16} className="shrink-0" />
-    {msg}
+    <AlertCircle size={16} className="shrink-0" strokeWidth={2.5} />
+    <span className="text-xs font-bold">{msg}</span>
   </motion.div>
 );
 
@@ -535,21 +406,17 @@ const SubmitBtn = ({ loading, label, icon }) => (
   <button
     type="submit"
     disabled={loading}
-    className="w-full flex justify-center items-center gap-2 font-black text-[11px] uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100 bg-black text-white py-4 rounded-[1.25rem] shadow-xl shadow-black/10 hover:bg-slate-900"
+    className="w-full py-4 rounded-[1rem] font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:active:scale-100 bg-[#81B398] text-white hover:bg-[#6FA085] shadow-lg shadow-[#81B398]/20"
   >
-    <span className="flex items-center gap-2">
-      {loading ? (
-        <>
-          <Loader2 size={16} className="animate-spin" />
-          Processing...
-        </>
-      ) : (
-        <>
-          {icon}
-          {label}
-        </>
-      )}
-    </span>
+    {loading ? (
+      <>
+        <Loader2 size={18} className="animate-spin" /> Processing...
+      </>
+    ) : (
+      <>
+        {icon} {label}
+      </>
+    )}
   </button>
 );
 
