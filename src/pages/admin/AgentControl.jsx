@@ -8,24 +8,27 @@ import {
   AlertTriangle, Loader2, AlertCircle
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 
 // ─── Mappers ──────────────────────────────────────────────────────────────────
 const mapAgent = (a) => ({
-  id:      a.name,                          // email is the doc name/key
-  name:    a.full_name || a.name,
-  email:   a.email     || a.name,
-  phone:   a.phone     || '—',
-  joined:  a.creation  ? a.creation.split(' ')[0] : '—',
-  status:  a.enabled === 1 ? 'Active' : 'Restricted',
+  id: a.id,
+  name: a.full_name || 'Unknown User',
+  email: a.email || '',
+  phone: a.phone || '—',
+  joined: a.created_at
+    ? new Date(a.created_at).toLocaleDateString()
+    : '—',
+  status: a.status || 'active',
   balance: a.wallet_balance || 0,
+  totalLeads: a.total_leads || 0,
 });
 
 const mapLead = (l) => ({
-  id:         l.name,
+  id: l.id,
   clientName: l.customer_name || '—',
-  status:     l.status        || '—',
-  agentId:    l.source_agent  || '',   // matches agent.id (email)
+  status: l.status || 'pending',
+  agentId: l.source_user_id,
 });
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -44,11 +47,19 @@ const AgentControl = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await frappeApi.get('/method/business_chain.api.admin.get_team_data');
-      const payload = res.data?.message || {};
+      const { data, error } = await supabase.rpc('get_admin_agents_dashboard');
+
+      if (error) {
+        console.error('Failed to load team data:', error);
+        setError('Failed to load team data. Check your connection.');
+        return;
+      }
+
+      const payload = data || {};
       setAgents((payload.agents || []).map(mapAgent));
-      setLeads((payload.leads   || []).map(mapLead));
-    } catch {
+      setLeads((payload.leads || []).map(mapLead));
+    } catch (err) {
+      console.error('Error fetching team data:', err);
       setError('Failed to load team data. Check your connection.');
     } finally {
       setLoading(false);
@@ -57,22 +68,31 @@ const AgentControl = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ── Toggle enabled/restricted ─────────────────────────────────────────────
+  // ── Toggle active/restricted ─────────────────────────────────────────────
   const toggleAgentStatus = async (agent) => {
-    const newEnabled = agent.status === 'Active' ? 0 : 1;
+    const newStatus = agent.status === 'active' ? 'restricted' : 'active';
     setTogglingId(agent.id);
     try {
-      await frappeApi.put(`/resource/User/${encodeURIComponent(agent.id)}`, {
-        enabled: newEnabled,
-      });
-      const newStatus = newEnabled === 1 ? 'Active' : 'Restricted';
+      const { error } = await supabase
+        .from('users')
+        .update({ status: newStatus })
+        .eq('id', agent.id);
+
+      if (error) {
+        console.error('Failed to update agent status:', error);
+        alert('Failed to update agent status. Check permissions.');
+        return;
+      }
+
+      const displayStatus = newStatus === 'active' ? 'active' : 'restricted';
       setAgents(prev =>
-        prev.map(a => a.id === agent.id ? { ...a, status: newStatus } : a)
+        prev.map(a => a.id === agent.id ? { ...a, status: displayStatus } : a)
       );
       if (selectedAgent?.id === agent.id) {
-        setSelectedAgent(prev => ({ ...prev, status: newStatus }));
+        setSelectedAgent(prev => ({ ...prev, status: displayStatus }));
       }
-    } catch {
+    } catch (err) {
+      console.error('Error toggling agent status:', err);
       alert('Failed to update agent status. Check permissions.');
     } finally {
       setTogglingId(null);
@@ -106,8 +126,8 @@ const AgentControl = () => {
 
   // ── Charts ────────────────────────────────────────────────────────────────
   const chartConfigs = useMemo(() => {
-    const activeCount     = agents.filter(a => a.status === 'Active').length;
-    const restrictedCount = agents.filter(a => a.status === 'Restricted').length;
+    const activeCount     = agents.filter(a => a.status === 'active').length;
+    const restrictedCount = agents.filter(a => a.status === 'restricted').length;
 
     const leadCountByAgent = agents.map(a => ({
       x: a.name.split(' ')[0],
@@ -218,11 +238,11 @@ const AgentControl = () => {
               className="bg-white border border-slate-200 rounded-xl p-4 hover:border-blue-500 transition-all group relative shadow-sm"
             >
               <div className={`absolute top-3 right-3 px-2 py-0.5 text-[7px] font-black uppercase rounded border ${
-                agent.status === 'Active'
+                agent.status === 'active'
                   ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
                   : 'bg-red-50 text-red-600 border-red-100'
               }`}>
-                {agent.status}
+                {agent.status === 'active' ? 'Active' : 'Restricted'}
               </div>
 
               <div className="flex flex-col items-center text-center mb-4">
@@ -237,7 +257,7 @@ const AgentControl = () => {
                 <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 text-center">
                   <p className="text-[7px] text-slate-400 font-black uppercase mb-0.5">Leads</p>
                   <p className="text-xs font-black text-slate-900">
-                    {leads.filter(l => l.agentId === agent.id).length}
+                    {agent.totalLeads}
                   </p>
                 </div>
                 <div className="bg-slate-50 p-2 rounded-lg border border-slate-100 text-center">
@@ -295,14 +315,14 @@ const AgentControl = () => {
                         <InfoItem label="Email"  value={selectedAgent.email} />
                         <InfoItem label="Phone"  value={selectedAgent.phone} />
                         <InfoItem label="Joined" value={selectedAgent.joined} />
-                        <InfoItem label="Status" value={selectedAgent.status} />
+                        <InfoItem label="Status" value={selectedAgent.status === 'active' ? 'Active' : 'Restricted'} />
                       </div>
                     </section>
 
-                    <section className={`p-5 rounded-xl border ${selectedAgent.status === 'Active' ? 'bg-slate-50 border-slate-200' : 'bg-red-50 border-red-100'}`}>
+                    <section className={`p-5 rounded-xl border ${selectedAgent.status === 'active' ? 'bg-slate-50 border-slate-200' : 'bg-red-50 border-red-100'}`}>
                       <div className="flex items-center gap-3 mb-4">
-                        <AlertTriangle size={16} className={selectedAgent.status === 'Active' ? 'text-slate-600' : 'text-red-600'} />
-                        <p className={`text-[9px] font-black uppercase tracking-widest ${selectedAgent.status === 'Active' ? 'text-slate-600' : 'text-red-600'}`}>
+                        <AlertTriangle size={16} className={selectedAgent.status === 'active' ? 'text-slate-600' : 'text-red-600'} />
+                        <p className={`text-[9px] font-black uppercase tracking-widest ${selectedAgent.status === 'active' ? 'text-slate-600' : 'text-red-600'}`}>
                           Security Controls
                         </p>
                       </div>
@@ -310,14 +330,14 @@ const AgentControl = () => {
                         onClick={() => toggleAgentStatus(selectedAgent)}
                         disabled={togglingId === selectedAgent.id}
                         className={`w-full py-3 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60 ${
-                          selectedAgent.status === 'Active'
+                          selectedAgent.status === 'active'
                             ? 'bg-red-600 text-white hover:bg-red-700'
                             : 'bg-emerald-600 text-white hover:bg-emerald-700'
                         }`}
                       >
                         {togglingId === selectedAgent.id
                           ? <><Loader2 size={14} className="animate-spin"/> Updating...</>
-                          : selectedAgent.status === 'Active'
+                          : selectedAgent.status === 'active'
                             ? <><UserX size={14}/> Restrict Profile</>
                             : <><UserCheck size={14}/> Restore Access</>
                         }
