@@ -5,8 +5,7 @@ import {
   CheckCircle2, Inbox, Search, XCircle, FilterX, 
   User, ArrowRight, Loader2, Activity
 } from 'lucide-react';
-
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 
 const STATUSES = [
   'All',
@@ -33,14 +32,64 @@ const ManageLeads = () => {
   const fetchLeads = async () => {
     setLoading(true);
     try {
-      const res = await frappeApi.get(
-        '/method/business_chain.api.leads.get_business_leads',
-        { params: { status: statusFilter } }
-      );
-      setLeads(res.data.message.leads);
-      setSummary(res.data.message.summary);
+      const { data, error } = await supabase
+        .from('leads')
+        .select(`
+          id,
+          customer_name,
+          status,
+          created_at,
+          payment_status,
+          credit_status,
+          business_unit_services (
+            service_name
+          ),
+          users (
+            full_name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to load leads:', error);
+        return;
+      }
+
+      const mappedLeads = (data || []).map((lead) => ({
+        id: lead.id,
+        customer_name: lead.customer_name,
+        status: lead.status || 'Pending',
+        service: lead.business_unit_services?.service_name || 'Unknown',
+        date: lead.created_at,
+        agentId: lead.users?.full_name || 'Unknown',
+        paymentStatus: lead.payment_status === 'paid' ? 'Settled' : 'Pending',
+        creditStatus: lead.credit_status === 'credited' ? 'Credited' : 'Pending'
+      }));
+
+      const summary = {
+        total: mappedLeads.length,
+        pending: mappedLeads.filter(
+          (l) => l.status?.toLowerCase() === 'pending'
+        ).length,
+        in_progress: mappedLeads.filter(
+          (l) => l.status?.toLowerCase() === 'in progress'
+        ).length,
+        completed: mappedLeads.filter(
+          (l) => l.status?.toLowerCase() === 'completed'
+        ).length
+      };
+
+      const visibleLeads =
+        statusFilter === 'All'
+          ? mappedLeads
+          : mappedLeads.filter(
+              (lead) => lead.status?.toLowerCase() === statusFilter.toLowerCase()
+            );
+
+      setLeads(visibleLeads);
+      setSummary(summary);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load leads:', err);
     } finally {
       setLoading(false);
     }

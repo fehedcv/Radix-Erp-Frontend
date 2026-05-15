@@ -42,7 +42,7 @@ const BusinessDirectory = () => {
       try {
         const { data, error } = await supabase
           .from('business_units')
-          .select('id, business_name, description, location, logo')
+          .select('id, business_name, description, location, logo_url')
           .eq('status', 'active');
 
         if (error) {
@@ -56,7 +56,7 @@ const BusinessDirectory = () => {
           name: unit.business_name,
           description: unit.description,
           location: unit.location,
-          logo: unit.logo
+          logo_url: unit.logo_url
         }));
 
         setBusinessUnits(mappedData);
@@ -160,9 +160,9 @@ const BusinessDirectory = () => {
                 >
                   {/* Top: Logo & Badge */}
                   <div className="flex items-start justify-between mb-5">
-                    {unit.logo ? (
+                    {unit.logo_url ? (
                       <img
-                        src={getFrappeImage(unit.logo)}
+                        src={getFrappeImage(unit.logo_url)}
                         alt={`${unit.name} logo`}
                         className={`h-14 w-14 rounded-xl object-cover shrink-0 border ${
                           isLight ? 'border-[#E2E8F0] bg-white' : 'border-white/5 bg-[#131720]'

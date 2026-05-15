@@ -11,17 +11,18 @@ import {
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import ApexCharts from 'apexcharts';
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 
 // ─── Field map ─────────────────────────────────────────────────────────────────
-const mapWithdrawal = (doc,phoneMap = {}) => ({
-  id:        doc.name,
-  agentName: doc.agent             || '—',
-  agentPhone: phoneMap[doc.agent]  || '', // <--- ADD THIS LINE
-  amount:    doc.requested_credits || 0,
-  status:    doc.status            || 'Pending',
-  remarks:   doc.remarks           || '',
-  date:      doc.requested_on      || '—',
+const mapWithdrawal = (w) => ({
+  id: w.id,
+  agentName: w.agent_name || '—',
+  agentPhone: w.agent_phone || '',
+  amount: w.requested_credits || 0,
+  status: w.status || 'pending',
+  remarks: w.remarks || '',
+  date: w.requested_on || '—',
+  userId: w.user_id,
 });
 
 // ─── Main Component ────────────────────────────────────────────────────────────
@@ -48,8 +49,6 @@ const CreditSettlement = () => {
   const [settleRemarks, setSettleRemarks] = useState('');
   const [isProcessing,  setIsProcessing]  = useState(false);
 
-  const [agentPhones, setAgentPhones] = useState({});
-
   // ── Single API fetch ─────────────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
     setLoadingLeads(true);
@@ -57,49 +56,41 @@ const CreditSettlement = () => {
     setErrorLeads(null);
     setErrorWD(null);
     try {
-      const res = await frappeApi.get(
-        '/method/business_chain.api.admin.get_credit_settlement_data'
-      );
-      const { leads: rawLeads, withdrawals: rawWD } = res.data.message;
-const userRes = await frappeApi.get('/resource/User', {
-      params: { 
-        fields: JSON.stringify(['name', 'mobile_no', 'phone']), 
-        limit_page_length: 0 
+      const { data, error } = await supabase.rpc('get_admin_credit_settlement_dashboard');
+
+      if (error) {
+        console.error('Failed to load settlement data:', error);
+        setErrorLeads('Failed to load settlement data.');
+        setErrorWD('Failed to load settlement data.');
+        return;
       }
-    });
-    // console.log("API FULL RESPONSE:", userRes.data.message);
-    const phoneMap = {};
-    if (userRes.data?.data) {
-      userRes.data.data.forEach(user => {
-        phoneMap[user.name] = user.mobile_no || user.phone || "";
-      });
-    }
-    console.log("RAW LEADS FROM API:", rawLeads);
-console.log("FIRST LEAD:", rawLeads?.[0]);
-    setAgentPhones(phoneMap);
-      setLeads(rawLeads.map(l => ({
-        ledgerId:     l.ledger_id,
-        id:           l.id,
-        clientName:   l.client_name,
-        clientPhone:  l.client_phone,
-        clientAddress:l.client_address,
+
+      const payload = data || {};
+
+      setLeads((payload.leads || []).map(l => ({
+        ledgerId: l.ledger_id,
+        id: l.lead_id,
+        clientName: l.client_name,
+        clientPhone: l.client_phone,
+        clientAddress: l.client_address,
         businessUnit: l.business_unit,
-        service:      l.service,
-        description:  l.description,
-        status:       l.lead_status,
-        agentName:    l.agent_name,
-        agentId:      l.agent_id,
-        agentPhone:   phoneMap[l.agent_name] || phoneMap[l.agent_id] || '',
-        date:         l.date,
-        credits:      l.credits,
-        remarks:      l.ledger_remarks,
-        totalAmount:  l.total_sale_amount,
-        commission:   l.commission_amount,
-        agentCredit:  l.agent_credit,
+        service: l.service,
+        description: l.description,
+        status: l.lead_status,
+        agentName: l.agent_name,
+        agentId: l.agent_id,
+        agentPhone: l.agent_phone,
+        date: l.date,
+        credits: l.credits,
+        remarks: l.ledger_remarks,
+        totalAmount: l.total_sale_amount,
+        commission: l.commission_amount,
+        agentCredit: l.agent_credit,
       })));
 
-setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
-    } catch {
+      setWithdrawals((payload.withdrawals || []).map(mapWithdrawal));
+    } catch (err) {
+      console.error('Error fetching settlement data:', err);
       setErrorLeads('Failed to load settlement data.');
       setErrorWD('Failed to load settlement data.');
     } finally {
@@ -115,14 +106,41 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
     if (!settleAmount) return;
     setIsProcessing(true);
     try {
-      await frappeApi.put(`/resource/Agent Credit Ledger/${selectedItem.ledgerId}`, {
-        credits: parseInt(settleAmount),
-        status:  'Approved',
-        ...(settleRemarks ? { remarks: settleRemarks } : {}),
-      });
-     setLeads(prev => prev.filter(l => l.ledgerId !== selectedItem.ledgerId));
+      // Update agent_credit_ledger
+      const { error: ledgerError } = await supabase
+        .from('agent_credit_ledger')
+        .update({
+          credits: Number(settleAmount),
+          status: 'approved',
+          remarks: settleRemarks,
+        })
+        .eq('id', selectedItem.ledgerId);
+
+      if (ledgerError) {
+        console.error('Failed to update ledger:', ledgerError);
+        alert('Failed to assign credits. Please try again.');
+        return;
+      }
+
+      // Update related lead
+      const { error: leadError } = await supabase
+        .from('leads')
+        .update({
+          approved_credits: Number(settleAmount),
+          credit_status: 'approved',
+        })
+        .eq('id', selectedItem.id);
+
+      if (leadError) {
+        console.error('Failed to update lead:', leadError);
+        alert('Failed to update lead. Please try again.');
+        return;
+      }
+
+      setLeads(prev => prev.filter(l => l.ledgerId !== selectedItem.ledgerId));
       closeAllModals();
-    } catch {
+    } catch (err) {
+      console.error('Error settling credits:', err);
       alert('Failed to assign credits. Please try again.');
     } finally {
       setIsProcessing(false);
@@ -133,18 +151,26 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
   const confirmWithdrawal = async () => {
     setIsProcessing(true);
     try {
-      await frappeApi.put(
-        `/resource/Agent Withdrawal Request/${selectedItem.id}`,
-        {
-          status: 'Credited',
-          ...(settleRemarks ? { remarks: settleRemarks } : {}),
-        }
-      );
+      const { error } = await supabase
+        .from('agent_withdrawals')
+        .update({
+          status: 'approved',
+          remarks: settleRemarks,
+        })
+        .eq('id', selectedItem.id);
+
+      if (error) {
+        console.error('Failed to approve withdrawal:', error);
+        alert('Failed to approve withdrawal. Check permissions.');
+        return;
+      }
+
       setWithdrawals(prev =>
-        prev.map(w => w.id === selectedItem.id ? { ...w, status: 'Credited' } : w)
+        prev.map(w => w.id === selectedItem.id ? { ...w, status: 'credited' } : w)
       );
       closeAllModals();
-    } catch {
+    } catch (err) {
+      console.error('Error approving withdrawal:', err);
       alert('Failed to approve withdrawal. Check permissions.');
     } finally {
       setIsProcessing(false);
@@ -214,8 +240,8 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
       distribution: {
         series: [
           leads.length,
-          withdrawals.filter(w => w.status === 'Pending').length,
-          withdrawals.filter(w => w.status === 'Approved' || w.status === 'Credited').length,
+          withdrawals.filter(w => w.status === 'pending').length,
+          withdrawals.filter(w => w.status === 'approved' || w.status === 'credited').length,
         ],
         options: {
           chart: { id: 'dist-chart' },
@@ -508,10 +534,8 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
   {filteredPayouts.map(item => {
     // Determine Status Styles dynamically
-    const isSuccess = item.status === 'Approved' || item.status === 'Credited';
-    const isRejected = item.status === 'Rejected';
-
-    // Format Date and Time separately
+    const isSuccess = item.status === 'approved' || item.status === 'credited';
+    const isRejected = item.status === 'rejected';
     const rawDate = new Date(item.date);
     const isValid = !isNaN(rawDate.getTime());
     const displayDate = isValid 
@@ -588,7 +612,7 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
             <Info size={14} /> Details
           </button>
           
-          {item.status === 'Pending' ? (
+          {item.status === 'pending' ? (
             <button
               onClick={() => { setSelectedItem(item); setActiveModal('payout'); }}
               className="flex-[1.2] py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all shadow-md shadow-emerald-500/20 flex justify-center items-center gap-2 active:scale-95"
@@ -701,7 +725,6 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
                     <p className="text-[7px] font-bold text-blue-400 uppercase">ID: {selectedItem.agentId}</p>
                   </div>
                 </div>
-                  {console.log(`It's from the mate model${selectedItem.agentPhone}`)}
                 <div className="flex gap-2 pt-1">
                   <a href={`tel:${selectedItem.agentPhone}`}
                     className="flex-1 py-1.5 bg-white rounded text-[7px] font-black uppercase text-center border border-blue-200">
@@ -731,7 +754,6 @@ setWithdrawals(rawWD.map(doc => mapWithdrawal(doc, phoneMap)));
                   <div className="flex items-center justify-center gap-2 text-xs text-slate-700 font-bold mb-3">
                     <Phone size={14} className="text-slate-400" /> {selectedItem.agentPhone || 'No Phone Available'}
                   </div>
-                  {console.log(selectedItem.agentPhone)}
                   <div className="flex gap-2">
                     <a href={`tel:${selectedItem.agentPhone}`} className="flex-1 py-2.5 bg-white rounded-lg text-[9px] font-black uppercase text-center border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center gap-1.5 shadow-sm">
                       <Phone size={12} /> Call Now

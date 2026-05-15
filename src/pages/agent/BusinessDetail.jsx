@@ -63,7 +63,7 @@ const BusinessDetail = () => {
           .from('business_units')
           .select(`
             id, business_name, website, email, primary_phone, location, 
-            address, description, logo, facebook, instagram, linkedin
+            address, description, logo_url, facebook, instagram, linkedin
           `)
           .eq('id', id)
           .single();
@@ -85,7 +85,7 @@ const BusinessDetail = () => {
 
         const { data: galleryData, error: galleryError } = await supabase
           .from('business_unit_gallery')
-          .select('image')
+          .select('image_url')
           .eq('business_unit_id', id);
 
         if (galleryError) {
@@ -102,7 +102,7 @@ const BusinessDetail = () => {
           location: unitData.location || '',
           address: unitData.address || '',
           description: unitData.description || '',
-          logo: unitData.logo || '',
+          logo_url: unitData.logo_url || '',
           facebook: unitData.facebook || '',
           instagram: unitData.instagram || '',
           linkedin: unitData.linkedin || '',
@@ -110,7 +110,7 @@ const BusinessDetail = () => {
             name: s.service_name,
             description: s.description || ''
           })),
-          gallery: (galleryData || []).map(g => g.image)
+          gallery: (galleryData || []).map(g => g.image_url)
         });
 
         if (servicesData && servicesData.length > 0) {
@@ -298,9 +298,9 @@ const BusinessDetail = () => {
       {/* HEADER CARD (App-Like layout) */}
       <div className={`rounded-2xl p-6 lg:p-8 flex flex-col lg:flex-row justify-between gap-6 items-start lg:items-center border transition-all ${surfaceClass}`}>
         <div className="flex flex-row items-center gap-5 w-full lg:w-auto">
-          {unit.logo ? (
+          {unit.logo_url ? (
             <img
-              src={getFrappeImage(unit.logo)}
+              src={getFrappeImage(unit.logo_url)}
               alt="logo"
               className={`h-20 w-20 lg:h-24 lg:w-24 rounded-xl object-cover border shrink-0 ${isLight ? 'border-[#E2E8F0] bg-white' : 'border-white/5 bg-[#131720]'}`}
             />

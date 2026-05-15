@@ -12,49 +12,42 @@ import {
   RotateCcw
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
-import frappeApi from '../../api/frappeApi';
-
-const SITE_URL = import.meta.env.VITE_FRAPPE_URL?.replace(/\/api$/, "") || "http://16.171.38.6:8000";
+import { supabase } from '../../supabase/supabaseClient';
 
 const resolveUrl = (url) => {
   if (!url) return "";
   if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) {
     return url;
   }
-  const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  return `${SITE_URL}${cleanPath}`;
+  return url;
 };
 
-// ─── Field map ────────────────────────────────────────────────────────────────
-const mapDoc = (doc) => ({
-  id:          doc.name,
-  name:        doc.business_name   || doc.name,
-  category:    doc.category        || '—',
-  status:      doc.status          || 'Active',
-  commision:  doc.commision      || 0,
-  managerName: doc.manager_name    || '—',
-  phone:       doc.primary_phone   || '',
-  whatsapp:    doc.whatsapp_number || '',
-  email:       doc.email           || '',
-  website:     doc.website         || '',
-  cityArea:    doc.location        || '',
-  address:     doc.address         || '',
-  description: doc.description     || '',
-  logo:        doc.logo            || '',
-  facebook:    doc.facebook        || '',
-  instagram:   doc.instagram       || '',
-  linkedin:    doc.linkedin        || '',
-  services:    Array.isArray(doc.services) ? doc.services : [],
-  gallery:     Array.isArray(doc.gallery)  ? doc.gallery  : [],
-  date:        doc.creation ? doc.creation.split(' ')[0] : '—',
+const normalizeBusinessUnit = (doc) => ({
+  id: doc.id,
+  name: doc.business_name || 'Unnamed Unit',
+  business_name: doc.business_name || 'Unnamed Unit',
+  category: doc.category || '—',
+  status: doc.status || 'Active',
+  commission: doc.commission ?? 0,
+  managerName: doc.manager_name || '—',
+  managerEmail: doc.manager_email || '',
+  managerPhone: doc.manager_phone || '',
+  phone: doc.primary_phone || '',
+  whatsapp: doc.whatsapp_number || '',
+  email: doc.email || '',
+  website: doc.website || '',
+  cityArea: doc.location || '',
+  address: doc.address || '',
+  description: doc.description || '',
+  logo: doc.logo || '',
+  facebook: doc.facebook || '',
+  instagram: doc.instagram || '',
+  linkedin: doc.linkedin || '',
+  services: Array.isArray(doc.services) ? doc.services : [],
+  gallery: Array.isArray(doc.gallery) ? doc.gallery : [],
+  created_at: doc.created_at || '',
+  date: doc.created_at ? doc.created_at.split(' ')[0] : '—',
 });
-
-const BU_LIST_FIELDS = [
-  'name','business_name','category','status','manager_name',
-  'primary_phone','whatsapp_number','email','website',
-  'location','address','description','creation',
-  'commision'
-];
 
 const CATEGORIES = ['Technology','Real Estate','Finance','Healthcare','Retail','Construction','Other'];
 const STATUSES   = ['Active','Inactive','Suspended'];
@@ -78,11 +71,15 @@ const BusinessHub = () => {
   const fetchUnits = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const res = await frappeApi.get('/resource/Business Unit', {
-        params: { fields: JSON.stringify(BU_LIST_FIELDS), limit_page_length: 0, order_by: 'creation desc' },
-      });
-      setUnits((res.data?.data || []).map(mapDoc));
-    } catch {
+      const { data, error } = await supabase.rpc('get_admin_business_units');
+      if (error) {
+        console.error('Failed to load business units:', error);
+        setError('Failed to load business units. Check your connection or permissions.');
+        return;
+      }
+      setUnits((data || []).map(normalizeBusinessUnit));
+    } catch (err) {
+      console.error('Failed to load business units:', err);
       setError('Failed to load business units. Check your connection or permissions.');
     } finally { setLoading(false); }
   }, []);
@@ -95,9 +92,23 @@ const BusinessHub = () => {
     setLoadingDetail(true);
     setSelectedUnit({ ...unit, _loading: true });
     try {
-      const res = await frappeApi.get(`/resource/Business Unit/${unit.id}`);
-      setSelectedUnit(mapDoc(res.data?.data || {}));
-    } catch {
+      const [unitRes, servicesRes, galleryRes] = await Promise.all([
+        supabase.from('business_units').select('*').eq('id', unit.id).single(),
+        supabase.from('business_unit_services').select('*').eq('business_unit_id', unit.id),
+        supabase.from('business_unit_gallery').select('*').eq('business_unit_id', unit.id),
+      ]);
+
+      if (unitRes.error) throw unitRes.error;
+      if (servicesRes.error) throw servicesRes.error;
+      if (galleryRes.error) throw galleryRes.error;
+
+      setSelectedUnit(normalizeBusinessUnit({
+        ...unitRes.data,
+        services: servicesRes.data || [],
+        gallery: galleryRes.data || [],
+      }));
+    } catch (err) {
+      console.error('Failed to load business unit detail:', err);
       setSelectedUnit({ ...unit, _loading: false });
     } finally { setLoadingDetail(false); }
   }, []);
@@ -127,26 +138,44 @@ const BusinessHub = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await frappeApi.put(`/resource/Business Unit/${selectedUnit.id}`, {
-        business_name:   editForm.name,
-        category:        editForm.category,
-        status:          editForm.status,
-        commision:      editForm.commision,
-        manager_name:    editForm.manager,
-        primary_phone:   editForm.phone,
-        whatsapp_number: editForm.whatsapp,
-        email:           editForm.email,
-        website:         editForm.website,
-        location:        editForm.cityArea,
-        address:         editForm.address,
-        description:     editForm.description,
+      const { error } = await supabase
+        .from('business_units')
+        .update({
+          business_name:   editForm.name,
+          category:        editForm.category,
+          status:          editForm.status,
+          commission:      editForm.commission,
+          primary_phone:   editForm.phone,
+          whatsapp_number: editForm.whatsapp,
+          email:           editForm.email,
+          website:         editForm.website,
+          location:        editForm.cityArea,
+          address:         editForm.address,
+          description:     editForm.description,
+        })
+        .eq('id', selectedUnit.id);
+
+      if (error) throw error;
+
+      const { data: updatedData, error: fetchError } = await supabase
+        .from('business_units')
+        .select('*')
+        .eq('id', selectedUnit.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const updated = normalizeBusinessUnit({
+        ...updatedData,
+        services: selectedUnit.services,
+        gallery: selectedUnit.gallery,
       });
-      const res = await frappeApi.get(`/resource/Business Unit/${selectedUnit.id}`);
-      const updated = mapDoc(res.data?.data || {});
+
       setSelectedUnit(updated);
       setUnits(prev => prev.map(u => u.id === updated.id ? { ...u, ...updated } : u));
       setEditMode(false);
-    } catch {
+    } catch (err) {
+      console.error('Failed to save business unit:', err);
       alert('Failed to save changes. Check permissions.');
     } finally { setSaving(false); }
   };
@@ -154,16 +183,18 @@ const BusinessHub = () => {
   // ── Delete flow: pre-check linked leads ───────────────────────────────────
   const initiateDelete = async (unit) => {
     try {
-      const res = await frappeApi.get('/resource/Lead', {
-        params: {
-          filters: JSON.stringify([['business_unit', '=', unit.id]]),
-          fields:  JSON.stringify(['name']),
-          limit_page_length: 0,
-        },
-      });
-      setDeleteTarget({ id: unit.id, name: unit.name, linkedLeads: res.data?.data || [] });
-    } catch {
-      // field may not exist on Lead — proceed without unlinking
+      const { data, error } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('business_unit_id', unit.id)
+        .limit(100);
+
+      if (error) throw error;
+
+      const linkedLeads = (data || []).map((lead) => ({ name: lead.id }));
+      setDeleteTarget({ id: unit.id, name: unit.name, linkedLeads });
+    } catch (err) {
+      console.error('Failed to fetch linked leads:', err);
       setDeleteTarget({ id: unit.id, name: unit.name, linkedLeads: [] });
     }
   };
@@ -172,19 +203,19 @@ const BusinessHub = () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      const response = await frappeApi.post('/method/business_chain.api.admin.delete_business_unit', {
-        business_unit_id: deleteTarget.id
-      });
-      if (response.data?.message?.success) {
-        alert('Business unit deleted successfully!');
-        setUnits(prev => prev.filter(u => u.id !== deleteTarget.id));
-        if (selectedUnit?.id === deleteTarget.id) setSelectedUnit(null);
-        setDeleteTarget(null);
-      } else {
-        throw new Error('Delete operation failed');
-      }
-    } catch (error) {
-      console.error('Delete error:', error);
+      const { error } = await supabase
+        .from('business_units')
+        .delete()
+        .eq('id', deleteTarget.id);
+
+      if (error) throw error;
+
+      alert('Business unit deleted successfully!');
+      setUnits(prev => prev.filter(u => u.id !== deleteTarget.id));
+      if (selectedUnit?.id === deleteTarget.id) setSelectedUnit(null);
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error('Delete error:', err);
       alert('Failed to delete business unit. Please try again.');
     } finally { setDeleting(false); }
   };
@@ -193,25 +224,28 @@ const BusinessHub = () => {
   const handleCreate = async (formData) => {
     setSubmitting(true);
     try {
-      await frappeApi.post('/resource/Business Unit', {
-        business_name:         formData.name,
-        category:              formData.category,
-        status:                'Active',
-        commision:            formData.commision,
-        manager_name:          formData.manager,
-        primary_phone:         formData.phone,
-        whatsapp_number:       formData.whatsapp,
-        email:                 formData.email,
-        website:               formData.website,
-        location:              formData.cityArea,
-        address:               formData.address,
-        description:           formData.description,
-        logo:  ""
-        // commission_percentage: formData.commission // Passed the new commission value to API
-      });
+      const { error } = await supabase
+        .from('business_units')
+        .insert({
+          business_name:   formData.name,
+          category:        formData.category,
+          status:          'Active',
+          commission:      formData.commission,
+          primary_phone:   formData.phone,
+          whatsapp_number: formData.whatsapp,
+          email:           formData.email,
+          website:         formData.website,
+          location:        formData.cityArea,
+          address:         formData.address,
+          description:     formData.description,
+          logo:             '',
+        });
+
+      if (error) throw error;
       setShowAddModal(false);
       await fetchUnits();
-    } catch {
+    } catch (err) {
+      console.error('Failed to create business unit:', err);
       alert('Failed to create business unit. Please try again.');
     } finally { setSubmitting(false); }
   };

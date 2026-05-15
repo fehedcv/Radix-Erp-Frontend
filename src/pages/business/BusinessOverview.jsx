@@ -9,7 +9,7 @@ import {
   Loader2
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 import { useTheme } from '../../context/ThemeContext';
 
 const BusinessOverview = () => {
@@ -20,13 +20,16 @@ const BusinessOverview = () => {
 
   useEffect(() => {
     const loadDashboard = async () => {
+      setLoading(true);
       try {
-        const res = await frappeApi.get(
-          '/method/business_chain.api.business_dashboard.get_business_overview'
-        );
-        setData(res.data.message);
+        const { data: rpcData, error } = await supabase.rpc('get_business_overview');
+        if (error) {
+          console.error('Failed to load business overview:', error);
+          return;
+        }
+        setData(rpcData);
       } catch (err) {
-        console.error('Failed to load business overview', err);
+        console.error('Failed to load business overview:', err);
       } finally {
         setLoading(false);
       }

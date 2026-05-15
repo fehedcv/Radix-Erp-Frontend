@@ -21,8 +21,8 @@ const WalletPage = () => {
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [filterStatus, setFilterStatus] = useState('All');
-  const [ledgerFilter, setLedgerFilter] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [ledgerFilter, setLedgerFilter] = useState('all');
 
   const isLight = theme === 'light';
 
@@ -54,9 +54,21 @@ const WalletPage = () => {
 
   const fetchWallet = async () => {
     try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('Failed to fetch authenticated user:', authError);
+        return;
+      }
+      const userId = authData?.user?.id;
+      if (!userId) {
+        console.error('No authenticated user available');
+        return;
+      }
+
       const { data: ledgerData, error: ledgerError } = await supabase
         .from('agent_credit_ledger')
         .select('id, credits, transaction_type, status, remarks, created_at')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (ledgerError) {
@@ -69,12 +81,16 @@ const WalletPage = () => {
         return;
       }
 
-      const available_cash = ledgerData.reduce((sum, item) => sum + item.credits, 0);
-      const earned_credits = ledgerData
-        .filter(item => item.credits > 0)
+      const available_cash = ledgerData
+        .filter(item => ['approved', 'credited'].includes(item.status?.toLowerCase()))
         .reduce((sum, item) => sum + item.credits, 0);
+
+      const earned_credits = ledgerData
+        .filter(item => ['approved', 'credited'].includes(item.status?.toLowerCase()) && item.credits > 0)
+        .reduce((sum, item) => sum + item.credits, 0);
+
       const total_withdrawn = ledgerData
-        .filter(item => item.credits < 0)
+        .filter(item => item.status?.toLowerCase() === 'credited' && item.credits < 0)
         .reduce((sum, item) => sum + Math.abs(item.credits), 0);
 
       const mappedLedger = ledgerData.map(entry => ({
@@ -103,9 +119,21 @@ const WalletPage = () => {
 
   const fetchWithdrawalRequests = async () => {
     try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('Failed to fetch authenticated user:', authError);
+        return;
+      }
+      const userId = authData?.user?.id;
+      if (!userId) {
+        console.error('No authenticated user available');
+        return;
+      }
+
       const { data: withdrawalData, error: withdrawalError } = await supabase
         .from('agent_withdrawals')
         .select('id, requested_credits, status, remarks, requested_on')
+        .eq('user_id', userId)
         .order('requested_on', { ascending: false });
 
       if (withdrawalError) {
@@ -134,24 +162,73 @@ const WalletPage = () => {
     }
   };
 
+  const refreshWalletData = async () => {
+    await Promise.all([fetchWallet(), fetchWithdrawalRequests()]);
+  };
+
   const handlePayout = async () => {
     setProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      console.log('Withdrawal request submitted (DUMMY):', {
-        requested_credits: wallet.summary.available_cash
-      });
-      setWallet(prev => ({
-        ...prev,
-        summary: {
-          ...prev.summary,
-          available_cash: 0,
-          total_withdrawn: prev.summary.total_withdrawn + prev.summary.available_cash
-        }
-      }));
+      if (!wallet?.summary) {
+        alert('Unable to determine current balance. Please try again.');
+        return;
+      }
+
+      const availableCash = wallet.summary.available_cash;
+      if (!availableCash || availableCash <= 0) {
+        alert('No balance available for withdrawal.');
+        return;
+      }
+
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('Failed to fetch authenticated user:', authError);
+        alert('Unable to verify user. Please sign in again.');
+        return;
+      }
+
+      const userId = authData?.user?.id;
+      if (!userId) {
+        alert('Unable to verify user. Please sign in again.');
+        return;
+      }
+
+      const { data: pendingRequests, error: pendingError } = await supabase
+        .from('agent_withdrawals')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .limit(1);
+
+      if (pendingError) {
+        console.error('Failed to check pending withdrawal requests:', pendingError);
+        alert('Unable to submit withdrawal request. Please try again.');
+        return;
+      }
+
+      if (pendingRequests?.length > 0) {
+        alert('A pending withdrawal request already exists.');
+        return;
+      }
+
+      const { error: insertError } = await supabase
+        .from('agent_withdrawals')
+        .insert([{ user_id: userId, requested_credits: availableCash, status: 'pending' }]);
+
+      if (insertError) {
+        console.error('Failed to create withdrawal request:', insertError);
+        alert('Unable to submit withdrawal request. Please try again.');
+        return;
+      }
+
+      await refreshWalletData();
       setShowConfirm(false);
-    } catch (err) { console.error(err); }
-    finally { setProcessing(false); }
+    } catch (err) {
+      console.error('Error submitting withdrawal request:', err);
+      alert('Unable to submit withdrawal request. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   // SKELETON LOADER
@@ -294,17 +371,22 @@ const WalletPage = () => {
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-            {['All', 'Pending', 'Credited', 'Rejected'].map((status) => (
+            {[
+              { value: 'all', label: 'All' },
+              { value: 'pending', label: 'Pending' },
+              { value: 'credited', label: 'Credited' },
+              { value: 'rejected', label: 'Rejected' }
+            ].map((status) => (
               <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
+                key={status.value}
+                onClick={() => setFilterStatus(status.value)}
                 className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
-                  filterStatus === status 
+                  filterStatus === status.value 
                   ? 'bg-[#81B398] text-[#FFFFFF]' 
                   : (isLight ? 'bg-[#F4F5F7] text-[#718096] hover:bg-[#E2E8F0]' : 'bg-[#131720] text-[#9CA3AF] hover:bg-[#1A202C]')
                 }`}
               >
-                {status}
+                {status.label}
               </button>
             ))}
           </div>
@@ -316,7 +398,7 @@ const WalletPage = () => {
             if (requestsLoading) return null;
 
             const filteredRequests = withdrawalRequests.filter(
-              req => filterStatus === 'All' || req.status === filterStatus
+              req => filterStatus === 'all' || req.status === filterStatus
             );
 
             if (filteredRequests.length === 0) {
@@ -324,7 +406,7 @@ const WalletPage = () => {
                 <div className="py-16 text-center">
                   <ClockArrowDown size={32} className={`mx-auto mb-3 opacity-30 ${textSecondary}`} />
                   <span className={`text-sm font-medium ${textSecondary}`}>
-                    No {filterStatus === 'All' ? 'withdrawal' : filterStatus} requests found.
+                    No {filterStatus === 'all' ? 'withdrawal' : `${filterStatus.charAt(0).toUpperCase()}${filterStatus.slice(1)}`} requests found.
                   </span>
                 </div>
               );
@@ -371,17 +453,23 @@ const WalletPage = () => {
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-            {['All', 'Credited', 'Approved', 'Pending', 'Withdrawal'].map((filterOption) => (
+            {[
+              { value: 'all', label: 'All' },
+              { value: 'credited', label: 'Credited' },
+              { value: 'approved', label: 'Approved' },
+              { value: 'pending', label: 'Pending' },
+              { value: 'withdrawal', label: 'Withdrawal' }
+            ].map((filterOption) => (
               <button
-                key={filterOption}
-                onClick={() => setLedgerFilter(filterOption)}
+                key={filterOption.value}
+                onClick={() => setLedgerFilter(filterOption.value)}
                 className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
-                  ledgerFilter === filterOption 
+                  ledgerFilter === filterOption.value 
                   ? 'bg-[#81B398] text-[#FFFFFF]' 
                   : (isLight ? 'bg-[#F4F5F7] text-[#718096] hover:bg-[#E2E8F0]' : 'bg-[#131720] text-[#9CA3AF] hover:bg-[#1A202C]')
                 }`}
               >
-                {filterOption}
+                {filterOption.label}
               </button>
             ))}
           </div>
@@ -391,9 +479,9 @@ const WalletPage = () => {
         <div className="flex flex-col divide-y transition-colors divide-inherit" style={{ borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' }}>
           {(() => {
             const filteredLedger = ledger.filter(entry => {
-              if (ledgerFilter === 'All') return true;
-              const matchStatus = entry.status && entry.status.toLowerCase() === ledgerFilter.toLowerCase();
-              const matchType = entry.type && entry.type.toLowerCase() === ledgerFilter.toLowerCase();
+              if (ledgerFilter === 'all') return true;
+              const matchStatus = entry.status && entry.status.toLowerCase() === ledgerFilter;
+              const matchType = entry.type && entry.type.toLowerCase() === ledgerFilter;
               return matchStatus || matchType;
             });
 
@@ -402,7 +490,7 @@ const WalletPage = () => {
                 <div className="py-16 text-center">
                   <History size={32} className={`mx-auto mb-3 opacity-30 ${textSecondary}`} />
                   <span className={`text-sm font-medium ${textSecondary}`}>
-                    No {ledgerFilter === 'All' ? 'transaction' : ledgerFilter} activity found.
+                    No {ledgerFilter === 'all' ? 'transaction' : `${ledgerFilter.charAt(0).toUpperCase()}${ledgerFilter.slice(1)}`} activity found.
                   </span>
                 </div>
               );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -12,11 +13,7 @@ import {
   AppWindowMacIcon
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
-
-// Data Sources
-import frappeApi from '../../api/frappeApi';
-import { initialLeads } from '../../data/leadHistoryData';
-import { businessUnits } from '../../data/businessData';
+import { supabase } from '../../supabase/supabaseClient';
 
 const AdminOverview = () => {
   const navigate = useNavigate();
@@ -43,48 +40,28 @@ const AdminOverview = () => {
 
   const [loading, setLoading] = useState(true);
 
-  const latestAgents = [
-    { id: 'A-901', name: 'Zaid Al-Farsi', joined: '2h ago', status: 'Active' },
-    { id: 'A-902', name: 'Sarah Mehmood', joined: '5h ago', status: 'Active' },
-    { id: 'A-903', name: 'Omar Al-Hassan', joined: '1d ago', status: 'Pending' },
-    { id: 'A-904', name: 'Layla Rashid', joined: '2d ago', status: 'Active' },
-  ];
-
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const res = await frappeApi.get('/method/business_chain.api.admin.get_admin_dashboard_data');
-        const payload = res?.data?.message || {};
+        const { data, error } = await supabase.rpc('get_admin_dashboard_data');
+        if (error) {
+          console.error('Admin dashboard fetch failed:', error);
+          return;
+        }
 
-        const inquiryPending = Number(payload.inquiryPending || 0);
-        const inquiryVerified = Number(payload.inquiryVerified || 0);
-        const inquiryCompleted = Number(payload.inquiryCompleted || 0);
-
-        setDashboard({
-          inquiryGenerated: payload.inquiryGenerated || [],
-          inquiryPending,
-          inquiryVerified,
-          inquiryCompleted,
-          topBusinessUnits: payload.topBusinessUnits || [],
-          allBusinessUnits: payload.allBusinessUnits || [],
-          totalLeads: Number(payload.totalLeads || 0),
-          totalBusinessUnits: Number(payload.totalBusinessUnits || 0),
-          totalAgents: Number(payload.totalAgents || 0),
-          allAgents: payload.allAgents || []
-        });
-
+        setDashboard(data);
         setStats({
-          totalLeads: Number(payload.totalLeads || 0),
-          totalUnits: Number(payload.totalBusinessUnits || 0),
-          totalCredits: Number(payload.totalAgents || 0),
+          totalLeads: Number(data.totalLeads || 0),
+          totalUnits: Number(data.totalBusinessUnits || 0),
+          totalCredits: Number(data.totalAgents || 0),
           statusCounts: {
-            Pending: inquiryPending,
-            Verified: inquiryVerified,
-            Completed: inquiryCompleted
+            Pending: Number(data.inquiryPending || 0),
+            Verified: Number(data.inquiryVerified || 0),
+            Completed: Number(data.inquiryCompleted || 0)
           }
         });
       } catch (error) {
-        console.error('Admin dashboard fetch error', error);
+        console.error('Admin dashboard fetch failed:', error);
       } finally {
         setLoading(false);
       }
@@ -95,9 +72,7 @@ const AdminOverview = () => {
 
   // --- REAL DATA CHART PROCESSING ---
   const trendChartData = useMemo(() => {
-    const source = (dashboard.inquiryGenerated && dashboard.inquiryGenerated.length)
-      ? dashboard.inquiryGenerated
-      : initialLeads.map(l => ({ date: l.date, count: 1 }));
+    const source = dashboard.inquiryGenerated || [];
 
     const dailyCounts = source.reduce((acc, item) => {
       const date = item.date || item.day || item.label || '';
@@ -120,12 +95,10 @@ const AdminOverview = () => {
       return acc;
     }, {});
 
-    const source = (dashboard.topBusinessUnits && dashboard.topBusinessUnits.length)
-      ? dashboard.topBusinessUnits.map(item => ({
-          label: unitsById[item.business_unit] || item.business_unit || 'Unknown',
-          count: Number(item.lead_count ?? item.count ?? 0)
-        }))
-      : businessUnits.map(u => ({ label: u.name, count: 0 }));
+    const source = (dashboard.topBusinessUnits || []).map((item) => ({
+      label: unitsById[item.business_unit] || item.business_unit || 'Unknown',
+      count: Number(item.lead_count ?? item.count ?? 0)
+    }));
 
     const activity = source.reduce((acc, item) => {
       const key = item.label || 'Unknown';
@@ -137,7 +110,7 @@ const AdminOverview = () => {
     const labels = Object.keys(activity).slice(0, 7);
     return {
       labels,
-      data: labels.map(l => activity[l])
+      data: labels.map((l) => activity[l])
     };
   }, [dashboard.topBusinessUnits, dashboard.allBusinessUnits]);
 
@@ -180,7 +153,11 @@ const AdminOverview = () => {
     }
   };
 
-  const dashboardAgents = dashboard.allAgents && dashboard.allAgents.length ? dashboard.allAgents.slice(0, 4) : latestAgents;
+  if (loading) {
+    // preserve loading state without changing layout
+  }
+
+  const dashboardAgents = (dashboard.allAgents || []).slice(0, 4);
 
   return (
     <div className="font-[sans-serif] space-y-6 max-w-[1600px] mx-auto">
@@ -285,7 +262,7 @@ const AdminOverview = () => {
             </h4>
           </div>
           <div className="p-3 space-y-2 flex-1">
-            {(dashboard.allBusinessUnits && dashboard.allBusinessUnits.length ? dashboard.allBusinessUnits : businessUnits).slice(0, 5).map((unit, i) => {
+            {(dashboard.allBusinessUnits || []).slice(0, 5).map((unit, i) => {
               const displayName = unit.business_name || unit.name || unit.unitName || 'Unknown';
               const location = unit.category || unit.address || 'Unknown';
               return (

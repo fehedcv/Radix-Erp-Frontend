@@ -11,25 +11,7 @@ import {
   Target
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
-import frappeApi from '../../api/frappeApi';
-
-// Map API doc → internal lead shape
-const mapDoc = (doc) => ({
-  id: doc.id || doc.name,
-  businessUnit: doc.business_unit_name || doc.business_unit || '—',
-  agentName: doc.source_agent || 'System',
-  agentId: doc.agent_id || doc.source_agent || 'VYNX-CORE',
-  clientName: doc.customer_name || '—',
-  clientPhone: doc.phone || '',
-  clientEmail: doc.email || '',
-  clientAddress: doc.client_address || '',
-  description: doc.description || '',
-  service: doc.service_name || doc.service || '—',
-  status: doc.status || 'Pending',
-  verifiedByAdmin: !!doc.verified_by_admin,
-  verificationNotes: doc.verification_notes || '',
-  date: doc.creation ? doc.creation.split(' ')[0] : '—',
-});
+import { supabase } from '../../supabase/supabaseClient';
 
 const MasterLeadTracker = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,42 +31,23 @@ const [customerSearch, setCustomerSearch] = useState("");
     setError(null);
 
     try {
-      const res = await frappeApi.get('/method/business_chain.api.admin.get_leads_business_units_services');
-      const payload = res.data?.message?.data || res.data?.data || res.data;
+      const { data, error } = await supabase.rpc('get_admin_leads_dashboard');
 
-      const unitMap = {};
-      const serviceMap = {};
+      if (error) {
+        console.error('Failed to load admin leads:', error);
+        setError('Failed to load leads.');
+        return;
+      }
 
-      (payload?.business_units || []).forEach((unit) => {
-        if (unit.id) unitMap[unit.id] = unit.name;
-      });
+      const normalized = (data?.leads || []).map((lead, index) => ({
+        ...lead,
+        displayId: `Lead-${index + 1}`,
+      }));
 
-      (payload?.services || []).forEach((service) => {
-        if (service.id) serviceMap[service.id] = service.name;
-      });
-
-      const leadsWithNames = (payload?.leads || []).map((doc, index) => {
-        const base = mapDoc(doc);
-        return {
-          ...base,
-          displayId: `Lead-${index + 1}`,
-          businessUnit:
-            doc.business_unit_name ||
-            unitMap[doc.business_unit_id] ||
-            doc.business_unit_id ||
-            base.businessUnit,
-          service:
-            doc.service_name ||
-            serviceMap[doc.service_id] ||
-            doc.service_id ||
-            base.service,
-        };
-      });
-
-      setLeads(leadsWithNames);
+      setLeads(normalized);
     } catch (err) {
-      console.warn('Failed to load leads data', err);
-      setError('Failed to load leads. Please check your connection or permissions.');
+      console.error('Failed to load admin leads:', err);
+      setError('Failed to load leads.');
     } finally {
       setLoading(false);
     }
