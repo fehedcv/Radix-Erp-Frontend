@@ -1,130 +1,214 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  User, Phone, Mail, Edit3, Camera, Save, X, 
-  CheckCircle2, Settings, Loader2, Target
+import { motion } from 'framer-motion';
+import {
+  User,
+  Phone,
+  Mail,
+  Edit3,
+  Camera,
+  Save,
+  CheckCircle2,
+  Settings,
+  Loader2,
+  Target
 } from 'lucide-react';
+
 import { supabase } from '../../supabase/supabaseClient';
 import { useTheme } from '../../context/ThemeContext';
 
 const ProfilePage = () => {
-  const { theme } = useTheme(); 
+  const { theme } = useTheme();
+
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
   const [user, setUser] = useState(null);
+
   const [profile, setProfile] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    status: "agent",
+    name: '',
+    phone: '',
+    email: '',
+    status: 'agent',
     totalLeads: 0,
     avatar: null,
-    avatarFile: null 
+    avatarFile: null
   });
 
   const fileInputRef = useRef(null);
+
   const isLight = theme === 'light';
 
-  // Design System Utility Classes
-  const surfaceClass = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5';
-  const textPrimary = isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]';
-  const textSecondary = isLight ? 'text-[#718096]' : 'text-[#9CA3AF]';
-  const pulseClass = isLight ? 'bg-[#E2E8F0]' : 'bg-[#334155]';
+  // Theme classes
+  const surfaceClass = isLight
+    ? 'bg-[#FFFFFF] border-[#E2E8F0]'
+    : 'bg-[#222938] border-white/5';
 
+  const textPrimary = isLight
+    ? 'text-[#1A202C]'
+    : 'text-[#F4F5F7]';
+
+  const textSecondary = isLight
+    ? 'text-[#718096]'
+    : 'text-[#9CA3AF]';
+
+  // FETCH PROFILE
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProfile = async () => {
       try {
         setLoading(true);
 
-        const { data: authData, error: authError } = await supabase.auth.getUser();
-        if (authError) {
-          console.error('Auth error:', authError);
-          return;
-        }
-        if (!authData.user) {
-          console.error('No authenticated user');
-          return;
-        }
-        setUser(authData.user);
+        // Get auth user
+        const {
+          data: { user: authUser },
+          error: authError
+        } = await supabase.auth.getUser();
 
-        const { data: profileData, error: profileError } = await supabase
+        if (authError || !authUser) {
+          console.error(authError);
+          return;
+        }
+
+        setUser(authUser);
+
+        // Get user profile
+        const { data, error } = await supabase
           .from('users')
-          .select('full_name, phone, role, avatar_url')
-          .eq('id', authData.user.id)
+          .select(`
+            full_name,
+            phone,
+            role,
+            avatar_url
+          `)
+          .eq('id', authUser.id)
           .single();
 
-        if (profileError) {
-          console.error('Profile fetch error:', profileError);
+        if (error) {
+          console.error('Profile fetch error:', error);
           return;
         }
 
-        const { count, error: countError } = await supabase
+        // Get total leads
+        const { count } = await supabase
           .from('leads')
-          .select('*', { count: 'exact', head: true });
-
-        if (countError) {
-          console.error('Lead count error:', countError);
-          return;
-        }
+          .select('*', {
+            count: 'exact',
+            head: true
+          })
+          .eq('source_user_id', authUser.id);
 
         setProfile({
-          name: profileData.full_name || '',
-          phone: profileData.phone || '',
-          email: authData.user.email || '',
-          status: profileData.role || 'agent',
+          name: data?.full_name || '',
+          phone: data?.phone || '',
+          email: authUser.email || '',
+          status: data?.role || 'agent',
           totalLeads: count || 0,
-          avatar: profileData.avatar_url || null,
+          avatar: data?.avatar_url || null,
           avatarFile: null
         });
 
-      } catch (error) {
-        console.error("Unexpected error:", error);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+
+    fetchProfile();
   }, []);
 
-  const handleImageClick = () => { if (isEditing) fileInputRef.current.click(); };
+  // CLEANUP BLOB URL
+  useEffect(() => {
+    return () => {
+      if (profile.avatar?.startsWith('blob:')) {
+        URL.revokeObjectURL(profile.avatar);
+      }
+    };
+  }, [profile.avatar]);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfile(prev => ({
-        ...prev,
-        avatarFile: file,
-        avatar: URL.createObjectURL(file)
-      }));
+  // IMAGE PICKER
+  const handleImageClick = () => {
+    if (isEditing) {
+      fileInputRef.current?.click();
     }
   };
 
+  // IMAGE CHANGE
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    const allowed = [
+      'image/png',
+      'image/jpeg',
+      'image/webp'
+    ];
+
+    if (!allowed.includes(file.type)) {
+      alert('Only PNG, JPEG, and WEBP are allowed.');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image must be below 2MB.');
+      return;
+    }
+
+    const preview = URL.createObjectURL(file);
+
+    setProfile(prev => ({
+      ...prev,
+      avatarFile: file,
+      avatar: preview
+    }));
+  };
+
+  // SAVE PROFILE
   const handleSave = async () => {
-    if (!user) return;
-    setSaving(true);
+    if (!user || saving) return;
+
     try {
+      setSaving(true);
+
       let avatarUrl = profile.avatar;
 
+      // Upload avatar if changed
       if (profile.avatarFile) {
+
+        const extension = profile.avatarFile.name
+          .split('.')
+          .pop()
+          ?.toLowerCase();
+
+        const filePath = `${user.id}/avatar.${extension}`;
+
+        // Upload to storage
         const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(`${user.id}.jpg`, profile.avatarFile, {
-            upsert: true
-          });
+          .upload(
+            filePath,
+            profile.avatarFile,
+            {
+              upsert: true
+            }
+          );
 
         if (uploadError) {
-          console.error('Upload error:', uploadError);
+          console.error(uploadError);
+          alert(uploadError.message);
           return;
         }
 
+        // Get public URL
         const { data: publicUrlData } = supabase.storage
           .from('avatars')
-          .getPublicUrl(`${user.id}.jpg`);
+          .getPublicUrl(filePath);
 
-        avatarUrl = publicUrlData?.publicUrl || profile.avatar;
+        avatarUrl = publicUrlData.publicUrl;
       }
 
+      // Update users table
       const { error: updateError } = await supabase
         .from('users')
         .update({
@@ -135,192 +219,204 @@ const ProfilePage = () => {
         .eq('id', user.id);
 
       if (updateError) {
-        console.error('Update error:', updateError);
+        console.error(updateError);
+        alert(updateError.message);
         return;
       }
 
       setProfile(prev => ({
         ...prev,
+        avatar: avatarUrl,
         avatarFile: null
       }));
 
       setIsEditing(false);
-    } catch (error) {
-      console.error('Unexpected error:', error);
+
+      alert('Profile updated successfully.');
+
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update profile.');
     } finally {
       setSaving(false);
     }
   };
 
-  // SKELETON LOADER
+  // LOADING
   if (loading) {
     return (
-      <div className="max-w-[1400px] mx-auto space-y-6 lg:space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] relative z-0 mt-2  lg:px-0">
-        {/* Header Skeleton */}
-        <div className="flex flex-col md:flex-row justify-between md:items-end gap-5  mb-8 animate-pulse">
-          <div className="space-y-3">
-            <div className={`h-10 w-48 rounded-md ${pulseClass}`} />
-            <div className={`h-4 w-64 rounded-md ${pulseClass}`} />
-          </div>
-          <div className={`h-12 w-36 rounded-lg ${pulseClass}`} />
-        </div>
-
-        {/* Grid Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 animate-pulse">
-          <div className={`lg:col-span-1 p-8 rounded-2xl border flex flex-col items-center justify-center min-h-[300px] ${surfaceClass}`}>
-            <div className={`w-32 h-32 rounded-full mb-6 ${pulseClass}`} />
-            <div className={`h-6 w-48 rounded-md mb-4 ${pulseClass}`} />
-            <div className={`h-8 w-32 rounded-md ${pulseClass}`} />
-          </div>
-          
-          <div className={`lg:col-span-2 p-8 rounded-2xl border ${surfaceClass}`}>
-            <div className={`h-6 w-40 rounded-md mb-8 ${pulseClass}`} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div className="space-y-2"><div className={`h-4 w-24 rounded-md ${pulseClass}`} /><div className={`h-12 w-full rounded-lg ${pulseClass}`} /></div>
-               <div className="space-y-2"><div className={`h-4 w-24 rounded-md ${pulseClass}`} /><div className={`h-12 w-full rounded-lg ${pulseClass}`} /></div>
-               <div className="space-y-2 md:col-span-2"><div className={`h-4 w-32 rounded-md ${pulseClass}`} /><div className={`h-12 w-full rounded-lg ${pulseClass}`} /></div>
-            </div>
-          </div>
-        </div>
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="animate-spin text-[#81B398]" size={32} />
       </div>
     );
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }} 
-      animate={{ opacity: 1, y: 0 }}
-      className={`max-w-[1400px] mx-auto space-y-6 lg:space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] relative z-0 transition-colors duration-300 mt-2  lg:px-0 ${textPrimary}`}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={`max-w-[1400px] mx-auto pb-16 ${textPrimary}`}
     >
-      {/* 1. HEADER (Borderless, Extracted from Card) */}
-      <div className="flex flex-col md:flex-row justify-between md:items-end gap-5  mb-8">
-        <div className="space-y-1.5">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">My Profile</h1>
-          <p className={`text-sm font-medium ${textSecondary}`}>Verified Partner Management System</p>
+
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-4xl font-extrabold">
+            My Profile
+          </h1>
+
+          <p className={`text-sm mt-1 ${textSecondary}`}>
+            Verified Partner Management System
+          </p>
         </div>
-        
-        <div className="flex items-center gap-3 shrink-0">
-          {!isEditing ? (
-            <button 
-              onClick={() => setIsEditing(true)}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all border ${
-                isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C] hover:bg-[#F4F5F7]' : 'bg-[#222938] border-white/5 text-[#F4F5F7] hover:bg-[#131720]'
-              }`}
-            >
-              <Edit3 size={16} className="text-[#81B398]" /> Edit Profile
-            </button>
-          ) : (
-            <div className="flex gap-3 w-full md:w-auto">
-              <button 
-                onClick={() => {
-                  setIsEditing(false);
-                  setProfile(prev => ({ ...prev, avatarFile: null })); // Reset pending image
-                }}
-                className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-all border ${
-                  isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#F0524F] hover:bg-[#F0524F]/10' : 'bg-[#222938] border-white/5 text-[#F0524F] hover:bg-[#F0524F]/10'
-                }`}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center justify-center gap-2 bg-[#81B398] text-[#FFFFFF] px-8 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#6FA085] disabled:opacity-50 transition-all shadow-sm flex-1 md:flex-none"
-              >
-                 {saving ? <Loader2 size={16} className="animate-spin" /> : <><Save size={16} /> Save</>}
-              </button>
-            </div>
-          )}
-        </div>
+
+        {!isEditing ? (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#81B398] text-white font-semibold"
+          >
+            <Edit3 size={16} />
+            Edit Profile
+          </button>
+        ) : (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#81B398] text-white font-semibold disabled:opacity-60"
+          >
+            {saving ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Save size={16} />
+            )}
+
+            Save
+          </button>
+        )}
       </div>
 
-      {/* 2. MAIN BENTO GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        
-        {/* LEFT COLUMN: Avatar & Stats */}
-        <div className={`lg:col-span-1 p-8 rounded-2xl border flex flex-col items-center justify-center transition-all ${surfaceClass}`}>
-          <div className="relative z-10 w-full flex flex-col items-center">
-            
-            {/* Interactive Avatar with Floating Stats Badge */}
-            <div className="relative mb-6">
-              <div 
-                onClick={handleImageClick}
-                className={`w-32 h-32 rounded-full overflow-hidden border-2 flex items-center justify-center transition-all group ${
-                  isEditing 
-                  ? `cursor-pointer border-dashed ${isLight ? 'border-[#81B398] bg-[#81B398]/5' : 'border-[#81B398] bg-[#81B398]/10'}` 
-                  : (isLight ? 'border-[#E2E8F0] bg-[#F4F5F7]' : 'border-white/10 bg-[#131720]')
-                }`}
-              >
-                {profile.avatar ? (
-                  <img src={profile.avatar} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <User size={48} className={textSecondary} />
-                )}
-                
-                {isEditing && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-[#FFFFFF] backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Camera size={24} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider mt-2">Update</span>
-                  </div>
-                )}
-              </div>
-              <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
+      {/* GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-              {/* Floating Lead Count Badge */}
-              <div className={`absolute -bottom-2 -right-2 px-3 py-1.5 rounded-lg border shadow-sm flex items-center gap-1.5 ${
-                isLight ? 'bg-white border-[#E2E8F0] text-[#1A202C]' : 'bg-[#222938] border-white/10 text-[#F4F5F7]'
-              }`}>
-                <Target size={14} className="text-[#81B398]" />
-                <span className="text-sm font-extrabold tracking-tight">{profile.totalLeads} <span className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary}`}>Leads</span></span>
-              </div>
+        {/* LEFT */}
+        <div className={`rounded-2xl border p-8 flex flex-col items-center ${surfaceClass}`}>
+
+          {/* AVATAR */}
+          <div className="relative mb-6">
+
+            <div
+              onClick={handleImageClick}
+              className={`
+                w-32 h-32 rounded-full overflow-hidden
+                flex items-center justify-center
+                border-2 transition-all
+                ${isEditing
+                  ? 'cursor-pointer border-dashed border-[#81B398]'
+                  : 'border-white/10'
+                }
+              `}
+            >
+
+              {profile.avatar ? (
+                <img
+                  src={profile.avatar}
+                  alt="avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={48} />
+              )}
+
+              {isEditing && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <Camera size={24} className="text-white" />
+                </div>
+              )}
+
             </div>
 
-            <h3 className="text-2xl font-bold tracking-tight text-center mt-2">{profile.name}</h3>
-            
-            <div className="mt-4 flex justify-center">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider border ${
-                isLight ? 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20' : 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20'
-              }`}>
-                <CheckCircle2 size={14} /> {profile.status} Partner
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*"
+              onChange={handleImageChange}
+            />
+
+            {/* LEADS BADGE */}
+            <div className="absolute -bottom-2 -right-2 bg-[#81B398] text-white px-3 py-1 rounded-lg flex items-center gap-1">
+              <Target size={12} />
+              <span className="text-xs font-bold">
+                {profile.totalLeads} Leads
               </span>
             </div>
           </div>
+
+          {/* NAME */}
+          <h2 className="text-2xl font-bold">
+            {profile.name}
+          </h2>
+
+          {/* ROLE */}
+          <div className="mt-4 px-4 py-2 rounded-lg bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20 flex items-center gap-2">
+            <CheckCircle2 size={14} />
+            <span className="text-xs font-semibold uppercase">
+              {profile.status} Partner
+            </span>
+          </div>
         </div>
 
-        {/* RIGHT COLUMN: Profile Data Form */}
-        <div className={`lg:col-span-2 rounded-2xl p-8 border transition-all ${surfaceClass}`}>
-          <h4 className={`text-sm font-bold uppercase tracking-wider mb-8 flex items-center gap-2 border-b pb-4 ${isLight ? 'border-[#E2E8F0] text-[#1A202C]' : 'border-white/5 text-[#F4F5F7]'}`}>
-            <Settings size={18} className="text-[#81B398]" /> Partner Data
-          </h4>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-            <ProfileField 
-              isLight={isLight} 
-              isEditing={isEditing} 
-              label="Full Legal Name" 
-              value={profile.name} 
-              onChange={(v) => setProfile({...profile, name: v})} 
-              icon={<User size={18} />} 
+        {/* RIGHT */}
+        <div className={`lg:col-span-2 rounded-2xl border p-8 ${surfaceClass}`}>
+
+          <div className="flex items-center gap-2 mb-8">
+            <Settings size={18} className="text-[#81B398]" />
+            <h3 className="font-bold uppercase tracking-wider">
+              Partner Data
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* NAME */}
+            <ProfileField
+              label="Full Name"
+              value={profile.name}
+              onChange={(v) =>
+                setProfile(prev => ({
+                  ...prev,
+                  name: v
+                }))
+              }
+              icon={<User size={18} />}
+              editable={isEditing}
             />
-            <ProfileField 
-              isLight={isLight} 
-              isEditing={isEditing} 
-              label="Direct Contact" 
-              value={profile.phone} 
-              onChange={(v) => setProfile({...profile, phone: v})} 
-              icon={<Phone size={18} />} 
+
+            {/* PHONE */}
+            <ProfileField
+              label="Phone"
+              value={profile.phone}
+              onChange={(v) =>
+                setProfile(prev => ({
+                  ...prev,
+                  phone: v
+                }))
+              }
+              icon={<Phone size={18} />}
+              editable={isEditing}
             />
+
+            {/* EMAIL */}
             <div className="md:col-span-2">
-              <ProfileField 
-                isLight={isLight} 
-                isEditing={false} 
-                label="Primary Network Email" 
-                value={profile.email} 
-                onChange={() => {}} 
-                icon={<Mail size={18} />} 
-                readOnlyTag={true}
+              <ProfileField
+                label="Email"
+                value={profile.email}
+                icon={<Mail size={18} />}
+                editable={false}
+                readonly
               />
             </div>
+
           </div>
         </div>
       </div>
@@ -328,34 +424,60 @@ const ProfilePage = () => {
   );
 };
 
-// Extracted Subcomponent for cleaner rendering
-const ProfileField = ({ isLight, isEditing, label, value, onChange, icon, readOnlyTag }) => {
-  const textSecondary = isLight ? 'text-[#718096]' : 'text-[#9CA3AF]';
-  const textPrimary = isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]';
-  const inputSurface = isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] focus:bg-[#FFFFFF] focus:border-[#81B398]' : 'bg-[#131720] border-transparent text-[#F4F5F7] focus:bg-[#222938] focus:border-[#81B398]';
-  const displaySurface = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5';
-
+const ProfileField = ({
+  label,
+  value,
+  onChange,
+  icon,
+  editable,
+  readonly
+}) => {
   return (
     <div className="space-y-2">
-      <div className="flex justify-between items-center ml-1">
-        <label className={`text-xs font-semibold ${textSecondary}`}>{label}</label>
-        {readOnlyTag && <span className={`text-[10px] font-bold uppercase tracking-widest ${isLight ? 'text-[#F0524F]' : 'text-[#F0524F]/80'}`}>Read Only</span>}
+
+      <div className="flex justify-between">
+        <label className="text-sm font-semibold text-gray-400">
+          {label}
+        </label>
+
+        {readonly && (
+          <span className="text-xs text-red-400 font-bold uppercase">
+            Read Only
+          </span>
+        )}
       </div>
 
-      {isEditing && !readOnlyTag ? (
+      {editable && !readonly ? (
         <div className="relative">
-          <div className={`absolute left-4 top-1/2 -translate-y-1/2 ${textSecondary}`}>{icon}</div>
-          <input 
-            type="text" 
-            value={value} 
-            onChange={(e) => onChange(e.target.value)} 
-            className={`w-full pl-11 pr-4 py-3 border rounded-lg outline-none font-medium text-sm transition-all ${inputSurface}`} 
+
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+            {icon}
+          </div>
+
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="
+              w-full
+              pl-12
+              pr-4
+              py-3
+              rounded-xl
+              bg-[#131720]
+              border border-transparent
+              focus:border-[#81B398]
+              outline-none
+            "
           />
         </div>
       ) : (
-        <div className={`flex items-center gap-4 p-4 border rounded-lg transition-all ${displaySurface} ${readOnlyTag ? 'opacity-80' : ''}`}>
-          <div className={`${textSecondary}`}>{icon}</div>
-          <span className={`text-sm font-medium truncate ${textPrimary}`}>{value || 'Not provided'}</span>
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#131720] border border-white/5">
+          {icon}
+
+          <span className="font-medium truncate">
+            {value || 'Not provided'}
+          </span>
         </div>
       )}
     </div>
