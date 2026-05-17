@@ -1,4 +1,4 @@
-# Radix ERP Frontend
+# Radix ERP 
 
 A modern ERP web application built with **React + Vite + Tailwind CSS**, powered by **Supabase** for backend services.
 
