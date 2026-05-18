@@ -180,7 +180,7 @@ const BusinessDetail = () => {
         .insert([{
           business_unit_id: unit.id,
           source_user_id: userData.user.id,
-          service: serviceData.id,
+          service_id: serviceData.id,
           customer_name: formData.client_name,
           phone: formData.client_phone,
           location: formData.customer_location,

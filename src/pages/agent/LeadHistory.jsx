@@ -59,7 +59,7 @@ const LeadHistory = () => {
         const { data, error } = await supabase
           .from('leads')
           .select(`
-            id, customer_name, status, service, created_at, credit_status,
+            id, customer_name, status, service_id, created_at, credit_status,
             business_units ( business_name )
           `)
           .order('created_at', { ascending: false });
@@ -73,7 +73,7 @@ const LeadHistory = () => {
           id: lead.id,
           clientName: lead.customer_name,
           status: lead.status,
-          service: lead.service,
+          service_id: lead.service_id,
           date: new Date(lead.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           creditStatus: lead.credit_status,
           businessUnit: lead.business_units?.business_name || 'Unknown'

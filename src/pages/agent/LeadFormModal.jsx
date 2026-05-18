@@ -8,11 +8,17 @@ import {
   MapPin, ClipboardList, ArrowRight, Info,
   BookUser, Search, Loader2 
 } from 'lucide-react';
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 
-const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSubmit, theme }) => {
+const LeadFormModal = ({ isOpen, onClose, initialUnit, onSubmit, theme }) => {
   const [step, setStep] = useState('form'); 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingServices, setIsLoadingServices] = useState(false);
+  const [isLoadingUnits, setIsLoadingUnits] = useState(false);
+  
+  const [businessUnits, setBusinessUnits] = useState([]);
+  const [services, setServices] = useState([]);
+  
   const [formData, setFormData] = useState({
     category: initialUnit || "",
     service: "",
@@ -30,12 +36,67 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
 
   const isLight = theme === 'light';
 
+  // Fetch business units on modal open
   useEffect(() => {
-    if (initialUnit) setFormData(prev => ({ ...prev, category: initialUnit, service: "" }));
-  }, [initialUnit]);
+    if (!isOpen) return;
+    
+    const fetchBusinessUnits = async () => {
+      setIsLoadingUnits(true);
+      try {
+        const { data, error } = await supabase
+          .from('business_units')
+          .select('id, business_name, category')
+          .eq('status', 'active')
+          .order('business_name');
+        
+        if (error) throw error;
+        setBusinessUnits(data || []);
+        
+        // Set initialUnit if it's a valid business_unit_id
+        if (initialUnit) {
+          setFormData(prev => ({ ...prev, category: initialUnit, service: "" }));
+        }
+      } catch (error) {
+        console.error('Error fetching business units:', error.message);
+        alert('Failed to load business units');
+      } finally {
+        setIsLoadingUnits(false);
+      }
+    };
 
-  const categories = Object.keys(businessUnits);
-  const servicesForCategory = formData.category ? (businessUnits[formData.category] || []) : [];
+    fetchBusinessUnits();
+  }, [isOpen, initialUnit]);
+
+  // Fetch services when category changes
+  useEffect(() => {
+    if (!formData.category) {
+      setServices([]);
+      return;
+    }
+
+    const fetchServices = async () => {
+      setIsLoadingServices(true);
+      try {
+        const { data, error } = await supabase
+          .from('business_unit_services')
+          .select('id, service_name')
+          .eq('business_unit_id', formData.category)
+          .order('service_name');
+        
+        if (error) throw error;
+        setServices(data || []);
+        // Reset service selection when category changes
+        setFormData(prev => ({ ...prev, service: "" }));
+      } catch (error) {
+        console.error('Error fetching services:', error.message);
+        alert('Failed to load services');
+      } finally {
+        setIsLoadingServices(false);
+      }
+    };
+
+    fetchServices();
+  }, [formData.category]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -91,22 +152,42 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
     try {
       setIsSubmitting(true);
       
-      // DUMMY DATA: Simulating lead submission
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Get authenticated user
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
 
-      // Log the submitted data (dummy)
-      console.log('Lead submitted successfully (DUMMY):', {
-        business_unit: formData.category,
-        client_name: formData.client_name,
-        client_phone: formData.client_phone,
-        service: formData.service,
-        notes: formData.notes,
-        location: formData.clientAddress
-      });
+      if (!user) {
+        alert('User not authenticated');
+        setStep('form');
+        return;
+      }
+
+      // Insert new lead into Supabase
+      const { error } = await supabase
+        .from('leads')
+        .insert({
+          business_unit_id: formData.category,
+          source_user_id: user.id,
+          service_id: formData.service,
+          customer_name: formData.client_name,
+          phone: formData.client_phone,
+          description: formData.notes,
+          location: formData.clientAddress,
+          status: 'pending',
+          verified_by_admin: false,
+          total_sale_amount: 0,
+          approved_credits: 0,
+          payment_status: 'pending',
+          credit_status: 'waiting'
+        });
+
+      if (error) throw error;
 
       setStep('success');
     } catch (err) {
-      alert('Failed to submit referral');
+      console.error('Error submitting lead:', err.message);
+      alert(`Failed to submit referral: ${err.message}`);
       setStep('form');
     } finally {
       setIsSubmitting(false);
@@ -243,13 +324,15 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
                         <label className={`text-xs font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Category</label>
                         <div className="relative">
                           <Building2 className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />
-                          <select name="category" required value={formData.category} onChange={handleInputChange}
-                            className={`w-full pl-10 pr-10 py-2.5 rounded-md text-sm appearance-none border outline-none transition-colors ${
+                          <select name="category" required value={formData.category} onChange={handleInputChange} disabled={isLoadingUnits}
+                            className={`w-full pl-10 pr-10 py-2.5 rounded-md text-sm appearance-none border outline-none transition-colors disabled:opacity-50 ${
                               isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C] focus:border-[#81B398]' : 'bg-[#222938] border-transparent text-[#F4F5F7] focus:border-[#81B398]'
                             }`}
                           >
-                            <option value="">Select Category</option>
-                            {categories.map(cat => ( <option key={cat} value={cat}>{cat}</option> ))}
+                            <option key="select-category" value="">{isLoadingUnits ? 'Loading...' : 'Select Category'}</option>
+                            {businessUnits.map((unit) => (
+                              <option key={unit.id} value={unit.id}>{unit.category}</option>
+                            ))}
                           </select>
                           <ChevronDown className={`absolute right-3.5 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />
                         </div>
@@ -259,14 +342,15 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
                         <label className={`text-xs font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Service</label>
                         <div className="relative">
                           <Briefcase className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />
-                          <select name="service" required value={formData.service} onChange={handleInputChange} disabled={!formData.category}
+                          <select name="service" required value={formData.service} onChange={handleInputChange} disabled={!formData.category || isLoadingServices}
                             className={`w-full pl-10 pr-10 py-2.5 rounded-md text-sm appearance-none disabled:opacity-50 border outline-none transition-colors ${
                               isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C] focus:border-[#81B398]' : 'bg-[#222938] border-transparent text-[#F4F5F7] focus:border-[#81B398]'
                             }`}
                           >
-                            <option value="">Select Service</option>
-                           
-                            {servicesForCategory.map(svc => ( <option key={svc} value={svc}>{svc}</option> ))}
+                            <option key="select-service" value="">{isLoadingServices ? 'Loading...' : 'Select Service'}</option>
+                            {services.map((svc) => (
+                              <option key={svc.id} value={svc.id}>{svc.service_name}</option>
+                            ))}
                           </select>
                           <ChevronDown className={`absolute right-3.5 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} />
                         </div>
@@ -308,8 +392,8 @@ const LeadFormModal = ({ isOpen, onClose, initialUnit, businessUnits = {}, onSub
                   </div>
                   <div className="p-5">
                     <p className={`text-xs font-medium mb-1.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Category</p>
-                    <p className={`text-sm font-semibold truncate ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{formData.category}</p>
-                    <p className="text-sm font-normal text-[#81B398] mt-0.5">{formData.service}</p>
+                    <p className={`text-sm font-semibold truncate ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{businessUnits.find(u => u.id === formData.category)?.category || ''}</p>
+                    <p className="text-sm font-normal text-[#81B398] mt-0.5">{services.find(s => s.id === formData.service)?.service_name || ''}</p>
                   </div>
                 </div>
 
