@@ -14,7 +14,7 @@ import {
   Plus
 } from 'lucide-react';
 
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient'; // Added Supabase client
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; 
 
@@ -28,7 +28,6 @@ const DirectorySkeleton = ({ theme }) => {
 
   return (
     <div className={` space-y-5   border-t  ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'} pb-32 pt-4 `}>
-                  {/* <div className={`w-full border-t pb-28 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`} />  */}
 
       {/* HERO BENTO SKELETON */}
       <div className={`rounded-3xl p-6 border relative overflow-hidden animate-pulse ${cardBg}`}>
@@ -141,61 +140,70 @@ const BusinessDetailApp = () => {
   useEffect(() => {
     const fetchUnit = async () => {
       try {
-        await new Promise(resolve => setTimeout(resolve, 600));
+        setLoading(true);
 
-        const dummyData = {
-          id: id || 'unit_001',
-          name: 'Premium Real Estate Solutions',
-          website: 'https://example.com',
-          email: 'contact@realestate.com',
-          contact: '+91 9876543210',
-          location: 'Mumbai, Maharashtra',
-          address: '123 Business Park, Mumbai, MH 400001',
-          description: 'We provide comprehensive real estate solutions including residential, commercial and industrial properties with professional consultation and support.',
-          logo: 'https://api.dicebear.com/7.x/business/svg?seed=realestate',
-          facebook: 'https://facebook.com/example',
-          instagram: 'https://instagram.com/example',
-          linkedin: 'https://linkedin.com/company/example',
-          services: [
-            { name: 'Residential Properties', description: 'Luxury apartments and villas' },
-            { name: 'Commercial Spaces', description: 'Office spaces and retail locations' },
-            { name: 'Industrial Properties', description: 'Manufacturing and warehouse spaces' },
-            { name: 'Property Management', description: 'Full property management services' }
-          ],
-          gallery: [
-            'https://images.unsplash.com/photo-1545654711-cd4628902c4d?w=800',
-            'https://images.unsplash.com/photo-1560518883-b1e6e4fcd3b0?w=800',
-            'https://images.unsplash.com/photo-1449844908441-8829872d2607?w=800'
-          ]
-        };
+        // Supabase App logic mapped to UI format
+        const { data: unitData, error: unitError } = await supabase
+          .from('business_units')
+          .select(`
+            id, business_name, website, email, primary_phone, location, 
+            address, description, logo_url, facebook, instagram, linkedin
+          `)
+          .eq('id', id)
+          .single();
+
+        if (unitError) {
+          console.error('Failed to fetch business unit:', unitError);
+          return;
+        }
+
+        const { data: servicesData, error: servicesError } = await supabase
+          .from('business_unit_services')
+          .select('service_name, description')
+          .eq('business_unit_id', id);
+
+        if (servicesError) {
+          console.error('Failed to fetch services:', servicesError);
+          return;
+        }
+
+        const { data: galleryData, error: galleryError } = await supabase
+          .from('business_unit_gallery')
+          .select('image_url')
+          .eq('business_unit_id', id);
+
+        if (galleryError) {
+          console.error('Failed to fetch gallery:', galleryError);
+          return;
+        }
 
         setUnit({
-          id: dummyData.id,
-          name: dummyData.name,
-          website: dummyData.website || '',
-          email: dummyData.email || '',
-          contact: dummyData.contact || '',
-          location: dummyData.location || '',
-          address: dummyData.address || "",
-          description: dummyData.description || '',
-          logo: dummyData.logo || '',
-          facebook: dummyData.facebook || '',
-          instagram: dummyData.instagram || '',
-          linkedin: dummyData.linkedin || '',
-          services: (dummyData.services || []).map(s => ({
-            name: s.name,
-            description: s.description || ""
+          id: unitData.id,
+          name: unitData.business_name,
+          website: unitData.website || '',
+          email: unitData.email || '',
+          contact: unitData.primary_phone || '',
+          location: unitData.location || '',
+          address: unitData.address || '',
+          description: unitData.description || '',
+          logo: unitData.logo_url || '',
+          facebook: unitData.facebook || '',
+          instagram: unitData.instagram || '',
+          linkedin: unitData.linkedin || '',
+          services: (servicesData || []).map(s => ({
+            name: s.service_name,
+            description: s.description || ''
           })),
-          gallery: dummyData.gallery || []
+          gallery: (galleryData || []).map(g => g.image_url)
         });
 
-        if (dummyData.services && dummyData.services.length > 0) {
-          setFormData(prev => ({ ...prev, service: dummyData.services[0].name }));
+        if (servicesData && servicesData.length > 0) {
+          setFormData(prev => ({ ...prev, service: servicesData[0].service_name }));
         }
       } catch (err) {
         console.error("Failed to fetch unit:", err);
       } finally {
-        setLoading(false);
+        setTimeout(() => setLoading(false), 500); 
       }
     };
     fetchUnit();
@@ -210,21 +218,70 @@ const BusinessDetailApp = () => {
     e.preventDefault();
     if (submitting) return;
 
+    if (!formData.client_name.trim() || !formData.client_phone.trim() || !formData.service) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
     try {
       setSubmitting(true);
-      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const { data: userData, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('Auth error:', authError);
+        alert('Authentication error. Please log in again.');
+        return;
+      }
+      
+      if (!userData.user) {
+        console.error('No authenticated user');
+        alert('Please log in to submit referrals.');
+        return;
+      }
 
-      console.log('Lead submitted successfully (DUMMY):', {
-        business_unit: unit.id,
-        ...formData,
-        location: formData.customer_location
-      });
+      const { data: serviceData, error: serviceError } = await supabase
+        .from('business_unit_services')
+        .select('id')
+        .eq('business_unit_id', unit.id)
+        .eq('service_name', formData.service)
+        .single();
+
+      if (serviceError) {
+        console.error('Failed to fetch service ID:', serviceError);
+        alert('Failed to validate service. Please try again.');
+        return;
+      }
+
+      if (!serviceData) {
+        console.error('Service not found');
+        alert('Selected service is not available. Please select a different service.');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('leads')
+        .insert([{
+          business_unit_id: unit.id,
+          source_user_id: userData.user.id,
+          service: serviceData.id,
+          customer_name: formData.client_name,
+          phone: formData.client_phone,
+          location: formData.customer_location,
+          description: formData.notes,
+        }]);
+
+      if (error) {
+        console.error('Failed to submit referral:', error);
+        alert('Failed to submit referral: ' + error.message);
+        return;
+      }
 
       setShowModal(false);
       setFormData(prev => ({ ...prev, client_name: '', client_phone: '', customer_location: '', notes: '' }));
       setShowSuccessModal(true);
     } catch (err) {
-      console.error(err);
+      console.error('Unexpected error:', err);
       alert('Failed to submit referral');
     } finally {
       setSubmitting(false);
@@ -461,7 +518,6 @@ const BusinessDetailApp = () => {
           PORTALS: Modals Break Out of Stacking Context
           ========================================= */}
       
-      {/* 1. FULL SCREEN GALLERY LIGHTBOX */}
       {/* 1. FULL SCREEN GALLERY LIGHTBOX (WITH SLIDER) */}
       {isBrowser && createPortal(
         <AnimatePresence>

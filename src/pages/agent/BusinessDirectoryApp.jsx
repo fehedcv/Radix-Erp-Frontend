@@ -8,7 +8,7 @@ import {
   Info
 } from 'lucide-react';
 
-import { supabase } from '../../supabase/supabaseClient'; // Added Supabase client
+import { supabase } from '../../supabase/supabaseClient'; 
 import { useTheme } from '../../context/ThemeContext'; 
 
 // ==========================================
@@ -83,10 +83,9 @@ const BusinessDirectoryApp = () => {
       try {
         setLoading(true);
 
-        // Fetching data from Supabase instead of Frappe API/Dummy Data
         const { data, error } = await supabase
           .from('business_units')
-          .select('id, business_name, description, location, logo')
+          .select('id, business_name, description, location, logo_url')
           .eq('status', 'active');
 
         if (error) {
@@ -100,14 +99,13 @@ const BusinessDirectoryApp = () => {
           name: unit.business_name,
           description: unit.description,
           location: unit.location,
-          logo: unit.logo
+          logo_url: unit.logo_url
         }));
 
         setBusinessUnits(mappedData);
       } catch (err) {
         console.error('Failed to load business units:', err);
       } finally {
-        // Small delay added to retain the native app skeleton transition smoothness
         setTimeout(() => setLoading(false), 500); 
       }
     };
@@ -121,7 +119,7 @@ const BusinessDirectoryApp = () => {
   return (
     <div className="space-y-5 pb-16">
       
-      {/* PROFESSIONAL SEPARATOR (Matches Dashboard) */}
+      {/* PROFESSIONAL SEPARATOR */}
       <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
         {/* Header Section */}
         <div className="flex justify-between items-end px-2">
@@ -134,7 +132,7 @@ const BusinessDirectoryApp = () => {
             </p>
           </div>
           
-          {/* Neutral/Info Badge (Muted Indigo - 10/100/20) */}
+          {/* Neutral/Info Badge (Muted Indigo) */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#48477A]/10 text-[#48477A] border border-[#48477A]/20">
             <Info size={14} strokeWidth={2.5} />
             <span className="text-[11px] font-bold uppercase tracking-wider">
@@ -162,10 +160,10 @@ const BusinessDirectoryApp = () => {
             >
               <div className="flex items-start gap-4">
                 
-                {/* Logo Wrapper (Nested Geometry) */}
-                {unit.logo ? (
+                {/* Logo Wrapper */}
+                {unit.logo_url ? (
                   <img
-                    src={getFrappeImage(unit.logo)}
+                    src={getFrappeImage(unit.logo_url)}
                     alt={`${unit.name} logo`}
                     className={`w-16 h-16 rounded-xl object-cover shrink-0 border ${
                       isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'
@@ -182,7 +180,7 @@ const BusinessDirectoryApp = () => {
                 {/* Business Info */}
                 <div className="flex-1 min-w-0 pt-0.5">
                   <div className="flex items-center mb-1.5">
-                    {/* Success/Verified Badge (Sage Green - 10/100/20) */}
+                    {/* Success/Verified Badge */}
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20">
                       <ShieldCheck size={10} strokeWidth={3} /> Verified
                     </span>
@@ -203,7 +201,7 @@ const BusinessDirectoryApp = () => {
                 isLight ? 'border-[#E2E8F0]' : 'border-white/10'
               }`}>
                 <span className={`text-[11px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-                  Explore Portfolio
+                  View Details
                 </span>
                 
                 {/* Clickable Arrow Indicator */}
@@ -219,9 +217,9 @@ const BusinessDirectoryApp = () => {
           );
         })}
         
-        {/* Empty State Fallback (just in case) */}
+        {/* Empty State Fallback */}
         {businessUnits.length === 0 && !loading && (
-           <div className={`col-span-full py-20 flex flex-col items-center text-center justify-center rounded-2xl border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+           <div className={`col-span-full py-20 flex flex-col items-center justify-center text-center rounded-2xl border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
               <Briefcase size={40} className={`mb-4 opacity-30 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} />
               <p className={`text-base font-semibold ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>No Businesses Found</p>
               <p className={`text-sm mt-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>There are currently no active business units available.</p>

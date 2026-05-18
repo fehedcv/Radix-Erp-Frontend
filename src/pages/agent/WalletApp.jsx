@@ -9,7 +9,7 @@ import {
   Loader2,
   X
 } from 'lucide-react';
-import { supabase } from '../../supabase/supabaseClient'; // Added Supabase Client
+import { supabase } from '../../supabase/supabaseClient'; 
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; 
 
@@ -89,14 +89,14 @@ const WalletApp = () => {
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [filterStatus, setFilterStatus] = useState('All');
-  const [ledgerFilter, setLedgerFilter] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [ledgerFilter, setLedgerFilter] = useState('all');
 
   // Strict 10/100/20 Opacity Logic mapped to Semantic Colors
   const getStatusStyles = (status) => {
     const s = status?.toLowerCase();
     if (s === 'pending') return 'bg-[#DAC18A]/10 text-[#DAC18A] border-[#DAC18A]/20'; // Mustard
-    if (s === 'approved' || s === 'credited') return 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20'; // Sage Green
+    if (s === 'approved' || s === 'credited' || s === 'completed') return 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20'; // Sage Green
     if (s === 'rejected' || s === 'failed') return 'bg-[#F0524F]/10 text-[#F0524F] border-[#F0524F]/20'; // Coral Red
     return 'bg-[#48477A]/10 text-[#48477A] border-[#48477A]/20'; // Muted Indigo (Default)
   };
@@ -108,10 +108,22 @@ const WalletApp = () => {
 
   const fetchWallet = async () => {
     try {
-      // Supabase Fetch Logic
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('Failed to fetch authenticated user:', authError);
+        return;
+      }
+      const userId = authData?.user?.id;
+      if (!userId) {
+        console.error('No authenticated user available');
+        return;
+      }
+
+      // App logic mapped directly from your web version
       const { data: ledgerData, error: ledgerError } = await supabase
         .from('agent_credit_ledger')
         .select('id, credits, transaction_type, status, remarks, created_at')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (ledgerError) {
@@ -124,16 +136,18 @@ const WalletApp = () => {
         return;
       }
 
-      // Calculations
-      const available_cash = ledgerData.reduce((sum, item) => sum + item.credits, 0);
-      const earned_credits = ledgerData
-        .filter(item => item.credits > 0)
+      const available_cash = ledgerData
+        .filter(item => ['approved', 'credited'].includes(item.status?.toLowerCase()))
         .reduce((sum, item) => sum + item.credits, 0);
+
+      const earned_credits = ledgerData
+        .filter(item => ['approved', 'credited'].includes(item.status?.toLowerCase()) && item.credits > 0)
+        .reduce((sum, item) => sum + item.credits, 0);
+
       const total_withdrawn = ledgerData
-        .filter(item => item.credits < 0)
+        .filter(item => item.status?.toLowerCase() === 'credited' && item.credits < 0)
         .reduce((sum, item) => sum + Math.abs(item.credits), 0);
 
-      // Data formatting for the Mobile App UI
       const mappedLedger = ledgerData.map(entry => ({
         id: entry.id,
         date: new Date(entry.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -155,16 +169,27 @@ const WalletApp = () => {
     } catch (err) { 
       console.error('Unexpected error while fetching wallet:', err); 
     } finally { 
-      // Maintained small timeout for smooth skeleton transition
       setTimeout(() => setLoading(false), 500); 
     }
   };
 
   const fetchWithdrawalRequests = async () => {
     try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('Failed to fetch authenticated user:', authError);
+        return;
+      }
+      const userId = authData?.user?.id;
+      if (!userId) {
+        console.error('No authenticated user available');
+        return;
+      }
+
       const { data: withdrawalData, error: withdrawalError } = await supabase
         .from('agent_withdrawals')
         .select('id, requested_credits, status, remarks, requested_on')
+        .eq('user_id', userId)
         .order('requested_on', { ascending: false });
 
       if (withdrawalError) {
@@ -177,7 +202,6 @@ const WalletApp = () => {
         return;
       }
 
-      // Map to UI specific requirements
       const mappedWithdrawals = withdrawalData.map(req => ({
         id: req.id,
         date: new Date(req.requested_on).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -194,27 +218,74 @@ const WalletApp = () => {
     }
   };
 
+  const refreshWalletData = async () => {
+    await Promise.all([fetchWallet(), fetchWithdrawalRequests()]);
+  };
+
   const handlePayout = async () => {
     setProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
+      if (!wallet?.summary) {
+        alert('Unable to determine current balance. Please try again.');
+        return;
+      }
 
-      console.log('Withdrawal request submitted (DUMMY):', {
-        requested_credits: wallet.summary.available_cash
-      });
+      const availableCash = wallet.summary.available_cash;
+      if (!availableCash || availableCash <= 0) {
+        alert('No balance available for withdrawal.');
+        return;
+      }
 
-      setWallet(prev => ({
-        ...prev,
-        summary: {
-          ...prev.summary,
-          available_cash: 0,
-          total_withdrawn: prev.summary.total_withdrawn + prev.summary.available_cash
-        }
-      }));
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('Failed to fetch authenticated user:', authError);
+        alert('Unable to verify user. Please sign in again.');
+        return;
+      }
 
+      const userId = authData?.user?.id;
+      if (!userId) {
+        alert('Unable to verify user. Please sign in again.');
+        return;
+      }
+
+      // Check for pending request limits
+      const { data: pendingRequests, error: pendingError } = await supabase
+        .from('agent_withdrawals')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .limit(1);
+
+      if (pendingError) {
+        console.error('Failed to check pending withdrawal requests:', pendingError);
+        alert('Unable to submit withdrawal request. Please try again.');
+        return;
+      }
+
+      if (pendingRequests?.length > 0) {
+        alert('A pending withdrawal request already exists.');
+        return;
+      }
+
+      const { error: insertError } = await supabase
+        .from('agent_withdrawals')
+        .insert([{ user_id: userId, requested_credits: availableCash, status: 'pending' }]);
+
+      if (insertError) {
+        console.error('Failed to create withdrawal request:', insertError);
+        alert('Unable to submit withdrawal request. Please try again.');
+        return;
+      }
+
+      await refreshWalletData();
       setShowConfirm(false);
-    } catch (err) { console.error(err); }
-    finally { setProcessing(false); }
+    } catch (err) {
+      console.error('Error submitting withdrawal request:', err);
+      alert('Unable to submit withdrawal request. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   if (loading || !wallet) {
@@ -304,17 +375,22 @@ const WalletApp = () => {
 
             {/* Filter Pills */}
             <div className="flex overflow-x-auto no-scrollbar gap-2 mb-5 pb-1">
-              {['All', 'Pending', 'Credited', 'Rejected'].map((status) => (
+              {[
+                { value: 'all', label: 'All' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'credited', label: 'Credited' },
+                { value: 'rejected', label: 'Rejected' }
+              ].map((status) => (
                 <button
-                  key={status}
-                  onClick={() => setFilterStatus(status)}
+                  key={status.value}
+                  onClick={() => setFilterStatus(status.value)}
                   className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 whitespace-nowrap active:scale-95 border ${
-                    filterStatus === status 
+                    filterStatus === status.value 
                     ? (isLight ? 'bg-[#1A202C] text-[#FFFFFF] border-transparent' : 'bg-[#F4F5F7] text-[#1A202C] border-transparent')
                     : (isLight ? 'bg-[#F4F5F7] text-[#718096] border-transparent hover:border-[#E2E8F0]' : 'bg-[#131720] text-[#9CA3AF] border-transparent hover:border-white/10')
                   }`}
                 >
-                  {status}
+                  {status.label}
                 </button>
               ))}
             </div>
@@ -326,7 +402,7 @@ const WalletApp = () => {
                 );
 
                 const filteredRequests = withdrawalRequests.filter(
-                  req => filterStatus === 'All' || req.status === filterStatus
+                  req => filterStatus === 'all' || req.status?.toLowerCase() === filterStatus
                 );
 
                 if (filteredRequests.length === 0) {
@@ -334,7 +410,7 @@ const WalletApp = () => {
                     <div className={`text-center py-8 rounded-xl border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
                       <ClockArrowDown size={20} className={`mx-auto mb-2 ${isLight ? 'text-[#E2E8F0]' : 'text-white/10'}`} />
                       <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-                        No {filterStatus === 'All' ? 'requests' : filterStatus} found
+                        No {filterStatus === 'all' ? 'requests' : filterStatus} found
                       </span>
                     </div>
                   );
@@ -348,7 +424,6 @@ const WalletApp = () => {
                       <p className={`font-bold text-base tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
                         ₹{Number(req.amount).toLocaleString()}
                       </p>
-                      {/* Using the updated strict opacity badges */}
                       <span className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${getStatusStyles(req.status)}`}>
                         {req.status}
                       </span>
@@ -380,17 +455,23 @@ const WalletApp = () => {
 
             {/* Filter Pills */}
             <div className="flex overflow-x-auto no-scrollbar gap-2 mb-5 pb-1">
-              {['All', 'Credit', 'Debit'].map((filterOption) => (
+              {[
+                { value: 'all', label: 'All' },
+                { value: 'credited', label: 'Credited' },
+                { value: 'approved', label: 'Approved' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'withdrawal', label: 'Withdrawal' }
+              ].map((filterOption) => (
                 <button
-                  key={filterOption}
-                  onClick={() => setLedgerFilter(filterOption)}
+                  key={filterOption.value}
+                  onClick={() => setLedgerFilter(filterOption.value)}
                   className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 whitespace-nowrap active:scale-95 border ${
-                    ledgerFilter === filterOption 
+                    ledgerFilter === filterOption.value 
                     ? (isLight ? 'bg-[#1A202C] text-[#FFFFFF] border-transparent' : 'bg-[#F4F5F7] text-[#1A202C] border-transparent')
                     : (isLight ? 'bg-[#F4F5F7] text-[#718096] border-transparent hover:border-[#E2E8F0]' : 'bg-[#131720] text-[#9CA3AF] border-transparent hover:border-white/10')
                   }`}
                 >
-                  {filterOption}
+                  {filterOption.label}
                 </button>
               ))}
             </div>
@@ -398,8 +479,10 @@ const WalletApp = () => {
             <div className="space-y-3">
               {(() => {
                 const filteredLedger = ledger.filter(entry => {
-                  if (ledgerFilter === 'All') return true;
-                  return entry.type && entry.type.toLowerCase() === ledgerFilter.toLowerCase();
+                  if (ledgerFilter === 'all') return true;
+                  const matchStatus = entry.status && entry.status.toLowerCase() === ledgerFilter;
+                  const matchType = entry.type && entry.type.toLowerCase() === ledgerFilter;
+                  return matchStatus || matchType;
                 });
 
                 if (filteredLedger.length === 0) {
@@ -407,7 +490,7 @@ const WalletApp = () => {
                     <div className={`text-center py-8 rounded-xl border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
                       <History size={20} className={`mx-auto mb-2 ${isLight ? 'text-[#E2E8F0]' : 'text-white/10'}`} />
                       <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-                        No {ledgerFilter === 'All' ? 'transactions' : ledgerFilter} found
+                        No {ledgerFilter === 'all' ? 'transactions' : ledgerFilter} found
                       </span>
                     </div>
                   );
