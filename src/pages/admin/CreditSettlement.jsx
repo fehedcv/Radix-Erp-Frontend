@@ -151,27 +151,23 @@ const CreditSettlement = () => {
   const confirmWithdrawal = async () => {
     setIsProcessing(true);
     try {
-      const { error } = await supabase
-        .from('agent_withdrawals')
-        .update({
-          status: 'approved',
-          remarks: settleRemarks,
-        })
-        .eq('id', selectedItem.id);
+      const { data, error } = await supabase.rpc('process_agent_withdrawal', {
+        p_withdrawal_id: selectedItem.id,
+        p_admin_remarks: settleRemarks,
+      });
 
       if (error) {
         console.error('Failed to approve withdrawal:', error);
-        alert('Failed to approve withdrawal. Check permissions.');
+        alert(error.message || 'Failed to approve withdrawal. Check permissions.');
         return;
       }
 
-      setWithdrawals(prev =>
-        prev.map(w => w.id === selectedItem.id ? { ...w, status: 'credited' } : w)
-      );
+      await fetchAll();
       closeAllModals();
+      return data;
     } catch (err) {
       console.error('Error approving withdrawal:', err);
-      alert('Failed to approve withdrawal. Check permissions.');
+      alert(err.message || 'Failed to approve withdrawal. Check permissions.');
     } finally {
       setIsProcessing(false);
     }

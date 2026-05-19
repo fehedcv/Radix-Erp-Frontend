@@ -14,7 +14,7 @@ import {
   ArrowRightCircle
 } from 'lucide-react';
 
-import frappeApi from '../../api/frappeApi';
+import { supabase } from '../../supabase/supabaseClient';
 import { useTheme } from '../../context/ThemeContext'; // Using Theme Context
 
 const LeadReview = () => {
@@ -35,39 +35,160 @@ const LeadReview = () => {
   const [settleData, setSettleData] = useState({ totalAmount: '', credits: '' });
   const [isSettling, setIsSettling] = useState(false);
 
+  // Helper: Normalize lead status
+  const normalizeStatus = (dbStatus) => {
+    const statusMap = {
+      'pending': 'Pending',
+      'verified': 'Verified',
+      'in progress': 'In Progress',
+      'completed': 'Completed',
+      'rejected': 'Rejected'
+    };
+    return statusMap[dbStatus?.toLowerCase()] || dbStatus || 'Pending';
+  };
+
   // ---------------- FETCH LEAD ----------------
   useEffect(() => {
-    const fetchLead = async () => {
-      try {
-        const res = await frappeApi.get(
-          '/method/business_chain.api.leads.get_business_lead_detail',
-          { params: { lead_id: id } }
-        );
-        console.log(res.data.message);
-        
-        setLead(res.data.message);
-      } catch (err) {
-        console.error(err);
-        setLead(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLead();
-  }, [id]);
+  const fetchLead = async () => {
+    setLoading(true);
 
+    try {
+      // ---------------- FETCH LEAD ----------------
+      const { data, error } = await supabase
+        .from('leads')
+        .select(`
+          id,
+          customer_name,
+          phone,
+          email,
+          description,
+          location,
+          status,
+          payment_status,
+          credit_status,
+          total_sale_amount,
+          approved_credits,
+          created_at,
+          source_user_id,
+          business_units (
+            business_name,
+            commission
+          ),
+          business_unit_services (
+            service_name
+          )
+        `)
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Failed to load lead details:', error);
+        setLead(null);
+        return;
+      }
+
+      // ---------------- FETCH AGENT DATA ----------------
+      let agentData = null;
+
+      if (data?.source_user_id) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select(`
+            full_name,
+            phone
+          `)
+          .eq('id', data.source_user_id)
+          .single();
+
+        if (userError) {
+  console.error('Failed to load agent details:', userError);
+}
+
+if (userData) {
+  agentData = userData;
+}
+      }
+
+      // ---------------- MAP DATA ----------------
+      const mappedLead = {
+        id: data.id,
+
+        clientName: data.customer_name,
+
+        clientPhone: data.phone,
+
+        clientEmail: data.email,
+
+        description: data.description,
+
+        location: data.location,
+
+        status: normalizeStatus(data.status),
+
+        paymentStatus:
+          data.payment_status === 'paid'
+            ? 'Settled'
+            : 'Pending',
+
+        creditStatus: data.credit_status,
+
+        totalSaleAmount:
+          data.total_sale_amount || 0,
+
+        commission:
+          data.approved_credits || 0,
+
+        businessUnit:
+          data.business_units?.business_name || 'Unknown',
+
+        commision:
+          data.business_units?.commission || 0,
+
+        service:
+          data.business_unit_services?.service_name || 'Unknown',
+
+        // ---------------- FIXED AGENT DATA ----------------
+        agentId:
+          agentData?.full_name || 'Unknown',
+
+        agentPhone:
+          agentData?.phone || '',
+
+        date: data.created_at
+      };
+
+      setLead(mappedLead);
+
+    } catch (err) {
+      console.error('Failed to load lead details:', err);
+      setLead(null);
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchLead();
+
+}, [id]);
   // ---------------- STATUS UPDATE ----------------
   const updateStatus = async (status) => {
     setIsProcessing(true);
     try {
-      await frappeApi.post(
-        '/method/business_chain.api.leads.update_lead_status',
-        { lead_id: lead.id, status }
-      );
-      setLead(prev => ({ ...prev, status }));
+      const { error } = await supabase.rpc('update_lead_status', {
+        p_lead_id: lead.id,
+        p_status: status.toLowerCase()
+      });
+
+      if (error) {
+        console.error('Failed to update lead status:', error);
+        return;
+      }
+
+      setLead((prev) => ({ ...prev, status }));
       setModal({ show: false, targetStatus: '' });
     } catch (err) {
-      console.error(err);
+      console.error('Failed to update lead status:', err);
     } finally {
       setIsProcessing(false);
     }
@@ -77,26 +198,27 @@ const LeadReview = () => {
   const handleSettleSubmit = async () => {
     setIsSettling(true);
     try {
-      // Replace with your actual settlement endpoint
-      await frappeApi.post(
-        '/method/business_chain.api.leads.settle_agent_credit',
-        { 
-          ledger_id: lead.ledger_id || lead.id, 
-          commission: settleData.credits,
-          total_sale_amount: settleData.totalAmount
-        } 
-      );
-      setLead(prev=>({
+      const { error } = await supabase.rpc('settle_agent_credit', {
+        p_lead_id: lead.id,
+        p_total_sale_amount: Number(settleData.totalAmount),
+        p_approved_credits: Number(settleData.credits)
+      });
+
+      if (error) {
+        console.error('Failed to settle agent credit:', error);
+        return;
+      }
+
+      setLead((prev) => ({
         ...prev,
-        paymentStatus: "Settled",
-        commission: settleData.credits,
-        totalSaleAmount: settleData.totalAmount
-      }))
+        paymentStatus: 'Settled',
+        commission: Number(settleData.credits),
+        totalSaleAmount: Number(settleData.totalAmount)
+      }));
       setSettleModal({ show: false, step: 1 });
       setSettleData({ totalAmount: '', credits: '' });
-      // Optional: Refresh lead data or show a success message here
     } catch (err) {
-      console.error(err);
+      console.error('Failed to settle agent credit:', err);
     } finally {
       setIsSettling(false);
     }
@@ -506,7 +628,7 @@ const LeadReview = () => {
                       </div>
                       <div className="flex justify-between items-center text-[9px] font-bold uppercase text-slate-500">
                         <span>Commission ({lead.commision}%)</span>
-                        <span className="text-sm font-black text-slate-800">₹{(parseFloat(lead.totalSaleAmount || 0) * (parseFloat(lead.commision || 0) / 100)).toLocaleString()}</span>
+                        <span className="text-sm font-black text-slate-800">₹{(parseFloat(lead.totalSaleAmount || 0) * (parseFloat(lead.commision || 0) / 100)).toLocaleString('en-IN')}</span>
                       </div>
                       <div className="flex justify-between items-center text-[9px] font-bold uppercase text-slate-500 pt-2 border-t border-emerald-100">
                         <span>Total Sale</span>

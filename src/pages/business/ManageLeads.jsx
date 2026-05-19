@@ -41,10 +41,11 @@ const ManageLeads = () => {
           created_at,
           payment_status,
           credit_status,
+          source_user_id,
           business_unit_services (
             service_name
           ),
-          users (
+          users!source_user_id (
             full_name
           )
         `)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
@@ -51,8 +51,9 @@ import AuthGatewayApp from './pages/auth/AuthGatewayApp';
 const AppContent = () => {
   const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isMountedRef = useRef(true);
   const { theme } = useTheme(); // Access global theme
-const isNative = Capacitor.isNativePlatform();
+  const isNative = Capacitor.isNativePlatform();
   // Update Status Bar based on Theme
   useEffect(() => {
     const configureStatusBar = async () => {
@@ -79,61 +80,196 @@ const isNative = Capacitor.isNativePlatform();
   }, [theme]);// Re-run whenever theme changes
 
   useEffect(() => {
-    const getInitialSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await fetchUserRole(user.id);
-      } else {
-        setIsLoading(false);
+    isMountedRef.current = true;
+
+    // Helper to safely restore session and user role
+    const restoreSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session on startup:', error);
+        }
+
+        if (session?.user) {
+          await fetchUserRole(session.user.id);
+        } else if (isMountedRef.current) {
+          setUserRole(null);
+        }
+      } catch (err) {
+        console.error('Failed to restore Supabase session:', err);
+        if (isMountedRef.current) setUserRole(null);
+      } finally {
+        if (isMountedRef.current) setIsLoading(false);
       }
     };
 
-    getInitialSession();
+    // Initial restore
+    restoreSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        await fetchUserRole(session.user.id);
-      } else {
-        setUserRole(null);
-        setIsLoading(false);
+    // Auth state change listener - handle specific events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, payload) => {
+      try {
+        switch (event) {
+          case 'SIGNED_IN':
+            if (payload?.session?.user) {
+              await fetchUserRole(payload.session.user.id);
+            }
+            break;
+          case 'TOKEN_REFRESHED':
+            // Ensure we immediately rehydrate user info when token refresh occurs
+            try {
+              const { data: { session }, error } = await supabase.auth.getSession();
+              if (error) console.error('Error getting session after token refresh:', error);
+              if (session?.user) await fetchUserRole(session.user.id);
+            } catch (e) {
+              console.error('TOKEN_REFRESHED handling failed:', e);
+            }
+            break;
+          case 'SIGNED_OUT':
+            if (isMountedRef.current) {
+              setUserRole(null);
+              setIsLoading(false);
+              localStorage.removeItem('vynx_user');
+            }
+            break;
+          case 'USER_UPDATED':
+            if (payload?.user?.id) await fetchUserRole(payload.user.id).catch(() => {});
+            break;
+          default:
+            // fallback: re-check session
+            await restoreSession();
+        }
+      } catch (e) {
+        console.error('Error in auth state handler:', e);
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Periodic session validation to avoid stale sessions (every 5 minutes)
+    const intervalId = setInterval(async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Periodic session check failed:', error);
+          return;
+        }
+
+        if (!session) {
+          // No session -> sign out locally
+          if (isMountedRef.current) {
+            setUserRole(null);
+            setIsLoading(false);
+            localStorage.removeItem('vynx_user');
+          }
+        } else {
+          // If session exists, ensure role is present
+          if (!userRole && session.user?.id) {
+            await fetchUserRole(session.user.id).catch(() => {});
+          }
+        }
+      } catch (e) {
+        console.error('Error during periodic session validation:', e);
+      }
+    }, 5 * 60 * 1000);
+
+    // When tab becomes visible, revalidate session immediately
+    const handleVisibility = async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (error) console.error('visibilitychange getSession error:', error);
+          if (session?.user) {
+            await fetchUserRole(session.user.id).catch(() => {});
+          } else if (isMountedRef.current) {
+            setUserRole(null);
+          }
+        } catch (e) {
+          console.error('Error on visibilitychange handler:', e);
+        }
+      }
+    };
+
+    // When network reconnects, revalidate session and role
+    const handleOnline = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) console.error('online getSession error:', error);
+        if (session?.user) await fetchUserRole(session.user.id).catch(() => {});
+      } catch (e) {
+        console.error('Error on online handler:', e);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      isMountedRef.current = false;
+      try { subscription?.unsubscribe(); } catch (e) {}
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('online', handleOnline);
+    };
   }, []);
 
   const fetchUserRole = async (userId) => {
+    const TIMEOUT_MS = 8000;
     try {
-      const { data, error } = await supabase
+      // Timeout-protected role fetch to avoid hanging the app
+      const rolePromise = supabase
         .from('users')
         .select('role, full_name')
         .eq('id', userId)
         .single();
 
+      const timer = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout fetching role')), TIMEOUT_MS));
+
+      const result = await Promise.race([rolePromise, timer]);
+      const { data, error } = result || {};
+
+      if (!isMountedRef.current) return;
+
       if (error) {
         console.error('Error fetching user role:', error);
+        setUserRole(null);
+      } else if (!data) {
+        console.warn('No user role data returned');
         setUserRole(null);
       } else {
         let role = data.role;
         if (role === 'manager') role = 'business'; // Map manager to business
         setUserRole(role);
         // Store in localStorage for additional persistence
-        localStorage.setItem('vynx_user', JSON.stringify({
-          id: userId,
-          role: role,
-          name: data.full_name
-        }));
+        try {
+          localStorage.setItem('vynx_user', JSON.stringify({
+            id: userId,
+            role: role,
+            name: data.full_name
+          }));
+        } catch (e) {
+          // ignore storage errors
+        }
       }
     } catch (err) {
       console.error('Error fetching user role:', err);
-      setUserRole(null);
+      if (isMountedRef.current) {
+        setUserRole(null);
+      }
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
-  function handleLogout() {
-    supabase.auth.signOut();
+  async function handleLogout() {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error('Error signing out:', e);
+    } finally {
+      setUserRole(null);
+      localStorage.removeItem('vynx_user');
+    }
   }
 
   if (isLoading) return null;

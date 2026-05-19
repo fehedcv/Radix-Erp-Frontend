@@ -83,7 +83,7 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
         })
       );
 
-      onLoginSuccess(role);
+      onLoginSuccess?.(role);
 
       if (role === 'agent') navigate('/agent');
       else if (role === 'business') navigate('/business');
