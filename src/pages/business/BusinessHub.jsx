@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
-import { initialLeads } from '../../data/leadHistoryData';
+// import { initialLeads } from '../../data/leadHistoryData';
 
 const BusinessHub = ({ onLogout }) => {
   const { theme, toggleTheme } = useTheme();
@@ -18,11 +18,11 @@ const BusinessHub = ({ onLogout }) => {
   const currentUser = JSON.parse(localStorage.getItem('vynx_user') || "{}");
   const businessName = currentUser.name || currentUser.businessName || "Business Team";
 
-  const [leads, setLeads] = useState(() => {
-    const saved = localStorage.getItem('vynx_leads');
-    const allLeads = saved ? JSON.parse(saved) : initialLeads;
-    return allLeads.filter(l => l.businessUnit === businessName);
-  });
+ const [leads, setLeads] = useState(() => {
+  const saved = localStorage.getItem('vynx_leads');
+  const allLeads = saved ? JSON.parse(saved) : []; 
+  return allLeads.filter(l => l.businessUnit === businessName);
+});
 
   const updateLeadStatus = (id, newStatus) => {
     const masterSaved = JSON.parse(localStorage.getItem('vynx_leads') || "[]");

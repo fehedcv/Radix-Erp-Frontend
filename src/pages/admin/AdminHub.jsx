@@ -12,7 +12,6 @@ import {
   ArrowRight, Wallet, X, AlertCircle, Sparkles, ShieldCheck, Clock, CheckCheck
 } from 'lucide-react';
 
-import { initialLeads } from '../../data/leadHistoryData';
 
 const AdminHub = ({ onLogout }) => {
   const [showNotifications, setShowNotifications] = useState(false);

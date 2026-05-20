@@ -110,11 +110,16 @@ const AppContent = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, payload) => {
       try {
         switch (event) {
-          case 'SIGNED_IN':
-            if (payload?.session?.user) {
-              await fetchUserRole(payload.session.user.id);
-            }
-            break;
+         case 'SIGNED_IN':
+  if (payload?.session?.user) {
+    await fetchUserRole(payload.session.user.id);
+  } else {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await fetchUserRole(session.user.id);
+    }
+  }
+  break;
           case 'TOKEN_REFRESHED':
             // Ensure we immediately rehydrate user info when token refresh occurs
             try {
