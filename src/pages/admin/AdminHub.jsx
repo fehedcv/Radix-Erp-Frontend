@@ -23,7 +23,7 @@ const AdminHub = ({ onLogout }) => {
 
   const [leads] = useState(() => {
     const saved = localStorage.getItem('vynx_leads');
-    return saved ? JSON.parse(saved) : initialLeads;
+    return saved ? JSON.parse(saved) : [];
   });
 
   // --- UPDATED NOTIFICATION DATA ---
