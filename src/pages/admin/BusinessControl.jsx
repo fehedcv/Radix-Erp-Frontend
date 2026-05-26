@@ -88,30 +88,45 @@ const BusinessHub = () => {
 
   // ── Open detail ───────────────────────────────────────────────────────────
   const handleOpenDetail = useCallback(async (unit) => {
-    setEditMode(false);
-    setLoadingDetail(true);
-    setSelectedUnit({ ...unit, _loading: true });
-    try {
-      const [unitRes, servicesRes, galleryRes] = await Promise.all([
-        supabase.from('business_units').select('*').eq('id', unit.id).single(),
-        supabase.from('business_unit_services').select('*').eq('business_unit_id', unit.id),
-        supabase.from('business_unit_gallery').select('*').eq('business_unit_id', unit.id),
-      ]);
+  setEditMode(false);
+  setLoadingDetail(true);
+  setSelectedUnit({ ...unit, _loading: true });
 
-      if (unitRes.error) throw unitRes.error;
-      if (servicesRes.error) throw servicesRes.error;
-      if (galleryRes.error) throw galleryRes.error;
+  try {
 
-      setSelectedUnit(normalizeBusinessUnit({
-        ...unitRes.data,
-        services: servicesRes.data || [],
-        gallery: galleryRes.data || [],
-      }));
-    } catch (err) {
-      console.error('Failed to load business unit detail:', err);
-      setSelectedUnit({ ...unit, _loading: false });
-    } finally { setLoadingDetail(false); }
-  }, []);
+    const { data, error } = await supabase
+      .rpc('get_business_unit_profile', {
+        p_business_unit_id: unit.id
+      });
+
+    if (error) throw error;
+
+    setSelectedUnit(normalizeBusinessUnit({
+      ...data,
+
+      manager_name: data?.manager?.full_name || '—',
+      manager_email: data?.manager?.email || '',
+      manager_phone: data?.manager?.phone || '',
+
+      services: data?.services || [],
+      gallery: data?.gallery || [],
+    }));
+
+  } catch (err) {
+
+    console.error('Failed to load business unit detail:', err);
+
+    setSelectedUnit({
+      ...unit,
+      _loading: false
+    });
+
+  } finally {
+
+    setLoadingDetail(false);
+
+  }
+}, []);
 
   // ── Enter edit mode ───────────────────────────────────────────────────────
   const enterEdit = () => {
@@ -119,7 +134,7 @@ const BusinessHub = () => {
       name:        selectedUnit.name,
       category:    selectedUnit.category === '—' ? '' : selectedUnit.category,
       status:      selectedUnit.status,
-      commision:  selectedUnit.commision,
+      commision:   selectedUnit.commission,
       manager:     selectedUnit.managerName === '—' ? '' : selectedUnit.managerName,
       phone:       selectedUnit.phone,
       whatsapp:    selectedUnit.whatsapp,
@@ -144,7 +159,7 @@ const BusinessHub = () => {
           business_name:   editForm.name,
           category:        editForm.category,
           status:          editForm.status,
-          commission:      editForm.commission,
+          commission:      Number(editForm.commision) || 0,
           primary_phone:   editForm.phone,
           whatsapp_number: editForm.whatsapp,
           email:           editForm.email,
@@ -168,7 +183,7 @@ const BusinessHub = () => {
       const updated = normalizeBusinessUnit({
         ...updatedData,
         services: selectedUnit.services,
-        gallery: selectedUnit.gallery,
+        gallery:  selectedUnit.gallery,
       });
 
       setSelectedUnit(updated);
@@ -224,29 +239,44 @@ const BusinessHub = () => {
   const handleCreate = async (formData) => {
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('business_units')
-        .insert({
-          business_name:   formData.name,
-          category:        formData.category,
-          status:          'Active',
-          commission:      formData.commission,
-          primary_phone:   formData.phone,
-          whatsapp_number: formData.whatsapp,
-          email:           formData.email,
-          website:         formData.website,
-          location:        formData.cityArea,
-          address:         formData.address,
-          description:     formData.description,
-          logo:             '',
-        });
+      const payload = {
+        name:        formData.name,
+        category:    formData.category,
+        commission:  Number(formData.commision) || 0,
+        phone:       formData.phone,
+        whatsapp:    formData.whatsapp,
+        email:       formData.email,
+        website:     formData.website,
+        cityArea:    formData.cityArea,
+        address:     formData.address,
+        description: formData.description,
+        manager:     formData.manager,
+      };
+
+      const { data, error } = await supabase.functions.invoke('create-business-unit', {
+        body: payload,
+      });
 
       if (error) throw error;
+
+      if (data?.success === false) {
+        throw new Error(data?.error || 'Edge function returned a failure response.');
+      }
+
+      const tempPassword = data?.temporary_password ?? data?.temporaryPassword ?? '(check server logs)';
+      alert(
+        `Business unit registered successfully!\n\nManager Login Credentials\n` +
+        `Email: ${formData.email}\n` +
+        `Temporary Password: ${tempPassword}\n\n` +
+        `Share these credentials with the manager.`
+      );
+
       setShowAddModal(false);
       await fetchUnits();
     } catch (err) {
       console.error('Failed to create business unit:', err);
-      alert('Failed to create business unit. Please try again.');
+      const detail = err?.message || 'Unknown error. Check console for details.';
+      alert(`Failed to register business unit:\n${detail}`);
     } finally { setSubmitting(false); }
   };
 
