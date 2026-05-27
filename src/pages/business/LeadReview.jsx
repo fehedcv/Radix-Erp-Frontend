@@ -126,11 +126,11 @@ if (userData) {
         status: normalizeStatus(data.status),
 
         paymentStatus:
-          data.payment_status === 'paid'
+          data.payment_status === 'settled'
             ? 'Settled'
             : 'Pending',
 
-        creditStatus: data.credit_status,
+        creditStatus: data.credit_status || '',
 
         totalSaleAmount:
           data.total_sale_amount || 0,
@@ -616,7 +616,7 @@ if (userData) {
                 </button>
               )}
 
-              {lead.status === 'Completed' && lead.paymentStatus === 'Settled' ? (
+              {lead.status === 'Completed' && (lead.creditStatus === 'credited' || lead.paymentStatus === 'Settled') ? (
                 <div className={`border rounded-xl p-4 space-y-3 ${isLight ? 'bg-emerald-50 border-emerald-100' : 'bg-emerald-50 border-emerald-200'}`}>
                   <div className="flex items-center gap-2 mb-3 text-emerald-700 font-black text-[10px] uppercase tracking-widest">
                     <CheckCircle2 size={14} /> Settlement Details

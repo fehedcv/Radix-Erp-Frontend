@@ -90,29 +90,17 @@ const AdminOverview = () => {
   }, [dashboard.inquiryGenerated]);
 
   const partnerPerformanceData = useMemo(() => {
-    const unitsById = (dashboard.allBusinessUnits || []).reduce((acc, unit) => {
-      if (unit.name) acc[unit.name] = unit.business_name || unit.name;
-      return acc;
-    }, {});
-
     const source = (dashboard.topBusinessUnits || []).map((item) => ({
-      label: unitsById[item.business_unit] || item.business_unit || 'Unknown',
+      label: item.business_name || item.business_unit || item.name || 'Unknown',
       count: Number(item.lead_count ?? item.count ?? 0)
     }));
 
-    const activity = source.reduce((acc, item) => {
-      const key = item.label || 'Unknown';
-      const value = Number(item.count || 0);
-      acc[key] = (acc[key] || 0) + value;
-      return acc;
-    }, {});
-
-    const labels = Object.keys(activity).slice(0, 7);
+    const labels = source.map((s) => s.label).slice(0, 7);
     return {
       labels,
-      data: labels.map((l) => activity[l])
+      data: source.map((s) => s.count).slice(0, 7)
     };
-  }, [dashboard.topBusinessUnits, dashboard.allBusinessUnits]);
+  }, [dashboard.topBusinessUnits]);
 
   // --- CHART CONFIGURATIONS ---
   const activityTrendConfig = {

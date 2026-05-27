@@ -39,9 +39,23 @@ const [customerSearch, setCustomerSearch] = useState("");
         return;
       }
 
+      const normalizeStatus = (s) => {
+        const map = {
+          'pending': 'Pending',
+          'verified': 'Verified',
+          'in progress': 'In Progress',
+          'completed': 'Completed',
+          'rejected': 'Rejected',
+          'started': 'Started',
+        };
+        return map[(s || '').toLowerCase()] || s || 'Pending';
+      };
+
       const normalized = (data?.leads || []).map((lead, index) => ({
         ...lead,
         displayId: `Lead-${index + 1}`,
+        status: normalizeStatus(lead.status),
+        date: (lead.date || '').split('T')[0],
       }));
 
       setLeads(normalized);
@@ -137,6 +151,7 @@ const filteredLeads = useMemo(() => {
     Started: 'bg-blue-50 text-blue-700 border-blue-100',
     'In Progress': 'bg-indigo-50 text-indigo-700 border-indigo-100',
     Completed: 'bg-blue-50 text-blue-800 border-blue-200',
+    Rejected: 'bg-red-50 text-red-700 border-red-100',
   };
 
   return (
@@ -216,9 +231,9 @@ const filteredLeads = useMemo(() => {
                 <option value="All">All Statuses</option>
                 <option value="Pending">Pending</option>
                 <option value="Verified">Verified</option>
-                {/* <option value="Started">Started</option> */}
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
+                <option value="Rejected">Rejected</option>
               </select>
             </div>
 

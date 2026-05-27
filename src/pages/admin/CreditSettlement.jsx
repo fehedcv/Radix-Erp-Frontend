@@ -67,7 +67,7 @@ const CreditSettlement = () => {
 
       const payload = data || {};
 
-      setLeads((payload.leads || []).map(l => ({
+      setLeads((payload.paid_leads || []).map(l => ({
         ledgerId: l.ledger_id,
         id: l.lead_id,
         clientName: l.client_name,
@@ -86,6 +86,7 @@ const CreditSettlement = () => {
         totalAmount: l.total_sale_amount,
         commission: l.commission_amount,
         agentCredit: l.agent_credit,
+        creditStatus: l.credit_status || '',
       })));
 
       setWithdrawals((payload.withdrawals || []).map(mapWithdrawal));
@@ -106,42 +107,18 @@ const CreditSettlement = () => {
     if (!settleAmount) return;
     setIsProcessing(true);
     try {
-      // Update agent_credit_ledger
-      const { error: ledgerError } = await supabase
-        .from('agent_credit_ledger')
-        .update({
-          credits: Number(settleAmount),
-          status: 'approved',
-          remarks: settleRemarks,
-        })
-        .eq('id', selectedItem.ledgerId);
-
-      if (ledgerError) {
-        console.error('Failed to update ledger:', ledgerError);
-        alert('Failed to assign credits. Please try again.');
-        return;
-      }
-
-      // Update related lead
-      const { error: leadError } = await supabase
-        .from('leads')
-        .update({
-          approved_credits: Number(settleAmount),
-          credit_status: 'approved',
-        })
-        .eq('id', selectedItem.id);
-
-      if (leadError) {
-        console.error('Failed to update lead:', leadError);
-        alert('Failed to update lead. Please try again.');
-        return;
-      }
-
-      setLeads(prev => prev.filter(l => l.ledgerId !== selectedItem.ledgerId));
+      const { error } = await supabase.rpc('verify_credits', {
+        p_lead_id: selectedItem.id,
+        p_credits: Number(settleAmount),
+        p_admin_remarks: settleRemarks || null,
+      });
+      if (error) throw error;
+      alert('Credits verified and transferred to agent wallet successfully!');
       closeAllModals();
+      await fetchAll();
     } catch (err) {
-      console.error('Error settling credits:', err);
-      alert('Failed to assign credits. Please try again.');
+      console.error('Error verifying credits:', err);
+      alert('Failed to verify credits: ' + (err?.message || 'Unknown error'));
     } finally {
       setIsProcessing(false);
     }
@@ -194,6 +171,7 @@ const CreditSettlement = () => {
   const filteredRewards = useMemo(() => {
     const term = rewardSearch.toLowerCase();
     return leads.filter(l => {
+      if (l.creditStatus !== 'paid') return false;
       const matchesSearch =
         l.clientName.toLowerCase().includes(term) ||
         l.id.toLowerCase().includes(term);

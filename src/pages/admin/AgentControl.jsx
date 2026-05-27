@@ -22,6 +22,7 @@ const mapAgent = (a) => ({
   status: a.status || 'active',
   balance: a.wallet_balance || 0,
   totalLeads: a.total_leads || 0,
+  avatar: a.avatar_url || '',
 });
 
 const mapLead = (l) => ({
@@ -246,8 +247,13 @@ const AgentControl = () => {
               </div>
 
               <div className="flex flex-col items-center text-center mb-4">
-                <div className="h-14 w-14 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black text-xl mb-3 shadow-md group-hover:bg-blue-600 transition-colors">
-                  {agent.name.charAt(0).toUpperCase()}
+                <div className="h-14 w-14 rounded-xl mb-3 shadow-md shrink-0 overflow-hidden bg-slate-900 group-hover:ring-2 group-hover:ring-blue-500 transition-all">
+                  {agent.avatar
+                    ? <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                    : null}
+                  <div className={`w-full h-full items-center justify-center font-black text-xl text-white group-hover:bg-blue-600 bg-slate-900 transition-colors ${agent.avatar ? 'hidden' : 'flex'}`}>
+                    {agent.name.charAt(0).toUpperCase()}
+                  </div>
                 </div>
                 <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">{agent.name}</h3>
                 <p className="text-[8px] text-slate-400 font-bold mt-0.5 uppercase tracking-widest truncate max-w-full px-2">{agent.email}</p>
@@ -288,8 +294,13 @@ const AgentControl = () => {
               {/* Modal Header */}
               <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-blue-50/50">
                 <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 md:h-12 md:w-12 bg-slate-900 text-white rounded-lg flex items-center justify-center font-black text-lg md:text-xl shadow-md shrink-0">
-                    {selectedAgent.name.charAt(0).toUpperCase()}
+                  <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg shadow-md shrink-0 overflow-hidden bg-slate-900">
+                    {selectedAgent.avatar
+                      ? <img src={selectedAgent.avatar} alt={selectedAgent.name} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                      : null}
+                    <div className={`w-full h-full items-center justify-center font-black text-lg md:text-xl text-white bg-slate-900 ${selectedAgent.avatar ? 'hidden' : 'flex'}`}>
+                      {selectedAgent.name.charAt(0).toUpperCase()}
+                    </div>
                   </div>
                   <div>
                     <h3 className="text-base md:text-lg font-black text-slate-900 uppercase tracking-tighter leading-none">{selectedAgent.name}</h3>

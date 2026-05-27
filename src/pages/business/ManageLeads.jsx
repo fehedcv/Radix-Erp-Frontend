@@ -63,7 +63,7 @@ const ManageLeads = () => {
         service: lead.business_unit_services?.service_name || 'Unknown',
         date: lead.created_at,
         agentId: lead.users?.full_name || 'Unknown',
-        paymentStatus: lead.payment_status === 'paid' ? 'Settled' : 'Pending',
+        paymentStatus: lead.payment_status,
         creditStatus: lead.credit_status === 'credited' ? 'Credited' : 'Pending'
       }));
 
@@ -266,21 +266,35 @@ const ManageLeads = () => {
                 <div className="flex justify-between items-center gap-2">
                   <span className={isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}>Settlement</span>
                   <div className="flex items-center gap-1.5">
-                    {lead.paymentStatus === "Settled" ? (
+                    {lead.paymentStatus === "settled" ? (
                       <><CheckCircle2 size={14} className="text-emerald-500" /><span className="text-emerald-600 font-bold">Settled</span></>
                     ) : <><Activity size={14} className="text-amber-500" /><span className="text-amber-600 font-bold">Pending</span></>}
                   </div>
                 </div>
 
                 <div className="flex justify-between items-center gap-2">
-                  <span className={isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}>Credit</span>
+                  <span className={isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}>Status</span>
                   <div className="flex items-center gap-1.5">
-                    {lead.creditStatus === "Credited" ? (
-                      <><CheckCircle2 size={14} className="text-emerald-500" /><span className="text-emerald-600 font-bold">Credited</span></>
-                    ) : <><Activity size={14} className="text-amber-500" /><span className="text-amber-600 font-bold">Pending</span></>}
+                    {lead.status === "approved" ? (
+                      <>
+                        <CheckCircle2 size={14} className="text-emerald-500" />
+                        <span className="text-emerald-600 font-bold">Approved</span>
+                      </>
+                    ) : lead.status === "rejected" ? (
+                      <>
+                        <XCircle size={14} className="text-rose-500" />
+                        <span className="text-rose-600 font-bold">Rejected</span>
+                      </>
+                    ) : (
+                      <>
+                        <Activity size={14} className="text-amber-500" />
+                        <span className="text-amber-600 font-bold">Pending</span>
+                      </>
+                    )}
                   </div>
                 </div>
-              </div>
+                </div>
+     
 
               {/* Footer */}
               <div className={`p-3 border-t mt-auto ${isLight ? 'bg-white/40 border-[#E8ECEF]' : 'bg-white/5 border-white/10'}`}>
