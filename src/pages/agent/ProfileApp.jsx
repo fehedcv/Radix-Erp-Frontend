@@ -4,7 +4,7 @@ import {
   User, Phone, Mail, Edit3, Camera, Save, X, 
   CheckCircle2, Settings, Loader2 
 } from 'lucide-react';
-import { supabase } from '../../supabase/supabaseClient'; // Added Supabase Client
+import { supabase } from '../../supabase/supabaseClient'; 
 import { useTheme } from '../../context/ThemeContext'; 
 
 // ==========================================
@@ -18,8 +18,7 @@ const ProfileSkeleton = ({ theme }) => {
   return (
     <div className="w-full max-w-[1200px] mx-auto  space-y-5 pb-16 pt-4">
       {/* Separator */}
-             <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`} />
-
+      <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`} />
 
       {/* Header Skeleton */}
       <div className="flex justify-between items-end mb-6 px-2">
@@ -70,7 +69,7 @@ const ProfilePageApp = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [user, setUser] = useState(null); // Added user state for Supabase Auth
+  const [user, setUser] = useState(null); 
   const [profile, setProfile] = useState({
     name: "",
     phone: "",
@@ -88,7 +87,6 @@ const ProfilePageApp = () => {
       try {
         setLoading(true);
 
-        // Supabase Logic replacing Dummy Data
         const { data: authData, error: authError } = await supabase.auth.getUser();
         if (authError) {
           console.error('Auth error:', authError);
@@ -113,7 +111,8 @@ const ProfilePageApp = () => {
 
         const { count, error: countError } = await supabase
           .from('leads')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
+          .eq('source_user_id', authData.user.id);
 
         if (countError) {
           console.error('Lead count error:', countError);
@@ -139,41 +138,70 @@ const ProfilePageApp = () => {
     fetchData();
   }, []);
 
-  const handleImageClick = () => { if (isEditing) fileInputRef.current.click(); };
+  // CLEANUP BLOB URL TO PREVENT MEMORY LEAKS
+  useEffect(() => {
+    return () => {
+      if (profile.avatar?.startsWith('blob:')) {
+        URL.revokeObjectURL(profile.avatar);
+      }
+    };
+  }, [profile.avatar]);
+
+  const handleImageClick = () => { if (isEditing) fileInputRef.current?.click(); };
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfile(prev => ({
-        ...prev,
-        avatar: URL.createObjectURL(file),
-        avatarFile: file
-      }));
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ['image/png', 'image/jpeg', 'image/webp'];
+
+    if (!allowed.includes(file.type)) {
+      alert('Only PNG, JPEG, and WEBP are allowed.');
+      return;
     }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image must be below 2MB.');
+      return;
+    }
+
+    const preview = URL.createObjectURL(file);
+
+    setProfile(prev => ({
+      ...prev,
+      avatar: preview,
+      avatarFile: file
+    }));
   };
 
   const handleSave = async () => {
-    if (!user) return;
+    if (!user || saving) return;
     setSaving(true);
+    
     try {
       let avatarUrl = profile.avatar;
 
       // Supabase Avatar Upload Logic
       if (profile.avatarFile) {
+        const extension = profile.avatarFile.name.split('.').pop()?.toLowerCase();
+        const filePath = `${user.id}/avatar.${extension}`;
+
         const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(`${user.id}.jpg`, profile.avatarFile, {
+          .upload(filePath, profile.avatarFile, {
             upsert: true
           });
 
         if (uploadError) {
           console.error('Upload error:', uploadError);
+          alert(uploadError.message);
+          setSaving(false);
           return;
         }
 
         const { data: publicUrlData } = supabase.storage
           .from('avatars')
-          .getPublicUrl(`${user.id}.jpg`);
+          .getPublicUrl(filePath);
 
         avatarUrl = publicUrlData?.publicUrl || profile.avatar;
       }
@@ -190,6 +218,7 @@ const ProfilePageApp = () => {
 
       if (updateError) {
         console.error('Update error:', updateError);
+        alert(updateError.message);
         return;
       }
 
@@ -200,8 +229,10 @@ const ProfilePageApp = () => {
       }));
       
       setIsEditing(false);
+      alert('Profile updated successfully.');
     } catch (error) {
       console.error('Unexpected error:', error);
+      alert('Failed to update profile.');
     } finally {
       setSaving(false);
     }
@@ -216,7 +247,7 @@ const ProfilePageApp = () => {
       <main className="w-full max-w-[1200px] mx-auto  space-y-5 ">
         
         {/* PROFESSIONAL SEPARATOR */}
-                <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+        <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
 
           {/* Header Section */}
           <div className="flex justify-between items-end px-2 mb-2">
@@ -269,7 +300,7 @@ const ProfilePageApp = () => {
             <div className="relative w-32 h-32 mb-5">
               <div 
                 onClick={handleImageClick}
-                className={`w-full h-full rounded-2xl overflow-hidden border flex items-center justify-center transition-all ${
+                className={`w-full h-full rounded-full overflow-hidden border flex items-center justify-center transition-all ${
                   isEditing 
                   ? (isLight ? 'border-[#81B398] border-dashed bg-[#81B398]/10 cursor-pointer' : 'border-[#81B398] border-dashed bg-[#81B398]/10 cursor-pointer') 
                   : (isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10')

@@ -5,8 +5,7 @@ import {
   Clock,
   Activity,
   ShieldCheck,
-  TrendingUp,
-  Loader2
+  TrendingUp
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import { supabase } from '../../supabase/supabaseClient';
@@ -17,6 +16,12 @@ const BusinessOverview = () => {
   const [loading, setLoading] = useState(true);
   const { theme } = useTheme();
   const isLight = theme === 'light';
+
+  // Design System Utility Classes
+  const surfaceClass = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5';
+  const textPrimary = isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]';
+  const textSecondary = isLight ? 'text-[#718096]' : 'text-[#9CA3AF]';
+  const pulseClass = isLight ? 'bg-[#E2E8F0]' : 'bg-[#334155]';
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -47,27 +52,42 @@ const BusinessOverview = () => {
 
   const { total, verified, in_progress, completion_rate, trend } = safeData;
 
+  // Chart Configurations mapped to Earth-Tech Palette
   const areaChartConfig = useMemo(() => ({
     series: [{ name: 'Leads Received', data: trend.data.length ? trend.data : [0, 0, 0, 0, 0, 0, 0] }],
     options: {
-      chart: { type: 'area', toolbar: { show: false }, fontFamily: 'Plus Jakarta Sans', zoom: { enabled: false }, background: 'transparent' },
-      colors: ['#61D9DE'],
+      chart: { 
+        type: 'area', 
+        toolbar: { show: false }, 
+        fontFamily: 'Plus Jakarta Sans', 
+        zoom: { enabled: false }, 
+        background: 'transparent', 
+        parentHeightOffset: 0 
+      },
+      colors: ['#DAC18A'], // Earth-Tech Sand
       stroke: { curve: 'smooth', width: 3 },
       fill: {
         type: 'gradient',
-        gradient: { shadeIntensity: 1, opacityFrom: isLight ? 0.3 : 0.45, opacityTo: 0.05, stops: [0, 90, 100] },
+        gradient: { shadeIntensity: 1, opacityFrom: isLight ? 0.3 : 0.4, opacityTo: 0, stops: [0, 100] },
       },
+      dataLabels: { enabled: false },
       xaxis: {
         categories: trend.labels,
-        labels: { style: { colors: isLight ? '#9A9FA5' : '#94A3B8', fontSize: '11px', fontWeight: 600 } },
+        labels: { style: { colors: isLight ? '#718096' : '#9CA3AF', fontSize: '12px', fontFamily: 'Plus Jakarta Sans', fontWeight: 500 } },
         axisBorder: { show: false },
         axisTicks: { show: false },
       },
       yaxis: {
-        labels: { style: { colors: isLight ? '#9A9FA5' : '#94A3B8', fontSize: '11px', fontWeight: 600 } },
+        labels: { style: { colors: isLight ? '#718096' : '#9CA3AF', fontSize: '12px', fontFamily: 'Plus Jakarta Sans', fontWeight: 500 } },
         tickAmount: 4,
       },
-      grid: { borderColor: isLight ? '#E8ECEF' : 'rgba(255,255,255,0.05)', strokeDashArray: 4 },
+      grid: { 
+        borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)', 
+        strokeDashArray: 4,
+        xaxis: { lines: { show: false } },
+        yaxis: { lines: { show: true } },
+        padding: { top: 0, right: 0, bottom: 0, left: 10 } 
+      },
       tooltip: { theme: isLight ? 'light' : 'dark' },
     },
   }), [trend, isLight]);
@@ -75,95 +95,164 @@ const BusinessOverview = () => {
   const radialConfig = {
     series: [completion_rate],
     options: {
-      chart: { type: 'radialBar' },
+      chart: { type: 'radialBar', sparkline: { enabled: true }, parentHeightOffset: 0 },
       plotOptions: {
         radialBar: {
           startAngle: -135,
           endAngle: 135,
           hollow: { size: '65%' },
-          track: { background: isLight ? '#F0F2F5' : 'rgba(255,255,255,0.05)' },
+          track: { background: isLight ? '#F4F5F7' : '#131720', strokeWidth: '100%' },
           dataLabels: {
-            name: { offsetY: 20, color: isLight ? '#9A9FA5' : '#64748B', fontSize: '11px', fontWeight: 700 },
-            value: { offsetY: -15, color: isLight ? '#1A1D1F' : '#E2E8F0', fontSize: '26px', fontWeight: 800, formatter: (val) => `${val}%` },
+            name: { offsetY: 20, color: isLight ? '#718096' : '#9CA3AF', fontSize: '12px', fontWeight: 600, fontFamily: 'Plus Jakarta Sans' },
+            value: { offsetY: -15, color: isLight ? '#1A202C' : '#F4F5F7', fontSize: '28px', fontWeight: 800, fontFamily: 'Plus Jakarta Sans', formatter: (val) => `${val}%` },
           },
         },
       },
-      colors: ['#61D9DE'],
+      colors: ['#81B398'], // Earth-Tech Sage Green
       stroke: { lineCap: 'round' },
     },
   };
 
+  // SKELETON LOADER
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className={`h-10 w-10 animate-spin mb-4 ${isLight ? 'text-[#61D9DE]' : 'text-[#38BDF8]'}`} />
-        <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>Loading...</p>
+      <div className="max-w-[1400px] mx-auto space-y-6 lg:space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] mt-2 lg:mt-4 px-4 lg:px-0">
+        {/* Header Skeleton */}
+        <div className="pt-2 mb-6">
+          <div className={`h-10 w-48 rounded-md mb-2 ${pulseClass} animate-pulse`} />
+          <div className={`h-4 w-64 rounded-md ${pulseClass} animate-pulse`} />
+        </div>
+
+        {/* Top Row: Metric Cards Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8">
+          {[1, 2, 3].map(i => (
+            <div key={i} className={`p-6 rounded-2xl border flex flex-col justify-between h-[140px] animate-pulse min-w-0 ${surfaceClass}`}>
+              <div className="flex justify-between items-start mb-4">
+                <div className={`h-4 w-20 rounded-md ${pulseClass}`} />
+                <div className={`h-8 w-8 rounded-lg ${pulseClass}`} />
+              </div>
+              <div className={`h-8 w-16 rounded-md ${pulseClass}`} />
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom Row: Charts Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mt-6">
+          <div className={`lg:col-span-2 h-[360px] rounded-2xl border animate-pulse min-w-0 ${surfaceClass}`} />
+          <div className={`lg:col-span-1 h-[360px] rounded-2xl border animate-pulse min-w-0 ${surfaceClass}`} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`font-['Plus_Jakarta_Sans',sans-serif] space-y-6 pb-16 transition-colors duration-300 ${isLight ? 'text-[#1A1D1F]' : 'text-[#E2E8F0]'}`}>
+    <div className={`max-w-[1400px] mx-auto space-y-6 lg:space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] relative z-0 transition-colors duration-300 mt-2 lg:mt-4 px-4 lg:px-0 ${textPrimary}`}>
       
-      {/* HEADER CARD - Now #F8FAFB */}
-      <motion.div
-        initial={{ opacity: 0, y: -15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`p-6 rounded-2xl border transition-all duration-300 ${
-          isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] shadow-sm' : 'bg-white/5 border-white/10 shadow-sm'
-        } flex items-center justify-between`}
-      >
-        <div className="flex items-center gap-4">
-          <div className={`h-12 w-12 rounded-xl flex items-center justify-center border transition-colors ${
-            isLight ? 'bg-white text-[#61D9DE] border-[#E8ECEF]' : 'bg-blue-50/10 text-[#38BDF8] border-blue-500/20'
-          }`}>
-            <TrendingUp size={24} />
-          </div>
-          <div>
-            <h2 className="text-xl font-black uppercase tracking-tight">Analytics</h2>
-            <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>Performance Overview</p>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* METRICS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard label="Total Leads" value={total} icon={<Users size={18} />} isLight={isLight} />
-        <MetricCard label="Verified" value={verified} icon={<ShieldCheck size={18} />} isLight={isLight} />
-        <MetricCard label="In Progress" value={in_progress} icon={<Clock size={18} />} isLight={isLight} />
-        <MetricCard label="Success Rate" value={`${completion_rate}%`} icon={<Activity size={18} />} isLight={isLight} />
+      {/* HEADER (Free/Borderless) */}
+      <div className="pt-2">
+        <h1 className={`text-[32px] lg:text-[40px] font-extrabold tracking-tight leading-none mb-2 ${textPrimary}`}>
+          Dashboard
+        </h1>
+        <p className={`text-sm font-medium ${textSecondary}`}>
+          Monitor your business lead performance and analytics.
+        </p>
       </div>
 
-      {/* CHARTS SECTION */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className={`lg:col-span-2 rounded-2xl p-6 border transition-all ${
-          isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] shadow-sm' : 'bg-white/5 border-white/10 shadow-sm'
-        }`}>
-          <Chart options={areaChartConfig.options} series={areaChartConfig.series} type="area" height={280} />
+      {/* TOP ROW: Core Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8">
+        <MetricCard 
+          label="Total Leads" 
+          value={total} 
+          icon={<Users size={18} />} 
+          isLight={isLight} 
+          colorClass={isLight ? 'bg-[#F4F5F7] text-[#48477A]' : 'bg-[#131720] text-[#81B398]'}
+        />
+        <MetricCard 
+          label="Verified" 
+          value={verified} 
+          icon={<ShieldCheck size={18} />} 
+          isLight={isLight} 
+          colorClass={isLight ? 'bg-[#F4F5F7] text-[#81B398]' : 'bg-[#81B398]/10 text-[#81B398]'}
+        />
+        <MetricCard 
+          label="In Progress" 
+          value={in_progress} 
+          icon={<Clock size={18} />} 
+          isLight={isLight} 
+          colorClass={isLight ? 'bg-[#F4F5F7] text-[#DAC18A]' : 'bg-[#DAC18A]/10 text-[#DAC18A]'}
+        />
+      </div>
+
+      {/* BOTTOM ROW: Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        
+        {/* Left Side: Trend Chart (Col Span 2) */}
+        <div className={`lg:col-span-2 min-w-0 p-6 lg:p-8 rounded-2xl border transition-all duration-300 flex flex-col ${surfaceClass}`}>
+          <div className="flex justify-between items-center mb-6 shrink-0">
+            <h3 className={`text-xl font-bold tracking-tight ${textPrimary}`}>Activity</h3>
+            <div className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors border ${
+              isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/5 text-[#9CA3AF]'
+            }`}>
+              <TrendingUp size={14} /> Earning Trends
+            </div>
+          </div>
+          {/* Strictly constrained height block for ApexCharts */}
+          <div className="w-full h-[260px] overflow-hidden">
+            <Chart options={areaChartConfig.options} series={areaChartConfig.series} type="area" height="100%" width="100%" />
+          </div>
         </div>
 
-        <div className={`rounded-2xl p-6 border transition-all ${
-          isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] shadow-sm' : 'bg-white/5 border-white/10 shadow-sm'
-        }`}>
-          <Chart options={radialConfig.options} series={radialConfig.series} type="radialBar" height={260} />
+        {/* Right Side: Success Rate Radial Highlight (Col Span 1) */}
+        <div className={`lg:col-span-1 min-w-0 p-6 lg:p-8 rounded-2xl border flex flex-col transition-all duration-300 ${surfaceClass}`}>
+          <div className="w-full flex justify-between items-start mb-2 shrink-0">
+            <div>
+              <h3 className={`text-xl font-bold tracking-tight ${textPrimary}`}>Success Score</h3>
+              <p className={`text-xs font-medium mt-1 ${textSecondary}`}>Based on completed leads</p>
+            </div>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
+              <Activity size={18} className="text-[#81B398]" />
+            </div>
+          </div>
+          {/* Strictly constrained flex container for Radial Chart */}
+          <div className="flex-1 w-full h-[200px] flex items-center justify-center overflow-hidden -my-2">
+            <Chart options={radialConfig.options} series={radialConfig.series} type="radialBar" height="100%" width="100%" />
+          </div>
+          <div className="w-full mt-auto pt-2 shrink-0 flex justify-center">
+            <span className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest ${
+              isLight ? 'bg-[#F0524F] text-white' : 'bg-[#F0524F] text-white'
+            }`}>
+              {completion_rate}% Now
+            </span>
+          </div>
         </div>
+
       </div>
+
     </div>
   );
 };
 
-const MetricCard = ({ label, value, icon, isLight }) => (
-  <div className={`rounded-2xl p-6 border transition-all ${
-    isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] shadow-sm' : 'bg-white/5 border-white/10 shadow-sm'
-  }`}>
-    <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-colors ${
-      isLight ? 'bg-white text-[#61D9DE] border-[#E8ECEF] border' : 'bg-blue-50/10 text-[#38BDF8] border border-white/5'
-    }`}>
-      {icon}
+// Extracted Metric Card Component for clean rendering
+const MetricCard = ({ label, value, icon, isLight, colorClass }) => {
+  const surfaceClass = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5';
+  const textPrimary = isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]';
+  const textSecondary = isLight ? 'text-[#718096]' : 'text-[#9CA3AF]';
+
+  return (
+    <div className={`min-w-0 p-5 lg:p-6 rounded-2xl border flex flex-col justify-between h-[140px] lg:h-[160px] transition-all duration-300 ${surfaceClass}`}>
+      <div className="flex items-center justify-between">
+        <p className={`text-xs font-semibold uppercase tracking-wider truncate mr-2 ${textSecondary}`}>
+          {label}
+        </p>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${colorClass}`}>
+          {icon}
+        </div>
+      </div>
+      <h3 className={`text-3xl lg:text-4xl font-bold tracking-tight truncate ${textPrimary}`}>
+        {value}
+      </h3>
     </div>
-    <p className={`text-[11px] font-bold uppercase mt-4 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>{label}</p>
-    <h3 className="text-3xl font-black">{value}</h3>
-  </div>
-);
+  );
+};
 
 export default BusinessOverview;

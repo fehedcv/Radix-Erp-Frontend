@@ -6,7 +6,7 @@ import {
   Activity, User, AlertCircle, ChevronDown , X
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
-import { supabase } from '../../supabase/supabaseClient'; // Added Supabase client
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
 import { useTheme } from '../../context/ThemeContext'; 
 
@@ -21,7 +21,7 @@ const HistorySkeleton = ({ theme }) => {
   return (
     <div className="w-full max-w-[1200px] mx-auto  space-y-5 pb-32 ">
       {/* Separator */}
-                <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`} />
+      <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`} />
 
       {/* Header Skeleton */}
       <div className="space-y-2 mb-6">
@@ -79,11 +79,11 @@ const LeadHistoryApp = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        // Fetching real data from Supabase
+        // Fetching real data from Supabase exactly matching Web Logic
         const { data, error } = await supabase
           .from('leads')
           .select(`
-            id, customer_name, status, service, created_at, credit_status,
+            id, customer_name, status, service_id, created_at, credit_status,
             business_units ( business_name )
           `)
           .order('created_at', { ascending: false });
@@ -98,7 +98,8 @@ const LeadHistoryApp = () => {
           id: lead.id,
           clientName: lead.customer_name,
           status: lead.status,
-          service: lead.service || lead.business_units?.business_name || 'N/A',
+          service_id: lead.service_id,
+          service: lead.business_units?.business_name || 'N/A', // Retained for App UI specific mapping
           date: new Date(lead.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           creditStatus: lead.credit_status,
           businessUnit: lead.business_units?.business_name || 'Unknown'
@@ -211,7 +212,7 @@ const LeadHistoryApp = () => {
         
         {/* PROFESSIONAL SEPARATOR */}
  
-                <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`} >
+        <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`} >
 
           {/* Header Section */}
           <div className="flex justify-between items-end px-2 mb-2">
@@ -330,9 +331,7 @@ const LeadHistoryApp = () => {
             >
               <div className="flex justify-between items-start mb-6">
                 <div className="flex-1 min-w-0 pr-4">
-                  <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-                    ID: {lead.id}
-                  </p>
+                  
                   <h3 className={`text-xl font-extrabold tracking-tight truncate ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
                     {lead.clientName}
                   </h3>
@@ -368,14 +367,11 @@ const LeadHistoryApp = () => {
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
                   <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Credit</span>
-                  {normalizeStatus(lead.status) === "Completed" ? (
+                  {lead.creditStatus === "credited" ? (
                     <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#81B398]">
                       <CheckCircle2 size={12} strokeWidth={3} /> Credited
                     </span>
-                  ) : normalizeStatus(lead.status) === "Rejected" ? (
-                    <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#F0524F]">
-                      <X size={12} strokeWidth={3} /> Rejected
-                    </span>
+                  
                   ) : (
                     <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#DAC18A]">
                       <Clock size={12} strokeWidth={3} /> Pending

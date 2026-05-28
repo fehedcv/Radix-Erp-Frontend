@@ -47,6 +47,17 @@ import WalletApp from './pages/agent/WalletApp';
 import LeadHistoryApp from './pages/agent/LeadHistoryApp';
 import ProfilePageApp from './pages/agent/ProfileApp';
 import AuthGatewayApp from './pages/auth/AuthGatewayApp';
+import BusinessHubApp from './pages/business/BusinessHubApp';
+import BusinessOverviewApp from './pages/business/BusinessOverviewApp';
+import LeadReviewApp from './pages/business/LeadReviewApp';
+import ManageLeadsApp from './pages/business/MangeLeadsApp';
+import PortfolioManagerApp from './pages/business/PortfolioManagerApp';
+import AdminHubApp from './pages/admin/AdminHubApp';
+import AdminOverviewApp from './pages/admin/AdminOverviewApp';
+import AgentControlApp from './pages/admin/AgentControlApp';
+import CreditSettlementApp from './pages/admin/CreditSettlementApp';
+import MasterLeadTrackerApp from './pages/admin/MasterLeadTrackerApp';
+import BusinessControlApp from './pages/admin/BusinessControlApp';
 
 const AppContent = () => {
   const [userRole, setUserRole] = useState(null);
@@ -346,15 +357,15 @@ const AppContent = () => {
 
         {/* --- ADMIN PRIVATE ROUTES --- */}
         {userRole === 'admin' && (
-          <Route path="/admin" element={<AdminHub onLogout={handleLogout} />}>
+          <Route path="/admin" element={isNative ? <AdminHubApp onLogout={handleLogout} /> : <AdminHub onLogout={handleLogout} /> }>
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<AdminOverview />} />
-            <Route path="leads" element={<MasterLeadTracker />} />
-            <Route path="units" element={<BusinessControl />} />
-            <Route path="agents" element={<AgentControl />} />
-            <Route path="credits" element={<CreditSettlement />} />
+            <Route path="dashboard" element={isNative ? <AdminOverviewApp /> : <AdminOverview />} />
+            <Route path="leads" element={isNative ? <MasterLeadTrackerApp /> : <MasterLeadTracker />} />
+            <Route path="units" element={isNative ? <BusinessControlApp /> : <BusinessControl />} />
+            <Route path="agents" element={isNative ? <AgentControlApp /> : <AgentControl />} />
+            <Route path="credits" element={isNative ? <CreditSettlementApp /> : <CreditSettlement />} />
           </Route>
-        )}
+        )} 
 
         {/* --- AGENT PRIVATE ROUTES --- */}
         {userRole === 'agent' && (
@@ -371,13 +382,13 @@ const AppContent = () => {
 
         {/* --- BUSINESS PRIVATE ROUTES --- */}
         {userRole === 'business' && (
-          <Route path="/business" element={<BusinessHub onLogout={handleLogout} />}>
+          <Route path="/business" element={isNative ? <BusinessHubApp onLogout={handleLogout} /> : <BusinessHub onLogout={handleLogout} />}>
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<BusinessOverview />} />
-            <Route path="leads" element={<ManageLeads />} />
-            <Route path="leads/:id" element={<LeadReview />} />
-            <Route path="portfolio" element={<PortfolioManager />} />
-            <Route path="settings" element={<BusinessSettings />} />
+            <Route path="dashboard" element={isNative ? <BusinessOverviewApp /> : <BusinessOverview />} />
+            <Route path="leads" element={isNative ? <ManageLeadsApp /> : <ManageLeads />} />
+            <Route path="leads/:id" element={isNative ? <LeadReviewApp /> : <LeadReview />} />
+            <Route path="portfolio" element={isNative ? <PortfolioManagerApp /> : <PortfolioManager />} />
+            {/* <Route path="settings" element={<BusinessSettings />} /> */}
           </Route>
         )}
 

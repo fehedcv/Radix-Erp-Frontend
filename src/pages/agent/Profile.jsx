@@ -430,7 +430,8 @@ const ProfileField = ({
   onChange,
   icon,
   editable,
-  readonly
+  readonly,
+  isLight
 }) => {
   return (
     <div className="space-y-2">
@@ -458,21 +459,33 @@ const ProfileField = ({
             type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="
-              w-full
-              pl-12
-              pr-4
-              py-3
-              rounded-xl
-              bg-[#131720]
-              border border-transparent
-              focus:border-[#81B398]
-              outline-none
-            "
+            className={`
+  w-full
+  pl-12
+  pr-4
+  py-3
+  rounded-xl
+  border
+  outline-none
+  transition-all
+
+  ${isLight
+    ? "bg-white border-gray-200 text-gray-900 focus:border-[#81B398]"
+    : "bg-[#1f2937] border-white/10 text-white focus:border-[#81B398]"
+  }
+`}
           />
         </div>
       ) : (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#131720] border border-white/5">
+        <div className={`
+  flex items-center gap-3 px-4 py-3 rounded-xl border
+  transition-all
+
+  ${isLight
+    ? "bg-gray-100 border-gray-200 text-gray-800"
+    : "bg-[#111827] border-white/10 text-gray-200"
+  }
+`}>
           {icon}
 
           <span className="font-medium truncate">

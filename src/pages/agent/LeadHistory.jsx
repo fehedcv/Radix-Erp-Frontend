@@ -294,9 +294,7 @@ const LeadHistory = () => {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-base font-bold tracking-tight truncate mb-1">{lead.clientName}</h3>
-                  <p className={`text-xs font-medium uppercase tracking-wider ${textSecondary}`}>
-                    ID: {lead.id}
-                  </p>
+     
                 </div>
               </div>
 
@@ -328,13 +326,14 @@ const LeadHistory = () => {
 
                 {/* Wallet Status */}
                 <div className={`px-3 py-1.5 rounded-md border flex items-center gap-1.5 ${
-                  lead.creditStatus === "Credited" 
+                  lead.creditStatus === "credited" 
                   ? 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20' 
                   : (isLight ? 'bg-[#F4F5F7] text-[#718096] border-[#E2E8F0]' : 'bg-[#131720] text-[#9CA3AF] border-white/5')
                 }`}>
-                  {lead.creditStatus === "Credited" ? <CheckCircle2 size={14} /> : <Clock size={14} />}
+                  {lead.creditStatus === "credited" ? <CheckCircle2 size={14} /> : <Clock size={14} />}
                   <span className="text-[11px] font-bold uppercase tracking-wider">
-                    {lead.creditStatus === "Credited" ? "Settled" : "Pending"}
+                    {/* {console.log(`Credit status current : ${lead.creditStatus}`)} */}
+                    {lead.creditStatus === "credited" ? "Settled" : "Pending"}
                   </span>
                 </div>
               </div>
