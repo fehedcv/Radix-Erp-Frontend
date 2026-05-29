@@ -2,8 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
+
 // --- THEME CONTEXT ---
-import { ThemeProvider, useTheme } from './context/ThemeContext'; // Ensure this path is correct
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+
+// --- NOTIFICATION CONTEXT ---
+import { NotificationProvider } from './context/NotificationContext';
 
 // --- SUPABASE ---
 import { supabase } from './supabase/supabaseClient';
@@ -30,7 +34,6 @@ import LeadHistory from './pages/agent/LeadHistory';
 import ProfilePage from './pages/agent/Profile';
 
 // Agent hub in android app
-
 import AgentHubApp from './pages/agent/AgentHubApp';
 
 // --- BUSINESS HUB & SUB-PAGES ---
@@ -59,79 +62,80 @@ import CreditSettlementApp from './pages/admin/CreditSettlementApp';
 import MasterLeadTrackerApp from './pages/admin/MasterLeadTrackerApp';
 import BusinessControlApp from './pages/admin/BusinessControlApp';
 
+// --- PUSH NOTIFICATIONS ---
+import PushNotificationHandler from './components/PushNotificationHandler';
+import NotificationToast from './components/NotificationToast';
+import { cleanupPushNotifications } from './services/pushNotifications';
+import { cleanupWebPush } from './services/webPush';
+
 const AppContent = () => {
   const [userRole, setUserRole] = useState(null);
+  const [authUserId, setAuthUserId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const isMountedRef = useRef(true);
   const userRoleRef = useRef(null);
-  const { theme } = useTheme(); // Access global theme
+  const { theme } = useTheme();
   const isNative = Capacitor.isNativePlatform();
+
   // Update Status Bar based on Theme
   useEffect(() => {
     const configureStatusBar = async () => {
       try {
         if (!Capacitor.isNativePlatform()) return;
-
-        // 1. Turn OFF the transparent overlay so it acts like a normal status bar
         await StatusBar.setOverlaysWebView({ overlay: false });
-
-        // 2. Set the exact hex colors to match your Bento design
         if (theme === 'light') {
-          await StatusBar.setBackgroundColor({ color: '#FF0000' }); // Light mode app background
-          await StatusBar.setStyle({ style: Style.Light });         // Dark icons/text
+          await StatusBar.setBackgroundColor({ color: '#FF0000' });
+          await StatusBar.setStyle({ style: Style.Light });
         } else {
-          await StatusBar.setBackgroundColor({ color: '#09090B' }); // Dark mode app background
-          await StatusBar.setStyle({ style: Style.Dark });          // Light icons/text
+          await StatusBar.setBackgroundColor({ color: '#09090B' });
+          await StatusBar.setStyle({ style: Style.Dark });
         }
       } catch (error) {
         console.warn('StatusBar is not available on this platform', error);
       }
     };
-
     configureStatusBar();
-  }, [theme]);// Re-run whenever theme changes
+  }, [theme]);
 
   useEffect(() => {
     isMountedRef.current = true;
 
-    // Helper to safely restore session and user role
     const restoreSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Error getting session on startup:', error);
         }
-
         if (session?.user) {
           await fetchUserRole(session.user.id);
         } else if (isMountedRef.current) {
           setUserRole(null);
+          setAuthUserId(null);
         }
       } catch (err) {
         console.error('Failed to restore Supabase session:', err);
-        if (isMountedRef.current) setUserRole(null);
+        if (isMountedRef.current) {
+          setUserRole(null);
+          setAuthUserId(null);
+        }
       } finally {
         if (isMountedRef.current) setIsLoading(false);
       }
     };
 
-    // Initial restore
     restoreSession();
 
-    // Auth state change listener - handle specific events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, payload) => {
       try {
         switch (event) {
-         case 'SIGNED_IN':
-  if (payload?.session?.user) {
-    await fetchUserRole(payload.session.user.id);
-  } else {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      await fetchUserRole(session.user.id);
-    }
-  }
-  break;
+          case 'SIGNED_IN':
+            if (payload?.session?.user) {
+              await fetchUserRole(payload.session.user.id);
+            } else {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.user) await fetchUserRole(session.user.id);
+            }
+            break;
           case 'TOKEN_REFRESHED':
             try {
               const { data: { session }, error } = await supabase.auth.getSession();
@@ -145,6 +149,7 @@ const AppContent = () => {
             if (isMountedRef.current) {
               userRoleRef.current = null;
               setUserRole(null);
+              setAuthUserId(null);
               setIsLoading(false);
               localStorage.removeItem('vynx_user');
             }
@@ -160,7 +165,7 @@ const AppContent = () => {
       }
     });
 
-    // Periodic session validation to avoid stale sessions (every 5 minutes)
+    // Periodic session validation (every 5 minutes)
     const intervalId = setInterval(async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -168,8 +173,6 @@ const AppContent = () => {
           console.error('Periodic session check failed:', error);
           return;
         }
-        // Only fetch role if session exists but role is missing — never clear role here.
-        // Actual sign-outs are handled by the SIGNED_OUT auth event.
         if (session?.user && !userRoleRef.current) {
           await fetchUserRole(session.user.id).catch(() => {});
         }
@@ -178,37 +181,26 @@ const AppContent = () => {
       }
     }, 5 * 60 * 1000);
 
-    // When tab becomes visible, revalidate session immediately
     const handleVisibility = async () => {
       if (document.visibilityState === 'visible') {
         try {
           const { data: { session }, error } = await supabase.auth.getSession();
           if (error) console.error('visibilitychange getSession error:', error);
-
           if (session?.user) {
-            // If token is expired or expires within the next 10 minutes, force a
-            // refresh NOW so subsequent DB requests use a valid token. Without this
-            // the DB query races against Supabase's internal _recoverAndRefresh()
-            // and can run with the stale expired token.
             const now = Math.floor(Date.now() / 1000);
             const expiresIn = (session.expires_at ?? 0) - now;
             if (expiresIn < 600) {
               const { error: refreshErr } = await supabase.auth.refreshSession();
               if (refreshErr) console.warn('Token refresh on visibility failed:', refreshErr);
             }
-
             await fetchUserRole(session.user.id).catch(() => {});
           }
-          // Do NOT clear role when getSession returns null — that can happen on
-          // network hiccups after long inactivity. The SIGNED_OUT event handles
-          // real sign-outs.
         } catch (e) {
           console.error('Error on visibilitychange handler:', e);
         }
       }
     };
 
-    // When network reconnects, revalidate session and role
     const handleOnline = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -230,7 +222,7 @@ const AppContent = () => {
 
     return () => {
       isMountedRef.current = false;
-      try { subscription?.unsubscribe(); } catch (e) {}
+      try { subscription?.unsubscribe(); } catch {} // eslint-disable-line no-empty
       clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('online', handleOnline);
@@ -246,13 +238,14 @@ const AppContent = () => {
         if (parsed?.id === userId && parsed?.role) {
           userRoleRef.current = parsed.role;
           setUserRole(parsed.role);
+          setAuthUserId(userId);
           return;
         }
       }
     } catch {} // eslint-disable-line no-empty
-    // Only reach here if no valid cache exists
     userRoleRef.current = null;
     setUserRole(null);
+    setAuthUserId(null);
   };
 
   const fetchUserRole = async (userId) => {
@@ -284,6 +277,7 @@ const AppContent = () => {
         if (role === 'manager') role = 'business';
         userRoleRef.current = role;
         setUserRole(role);
+        setAuthUserId(userId);
         try {
           localStorage.setItem('vynx_user', JSON.stringify({
             id: userId,
@@ -305,12 +299,24 @@ const AppContent = () => {
   };
 
   async function handleLogout() {
+    // Clean up push tokens before signing out
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await cleanupPushNotifications();
+      } else {
+        await cleanupWebPush();
+      }
+    } catch (e) {
+      console.warn('Push token cleanup on logout failed:', e);
+    }
+
     try {
       await supabase.auth.signOut();
     } catch (e) {
       console.error('Error signing out:', e);
     } finally {
       setUserRole(null);
+      setAuthUserId(null);
       localStorage.removeItem('vynx_user');
     }
   }
@@ -319,40 +325,38 @@ const AppContent = () => {
 
   return (
     <BrowserRouter>
+      {/* Push notification initializer — requires Router context for navigate() */}
+      <PushNotificationHandler userId={authUserId} />
+
+      {/* In-app toast overlay for foreground notifications */}
+      <NotificationToast />
+
       <Routes>
-        <Route 
-          path="/" 
-          element={!userRole ? <LandingPage onEnterPortal={() => window.location.href='/login'} /> : <Navigate to={`/${userRole}`} replace />} 
+        <Route
+          path="/"
+          element={!userRole ? <LandingPage onEnterPortal={() => window.location.href='/login'} /> : <Navigate to={`/${userRole}`} replace />}
         />
-        
-      <Route 
-          path="/login" 
+
+        <Route
+          path="/login"
           element={
             !userRole ? (
-              Capacitor.isNativePlatform() ? (
-                <AuthGatewayApp />
-              ) : (
-                <AuthGateway />
-              )
+              Capacitor.isNativePlatform() ? <AuthGatewayApp /> : <AuthGateway />
             ) : (
               <Navigate to={`/${userRole}`} replace />
             )
-          } 
+          }
         />
-        
-        <Route 
-          path="/signup" 
+
+        <Route
+          path="/signup"
           element={
             !userRole ? (
-              Capacitor.isNativePlatform() ? (
-                <AuthGatewayApp />
-              ) : (
-                <AuthGateway />
-              )
+              Capacitor.isNativePlatform() ? <AuthGatewayApp /> : <AuthGateway />
             ) : (
               <Navigate to={`/${userRole}`} replace />
             )
-          } 
+          }
         />
 
         {/* --- ADMIN PRIVATE ROUTES --- */}
@@ -369,9 +373,9 @@ const AppContent = () => {
 
         {/* --- AGENT PRIVATE ROUTES --- */}
         {userRole === 'agent' && (
-          <Route path="/agent" element={isNative ? <AgentHubApp onLogout={handleLogout} /> : <AgentHub onLogout={handleLogout} /> }>
+          <Route path="/agent" element={isNative ? <AgentHubApp onLogout={handleLogout} /> : <AgentHub onLogout={handleLogout} />}>
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={isNative ? <DashboardOverviewApp /> : <DashboardOverview /> } />
+            <Route path="dashboard" element={isNative ? <DashboardOverviewApp /> : <DashboardOverview />} />
             <Route path="units" element={isNative ? <BusinessDirectoryApp /> : <BusinessDirectory />} />
             <Route path="units/:id" element={isNative ? <BusinessDetailApp /> : <BusinessDetail />} />
             <Route path="wallet" element={isNative ? <WalletApp /> : <WalletPage />} />
@@ -401,7 +405,9 @@ const AppContent = () => {
 // --- WRAPPER TO PROVIDE CONTEXT TO THE WHOLE APP ---
 const App = () => (
   <ThemeProvider>
-    <AppContent />
+    <NotificationProvider>
+      <AppContent />
+    </NotificationProvider>
   </ThemeProvider>
 );
 
