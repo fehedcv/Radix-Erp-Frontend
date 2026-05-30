@@ -1,18 +1,13 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, Building2, Trash2, X, ShieldCheck,
-  MapPin, User, BarChart3, CheckCircle2,
-  Info, TrendingUp, LayoutGrid, Package,
-  Activity, Loader2, AlertCircle, Globe, Image,
-  Pencil, Save, XCircle,
-  RefreshCcw,
-  LucideRefreshCcw,
-  Rotate3D,
-  RotateCcw
-} from 'lucide-react';
-import Chart from 'react-apexcharts';
-import { supabase } from '../../supabase/supabaseClient';
+  Plus, Trash2, Save, Loader2, Settings, Briefcase, 
+  MapPin, Mail, Phone, Globe, Camera, X, UploadCloud, 
+  Upload, Instagram, Facebook, Linkedin, Share2, AlertTriangle, Activity, Search, XCircle, Building2, User, Trophy, LayoutGrid, CheckCircle2, Package, Image
+} from "lucide-react";
+
+import { supabase } from "../../supabase/supabaseClient";
+import { useTheme } from "../../context/ThemeContext";
 
 const resolveUrl = (url) => {
   if (!url) return "";
@@ -66,6 +61,16 @@ const BusinessControlApp = () => {
   const [saving,        setSaving]        = useState(false);
   const [deleteTarget,  setDeleteTarget]  = useState(null);
   const [deleting,      setDeleting]      = useState(false);
+  
+  // New UI States
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // --- THEME INTEGRATION ---
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
+  const originalServices = useRef([]);
+  const galleryItemsRef = useRef([]);
 
   // ── Fetch list ────────────────────────────────────────────────────────────
   const fetchUnits = useCallback(async () => {
@@ -88,45 +93,37 @@ const BusinessControlApp = () => {
 
   // ── Open detail ───────────────────────────────────────────────────────────
   const handleOpenDetail = useCallback(async (unit) => {
-  setEditMode(false);
-  setLoadingDetail(true);
-  setSelectedUnit({ ...unit, _loading: true });
+    setEditMode(false);
+    setLoadingDetail(true);
+    setSelectedUnit({ ...unit, _loading: true });
 
-  try {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_business_unit_profile', {
+          p_business_unit_id: unit.id
+        });
 
-    const { data, error } = await supabase
-      .rpc('get_business_unit_profile', {
-        p_business_unit_id: unit.id
+      if (error) throw error;
+
+      setSelectedUnit(normalizeBusinessUnit({
+        ...data,
+        manager_name: data?.manager?.full_name || '—',
+        manager_email: data?.manager?.email || '',
+        manager_phone: data?.manager?.phone || '',
+        services: data?.services || [],
+        gallery: data?.gallery || [],
+      }));
+
+    } catch (err) {
+      console.error('Failed to load business unit detail:', err);
+      setSelectedUnit({
+        ...unit,
+        _loading: false
       });
-
-    if (error) throw error;
-
-    setSelectedUnit(normalizeBusinessUnit({
-      ...data,
-
-      manager_name: data?.manager?.full_name || '—',
-      manager_email: data?.manager?.email || '',
-      manager_phone: data?.manager?.phone || '',
-
-      services: data?.services || [],
-      gallery: data?.gallery || [],
-    }));
-
-  } catch (err) {
-
-    console.error('Failed to load business unit detail:', err);
-
-    setSelectedUnit({
-      ...unit,
-      _loading: false
-    });
-
-  } finally {
-
-    setLoadingDetail(false);
-
-  }
-}, []);
+    } finally {
+      setLoadingDetail(false);
+    }
+  }, []);
 
   // ── Enter edit mode ───────────────────────────────────────────────────────
   const enterEdit = () => {
@@ -195,7 +192,7 @@ const BusinessControlApp = () => {
     } finally { setSaving(false); }
   };
 
-  // ── Delete flow: pre-check linked leads ───────────────────────────────────
+  // ── Delete flow ───────────────────────────────────────────────────────────
   const initiateDelete = async (unit) => {
     try {
       const { data, error } = await supabase
@@ -225,7 +222,6 @@ const BusinessControlApp = () => {
 
       if (error) throw error;
 
-      alert('Business unit deleted successfully!');
       setUnits(prev => prev.filter(u => u.id !== deleteTarget.id));
       if (selectedUnit?.id === deleteTarget.id) setSelectedUnit(null);
       setDeleteTarget(null);
@@ -280,169 +276,196 @@ const BusinessControlApp = () => {
     } finally { setSubmitting(false); }
   };
 
-  // ── Charts ────────────────────────────────────────────────────────────────
-  const chartConfigs = useMemo(() => {
-    const cats = units.reduce((acc, u) => { acc[u.category] = (acc[u.category] || 0) + 1; return acc; }, {});
-    const hasSeries = Object.keys(cats).length > 0;
-    return {
-      distribution: {
-        series:  hasSeries ? Object.values(cats) : [1],
-        options: {
-          chart:       { animations: { enabled: false } },
-          labels:      hasSeries ? Object.keys(cats) : ['No Data'],
-          colors:      ['#2563EB','#3B82F6','#60A5FA','#93C5FD','#BFDBFE'],
-          legend:      { position: 'bottom', fontFamily: 'Plus Jakarta Sans', fontSize: '10px', fontWeight: 600 },
-          plotOptions: { pie: { donut: { size: '75%' } } },
-          dataLabels:  { enabled: false },
-          stroke:      { width: 0 },
-        },
-      },
-    };
-  }, [units]);
+  // UI Helpers
+  const filteredUnits = units.filter(u => 
+    !searchQuery || 
+    u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.managerName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const topUnit = units.length > 0 ? units[0] : null;
 
   return (
-    <div className="font-['Plus_Jakarta_Sans',sans-serif] space-y-6 max-w-[1600px] mx-auto">
+    <div className={`font-['Plus_Jakarta_Sans',sans-serif] space-y-4 pt-2 pb-6 transition-colors duration-200 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
 
-      {/* ── HEADER ── */}
-      <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100 shrink-0">
-            <Building2 size={24} />
+      {/* ── TOP SECTION: Header, Button, Top Partner, and Stats ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        
+        {/* Left Side: Header & Status Cards */}
+        <div className="lg:col-span-2 flex flex-col justify-between gap-4">
+          <div className="px-1">
+            <h2 className="text-2xl font-extrabold tracking-tight mb-1">Business Units</h2>
+            <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Authorized Partners Management</p>
           </div>
-          <div>
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Business Units</h2>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
-             Authorized Business Management
-            </p>
+          
+          <div className="grid grid-cols-2 gap-3 lg:gap-4 mt-auto">
+            {/* Total Units */}
+            <div className={`rounded-3xl p-5 border transition-all duration-200 flex flex-col justify-center ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+              <div className="flex justify-between items-start mb-2">
+                <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Total Units</p>
+                <Building2 size={16} strokeWidth={2.5} className="text-[#81B398]" />
+              </div>
+              <h3 className="text-3xl font-extrabold tracking-tighter">{units.length}</h3>
+            </div>
+
+            {/* Active Units */}
+            {/* Active Sectors (Second Card) */}
+<div className={`rounded-3xl p-5 border transition-all duration-200 flex flex-col justify-center ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+  <div className="flex justify-between items-start mb-2">
+    <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+      Active Sectors
+    </p>
+    <Activity size={16} strokeWidth={2.5} className="text-[#81B398]" />
+  </div>
+  <h3 className="text-3xl font-extrabold tracking-tighter">
+    {[...new Set(units.map(u => u.category))].length}
+  </h3>
+</div>
           </div>
         </div>
-        <div className="flex gap-3">
-          <button onClick={fetchUnits} className="p-3 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all shadow-sm" title="Refresh">
-            <RotateCcw size={18} />
-          </button>
+
+        {/* Right Side: Add Button & Top Partner */}
+        <div className="lg:col-span-1 flex flex-col gap-3 lg:gap-4">
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-slate-900 text-white px-6 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
+            className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all active:scale-95 bg-[#81B398] text-white hover:bg-[#6FA085]"
           >
-            <Plus size={16} /> Add Business Unit
+            <Plus size={16} strokeWidth={2.5} /> Add Business Unit
           </button>
+          
+          <div className={`flex-1 rounded-3xl p-5 border transition-all duration-200 flex flex-col justify-center ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+            <div className="flex justify-between items-start mb-3">
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Top Partner</p>
+              <Trophy size={16} strokeWidth={2.5} className="text-[#81B398]" />
+            </div>
+            {topUnit ? (
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border shrink-0 ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
+                  {topUnit.logo ? (
+                    <img src={resolveUrl(topUnit.logo)} className="w-full h-full object-cover" alt="Logo" />
+                  ) : (
+                    <span className="font-extrabold text-xs text-[#81B398]">{topUnit.name.charAt(0)}</span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-extrabold truncate">{topUnit.name}</p>
+                  <p className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 truncate ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>{topUnit.category}</p>
+                </div>
+              </div>
+            ) : (
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>No data yet</p>
+            )}
+          </div>
         </div>
+
       </div>
 
-      {/* ── ANALYTICS ── */}
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <StatCard label="Total Business Units" value={units.length} icon={<LayoutGrid size={18}/>} color="text-blue-600" bg="bg-blue-50" />
-          <StatCard label="Active Connections" value={units.filter(u => u.status === 'Active').length} icon={<Activity size={18}/>} color="text-emerald-600" bg="bg-emerald-50" />
-        <div className="md:col-span-2 bg-white rounded-2xl p-5 shadow-md flex flex-col justify-between transition-all duration-300">
-  
-  {/* Header */}
-  <div className="flex items-center justify-between mb-5">
-    <div className="flex items-center gap-2">
-      <Activity size={14} className='text-blue-600' />
-      <h4 className="text-[10px] font-black uppercase tracking-widest">
-        Platform Scale & Health
-      </h4>
-    </div>
-  
-  </div>
-
-  {/* Main KPI Grid */}
-  <div className="grid grid-cols-2 gap-3 mb-4">
-    <div className="p-4 rounded-xl border border-gray-200 flex flex-col justify-center transition-colors">
-      <p className="text-[9px] font-black uppercase tracking-widest mb-1">
-        Total Registered Units
-      </p>
-      <h3 className="text-2xl font-black">
-        {units.length}
-      </h3>
-    </div>
-
-    <div className="p-4 rounded-xl border border-gray-200 flex flex-col justify-center transition-colors">
-      <p className="text-[9px] font-black uppercase tracking-widest mb-1">
-        Active Industry Sectors
-      </p>
-      <h3 className="text-2xl font-black">
-        {[...new Set(units.map(u => u.category))].length}
-      </h3>
-    </div>
-  </div>
-
- 
-</div>
-        </div>
-        <div className="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm min-h-[250px] flex flex-col">
-          <h4 className="text-[9px] font-black text-slate-900 uppercase tracking-widest mb-4">Sectors Representation</h4>
-          <div className="flex-1 flex items-center justify-center">
-            <Chart options={chartConfigs.distribution.options} series={chartConfigs.distribution.series} type="donut" width="100%" height={200} />
-          </div>
+      {/* ── SEARCH BAR ── */}
+      <div className={`p-4 rounded-3xl border flex items-center gap-3 transition-colors duration-200 mb-4 ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+        <div className="relative flex-1 w-full">
+          <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} strokeWidth={2.5} />
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by business name, manager, or email..." 
+            className={`w-full pl-12 pr-10 py-3.5 rounded-xl outline-none text-sm font-bold transition-all border ${
+              isLight 
+                ? 'bg-[#F4F5F7] border-transparent text-[#1A202C] placeholder:text-[#A0AEC0] focus:border-[#81B398]' 
+                : 'bg-[#131720] border-transparent text-white placeholder:text-[#718096] focus:border-[#81B398]'
+            }`}
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className={`absolute right-4 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+              <XCircle size={16} strokeWidth={2.5} />
+            </button>
+          )}
         </div>
       </div>
 
       {/* ── UNITS GRID ── */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-400">
-          <Loader2 size={28} className="animate-spin text-blue-400" />
-          <p className="text-[10px] font-black uppercase tracking-widest">Loading Business Units...</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[1,2,3,4,5,6].map(i => <SkeletonCard key={i} isLight={isLight} />)}
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-3 text-red-400">
-          <AlertCircle size={28} />
-          <p className="text-[10px] font-black uppercase tracking-widest">{error}</p>
-          <button onClick={fetchUnits} className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">Retry</button>
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-[#F0524F]">
+          <AlertTriangle size={24} strokeWidth={2.5} />
+          <p className="text-[10px] font-bold uppercase tracking-wider">{error}</p>
+          <button onClick={fetchUnits} className="mt-2 px-6 py-2.5 bg-[#81B398] text-white rounded-xl text-xs font-bold uppercase tracking-wider">Retry</button>
         </div>
-      ) : units.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-2 text-slate-300">
-          <Building2 size={32} />
-          <p className="text-[10px] font-black uppercase tracking-widest">No business units registered yet</p>
+      ) : filteredUnits.length === 0 ? (
+        <div className={`flex flex-col items-center justify-center py-24 gap-3 ${isLight ? 'text-[#A0AEC0]' : 'text-[#718096]'}`}>
+          <LayoutGrid size={28} strokeWidth={2.5} />
+          <p className="text-[10px] font-bold uppercase tracking-wider">No business units found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {units.map((unit, idx) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4">
+            {filteredUnits.map((unit) => (
               <div
                 key={unit.id}
-                className="bg-white border border-slate-200 rounded-xl p-5 hover:border-blue-500 transition-all group relative shadow-sm"
+                className={`border rounded-3xl p-5 md:p-6 transition-all duration-200 flex flex-col group ${
+                  isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:border-[#81B398]' : 'bg-[#222938] border-white/10 hover:border-[#81B398]'
+                }`}
               >
+                {/* Header */}
                 <div className="flex items-center gap-4 mb-5">
-                  <div className="h-12 w-12 bg-slate-900 text-white rounded-lg flex items-center justify-center font-black text-xl uppercase group-hover:bg-blue-600 transition-colors shadow-md">
-                    {unit.name.charAt(0)}
+                  <div className={`h-14 w-14 rounded-full flex items-center justify-center font-extrabold text-lg uppercase shrink-0 border overflow-hidden ${
+                    isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C]' : 'bg-[#131720] border-white/10 text-[#F4F5F7]'
+                  }`}>
+                    {unit.logo ? (
+                      <img src={resolveUrl(unit.logo)} className="w-full h-full object-cover" alt="Logo" />
+                    ) : (
+                      unit.name.charAt(0)
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight truncate">{unit.name}</h3>
-                    <p className="text-[8px] text-slate-400 font-black mt-0.5 uppercase tracking-widest">{unit.category}</p>
+                    <h3 className="text-sm font-extrabold uppercase tracking-tight truncate">{unit.name}</h3>
+                    <p className={`text-[9px] font-bold mt-1 uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>{unit.category}</p>
                   </div>
-                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-[8px] font-black uppercase border ${unit.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                  <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider border ${
+                    unit.status === 'Active' ? 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20' : 'bg-[#F0524F]/10 text-[#F0524F] border-[#F0524F]/20'
+                  }`}>
                     {unit.status}
                   </span>
                 </div>
-                <div className="space-y-2 mb-5 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                  <div className="flex justify-between items-center text-[9px] font-bold uppercase">
-                    <span className="text-slate-400 tracking-tighter">Manager</span>
-                    <span className="text-slate-900">{unit.managerName}</span>
+
+                {/* Body Details */}
+                <div className={`space-y-3 mb-5 p-4 rounded-2xl border flex-1 ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
+                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+                    <span className={isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}>Manager</span>
+                    <span className="text-right truncate max-w-[120px]">{unit.managerName}</span>
                   </div>
                   {unit.cityArea && (
-                    <div className="flex justify-between items-center text-[9px] font-bold uppercase">
-                      <span className="text-slate-400 tracking-tighter">City / Area</span>
-                      <span className="text-slate-700">{unit.cityArea}</span>
+                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+                      <span className={isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}>Location</span>
+                      <span className="text-right truncate max-w-[120px]">{unit.cityArea}</span>
                     </div>
                   )}
-                  <div className="flex justify-between items-center text-[9px] font-bold uppercase">
-                    <span className="text-slate-400 tracking-tighter">Registry ID</span>
-                    <span className="text-blue-600 font-mono tracking-tighter">{unit.id}</span>
+                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+                    <span className={isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}>Email</span>
+                    <span className={`text-right truncate max-w-[140px] lowercase ${isLight ? 'text-[#81B398]' : 'text-[#81B398]'}`}>{unit.email || '—'}</span>
                   </div>
                 </div>
+
+                {/* Actions */}
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleOpenDetail(unit)}
-                    className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 hover:border-blue-600 hover:text-blue-600 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2"
+                    className={`flex-1 py-3.5 border text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 ${
+                      isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C] hover:border-[#81B398] hover:text-[#81B398]' : 'bg-[#131720] border-transparent text-[#F4F5F7] hover:border-[#81B398] hover:text-[#81B398]'
+                    }`}
                   >
-                    <BarChart3 size={14}/> Business Profile
+                    View Profile
                   </button>
                   <button
                     onClick={() => initiateDelete(unit)}
-                    className="p-2.5 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-all"
+                    className={`p-3.5 rounded-xl transition-all active:scale-95 border border-transparent ${
+                      isLight ? 'bg-[#F0524F]/10 text-[#F0524F] hover:bg-[#F0524F] hover:text-white' : 'bg-[#F0524F]/10 text-[#F0524F] hover:bg-[#F0524F] hover:text-white'
+                    }`}
                   >
-                    <Trash2 size={14}/>
+                    <Trash2 size={16} strokeWidth={2.5}/>
                   </button>
                 </div>
               </div>
@@ -450,347 +473,302 @@ const BusinessControlApp = () => {
         </div>
       )}
 
-      {/* ── DOSSIER / EDIT MODAL ── */}
+      {/* ── DOSSIER / VIEW MODAL ── */}
+      <AnimatePresence>
         {selectedUnit && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md">
-            <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl overflow-hidden flex flex-col border border-slate-200">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className={`w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden flex flex-col border ${
+                isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+              }`}
+            >
               {/* Header */}
-              <div className={`p-6 border-b border-slate-100 flex justify-between items-center shrink-0 transition-colors duration-300 ${editMode ? 'bg-amber-50/70' : 'bg-blue-50/50'}`}>
+              <div className={`p-6 border-b flex justify-between items-center shrink-0 ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
                 <div className="flex items-center gap-4">
-                <div className={`h-12 w-12 text-white rounded-lg flex items-center justify-center font-black text-xl shadow-lg transition-colors duration-300 overflow-hidden ${editMode ? 'bg-amber-500' : 'bg-slate-900'}`}>
- {editMode ? (
-   <Pencil size={20} />
- ) : selectedUnit.logo ? (
-   <img 
-     src={resolveUrl(selectedUnit.logo)} 
-     alt={selectedUnit.name}
-     className="w-full h-full object-cover"
-     onError={(e) => {
-       // Fallback to the first letter if the image URL is broken
-       e.target.style.display = 'none';
-       e.target.nextSibling.style.display = 'flex';
-     }}
-   />
- ) : (
-   selectedUnit.name.charAt(0)
- )}
- 
- {/* Hidden fallback text used only if the image fails to load */}
- {selectedUnit.logo && !editMode && (
-   <div style={{ display: 'none' }} className="w-full h-full items-center justify-center">
-     {selectedUnit.name.charAt(0)}
-   </div>
- )}
-</div>
+                  <div className={`h-16 w-16 rounded-full flex items-center justify-center font-extrabold text-xl overflow-hidden shrink-0 border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C]' : 'bg-[#131720] border-white/10 text-[#F4F5F7]'}`}>
+                    {selectedUnit.logo ? (
+                      <img src={resolveUrl(selectedUnit.logo)} alt={selectedUnit.name} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                    ) : (
+                      selectedUnit.name.charAt(0)
+                    )}
+                    {selectedUnit.logo && (
+                      <div style={{ display: 'none' }} className="w-full h-full items-center justify-center">{selectedUnit.name.charAt(0)}</div>
+                    )}
+                  </div>
                   <div>
-                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter">{selectedUnit.name}</h3>
-                    <p className={`text-[9px] font-black uppercase tracking-widest transition-colors duration-300 ${editMode ? 'text-amber-600' : 'text-blue-600'}`}>
-                      {editMode ? 'Admin Edit Mode' : selectedUnit.category}
-                    </p>
+                    <h3 className="text-xl font-extrabold uppercase tracking-tight mb-1">{selectedUnit.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>{selectedUnit.category}</span>
+                      <span className={`px-2 py-0.5 rounded-lg text-[8px] font-bold uppercase tracking-wider border ${selectedUnit.status === 'Active' ? 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20' : 'bg-[#F0524F]/10 text-[#F0524F] border-[#F0524F]/20'}`}>
+                        {selectedUnit.status}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {!editMode && !loadingDetail && !selectedUnit._loading && (
-                    <button
-                      onClick={enterEdit}
-                      className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
-                    >
-                      <Pencil size={13}/> Edit
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { setSelectedUnit(null); setEditMode(false); }}
-                    className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
-                  >
-                    <X size={18}/>
-                  </button>
-                </div>
+                <button
+                  onClick={() => { setSelectedUnit(null); }}
+                  className={`p-2 rounded-full transition-colors ${isLight ? 'text-[#718096] hover:bg-[#F4F5F7]' : 'text-[#9CA3AF] hover:bg-white/10'}`}
+                >
+                  <X size={20} strokeWidth={2.5}/>
+                </button>
               </div>
 
               {/* Body */}
               {selectedUnit._loading || loadingDetail ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400 py-24">
-                  <Loader2 size={28} className="animate-spin text-blue-400" />
-                  <p className="text-[10px] font-black uppercase tracking-widest">Loading Full Profile...</p>
-                </div>
-              ) : editMode ? (
-                <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <EditField label="Business Name *" value={editForm.name}        onChange={setField('name')}        placeholder="e.g. SKYLINE TECH" />
-                    <EditField label="Market Category" value={editForm.category}    onChange={setField('category')}    />
-                    <EditField label="Status"          value={editForm.status}      onChange={setField('status')}      isSelect options={STATUSES} />
-                    <EditField label="Commission (%)"  value={editForm.commision}  onChange={setField('commision')}  type="number" placeholder="e.g. 10" />
-                    <EditField label="Unit Manager"    value={editForm.manager}     onChange={setField('manager')}     placeholder="Manager name" />
-                    <EditField label="Primary Phone"   value={editForm.phone}       onChange={setField('phone')}       placeholder="+971 50 000 0000" />
-                    <EditField label="WhatsApp Number" value={editForm.whatsapp}    onChange={setField('whatsapp')}   placeholder="+971 50 000 0000" />
-                    <EditField label="Email"           value={editForm.email}       onChange={setField('email')}       placeholder="unit@example.com" type="email" />
-                    <EditField label="Website"         value={editForm.website}     onChange={setField('website')}     placeholder="https://example.com" />
-                    <EditField label="City / Area"     value={editForm.cityArea}    onChange={setField('cityArea')}   placeholder="e.g. Business Bay" />
-                  </div>
-                  <EditField label="Address"     value={editForm.address}     onChange={setField('address')}     placeholder="Full address..." isTextarea />
-                  <EditField label="Description" value={editForm.description} onChange={setField('description')} placeholder="About this business unit..." isTextarea />
-                  <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                    <p className="text-[9px] text-amber-700 font-bold uppercase tracking-wide">
-                      ⚠ Services and Gallery rows can only be managed via Frappe Desk. This form updates all other fields.
-                    </p>
-                  </div>
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 py-24">
+                  <Loader2 size={32} strokeWidth={2.5} className="animate-spin text-[#81B398]" />
+                  <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Loading Profile...</p>
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <div className="space-y-8">
-                      <DossierSection title="Unit Identity" icon={<User size={12}/>}>
-                        <InfoItem label="Manager"      value={selectedUnit.managerName} />
-                        <InfoItem label="Commission"   value={`${selectedUnit.commision}%`} />
-                        <InfoItem label="Onboarded"    value={selectedUnit.date} />
-                        <InfoItem label="Status"       value={selectedUnit.status} />
-                        {selectedUnit.phone    && <InfoItem label="Primary Phone" value={selectedUnit.phone} />}
-                        {selectedUnit.whatsapp && <InfoItem label="WhatsApp"      value={selectedUnit.whatsapp} />}
-                        {selectedUnit.email && (
-                          <div className="flex justify-between items-center border-b border-slate-50 pb-1.5">
-                            <span className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">Email</span>
-                            <span className="text-xs font-bold text-blue-600 lowercase">{selectedUnit.email}</span>
-                          </div>
-                        )}
-                        {selectedUnit.website && (
-                          <div className="flex justify-between items-center border-b border-slate-50 pb-1.5">
-                            <span className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">Website</span>
-                            <a href={selectedUnit.website} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">
-                              <Globe size={10}/> {selectedUnit.website}
-                            </a>
-                          </div>
-                        )}
-                        {selectedUnit.facebook && (
-                          <div className="flex justify-between items-center border-b border-slate-50 pb-1.5">
-                            <span className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">Facebook</span>
-                            <a href={selectedUnit.facebook} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">
-                              {selectedUnit.facebook}
-                            </a>
-                          </div>
-                        )}
-                        {selectedUnit.instagram && (
-                          <div className="flex justify-between items-center border-b border-slate-50 pb-1.5">
-                            <span className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">Instagram</span>
-                            <a href={selectedUnit.instagram} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">
-                              {selectedUnit.instagram}
-                            </a>
-                          </div>
-                        )}
-                        {selectedUnit.linkedin && (
-                          <div className="flex justify-between items-center border-b border-slate-50 pb-1.5">
-                            <span className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">LinkedIn</span>
-                            <a href={selectedUnit.linkedin} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline">
-                              {selectedUnit.linkedin}
-                            </a>
-                          </div>
-                        )}
-                      </DossierSection>
-                      <DossierSection title="HQ Coordinates" icon={<MapPin size={12}/>}>
-                        <div className="p-4 bg-slate-50 border border-slate-100 rounded-lg flex items-start gap-3">
-                          <MapPin size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
+                  
+                  {/* TWO COLUMN LAYOUT */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                    
+                    {/* LEFT COLUMN: Identity & Contact */}
+                    <div className="space-y-6">
+                      
+                      {/* Identity Card */}
+                      <div className={`border rounded-3xl p-5 md:p-6 ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
+                        <h5 className={`text-[10px] font-bold uppercase tracking-wider mb-5 pb-3 border-b flex items-center gap-2 ${isLight ? 'border-[#E2E8F0] text-[#718096]' : 'border-white/10 text-[#9CA3AF]'}`}>
+                          <User size={14} strokeWidth={2.5} className="text-[#81B398]"/> Unit Identity
+                        </h5>
+                        <div className="space-y-4">
+                          <InfoItem label="Manager" value={selectedUnit.managerName} isLight={isLight} />
+                          <InfoItem label="Commission" value={`${selectedUnit.commission}%`} isLight={isLight} />
+                          <InfoItem label="Onboarded" value={selectedUnit.created_at ? new Date(selectedUnit.created_at).toLocaleDateString() : '—'} isLight={isLight} />
+                        </div>
+                      </div>
+
+                      {/* Contact & Social Card */}
+                      <div className={`border rounded-3xl p-5 md:p-6 ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
+                        <h5 className={`text-[10px] font-bold uppercase tracking-wider mb-5 pb-3 border-b flex items-center gap-2 ${isLight ? 'border-[#E2E8F0] text-[#718096]' : 'border-white/10 text-[#9CA3AF]'}`}>
+                          <Globe size={14} strokeWidth={2.5} className="text-[#81B398]"/> Contact & Web
+                        </h5>
+                        <div className="space-y-4 mb-6">
+                          {selectedUnit.phone && <InfoItem label="Primary Phone" value={selectedUnit.phone} isLight={isLight} />}
+                          {selectedUnit.email && <InfoItem label="Email" value={<span className="lowercase normal-case font-bold">{selectedUnit.email}</span>} isLight={isLight} />}
+                          {selectedUnit.website && <InfoItem label="Website" value={<a href={selectedUnit.website} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:underline text-[#81B398]"><Globe size={10}/> Link</a>} isLight={isLight} />}
+                          {selectedUnit.instagram && <InfoItem label="Instagram" value={<a href={selectedUnit.instagram} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:underline text-[#81B398]"><Instagram size={10}/> Link</a>} isLight={isLight} />}
+                          {selectedUnit.facebook && <InfoItem label="Facebook" value={<a href={selectedUnit.facebook} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:underline text-[#81B398]"><Facebook size={10}/> Link</a>} isLight={isLight} />}
+                          {selectedUnit.linkedin && <InfoItem label="LinkedIn" value={<a href={selectedUnit.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:underline text-[#81B398]"><Linkedin size={10}/> Link</a>} isLight={isLight} />}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[#E2E8F0] dark:border-white/10">
+                           <a
+                             href={`tel:${selectedUnit.phone}`}
+                             className={`py-3 rounded-xl border text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 ${
+                               isLight ? 'bg-[#F4F5F7] border-transparent text-[#1A202C] hover:border-[#81B398]' : 'bg-[#222938] border-transparent text-[#F4F5F7] hover:border-[#81B398]'
+                             }`}
+                           >
+                             <Phone size={14} strokeWidth={2.5} /> Call Now
+                           </a>
+                           <a
+                             href={`https://wa.me/${selectedUnit.whatsapp?.replace(/\D/g, '')}`}
+                             target="_blank"
+                             rel="noreferrer"
+                             className="py-3 rounded-xl border border-transparent text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 bg-[#81B398] text-white hover:bg-[#6FA085]"
+                           >
+                             <MessageSquare size={14} strokeWidth={2.5} /> WhatsApp
+                           </a>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* RIGHT COLUMN: Location, Services & Gallery */}
+                    <div className="space-y-6">
+                      
+                      {/* Location & About */}
+                      <div className={`border rounded-3xl p-5 md:p-6 ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
+                        <h5 className={`text-[10px] font-bold uppercase tracking-wider mb-5 pb-3 border-b flex items-center gap-2 ${isLight ? 'border-[#E2E8F0] text-[#718096]' : 'border-white/10 text-[#9CA3AF]'}`}>
+                          <MapPin size={14} strokeWidth={2.5} className="text-[#81B398]"/> HQ Coordinates
+                        </h5>
+                        <div className={`p-4 rounded-2xl border flex items-start gap-3 mb-4 ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+                          <MapPin size={16} strokeWidth={2.5} className="text-[#81B398] shrink-0 mt-0.5" />
                           <div className="space-y-1">
-                            {selectedUnit.cityArea && <p className="text-[9px] text-blue-500 font-black uppercase tracking-widest">{selectedUnit.cityArea}</p>}
-                            <p className="text-xs font-bold text-slate-900 uppercase leading-relaxed">{selectedUnit.address || 'No address on file'}</p>
+                            {selectedUnit.cityArea && <p className={`text-[9px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>{selectedUnit.cityArea}</p>}
+                            <p className="text-xs font-extrabold leading-relaxed">{selectedUnit.address || 'No address on file'}</p>
                           </div>
                         </div>
                         {selectedUnit.description && (
-                          <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                            <p className="text-[8px] text-slate-400 font-black uppercase mb-1">About</p>
-                            <p className="text-[10px] text-slate-600 leading-relaxed">{selectedUnit.description}</p>
+                          <div className={`p-4 rounded-2xl border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+                            <p className={`text-[9px] font-bold uppercase tracking-wider mb-2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>About</p>
+                            <p className="text-xs font-medium leading-relaxed italic">"{selectedUnit.description}"</p>
                           </div>
                         )}
-                      </DossierSection>
-                    </div>
-                    <div className="space-y-8">
-                      <DossierSection title="Service Portfolio" icon={<Package size={12}/>}>
+                      </div>
+
+                      {/* Services */}
+                      <div className={`border rounded-3xl p-5 md:p-6 ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
+                        <h5 className={`text-[10px] font-bold uppercase tracking-wider mb-5 pb-3 border-b flex items-center gap-2 ${isLight ? 'border-[#E2E8F0] text-[#718096]' : 'border-white/10 text-[#9CA3AF]'}`}>
+                          <Package size={14} strokeWidth={2.5} className="text-[#81B398]"/> Service Portfolio
+                        </h5>
                         {selectedUnit.services.length > 0 ? (
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             {selectedUnit.services.map((s, i) => (
-                              <div key={i} className="p-3 bg-white border border-slate-100 rounded-lg hover:border-blue-400 transition-all">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[10px] font-black text-slate-800 uppercase tracking-tight">{s.service_name}</span>
-                                  <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                              <div key={i} className={`p-4 border rounded-2xl ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <span className="text-[10px] font-extrabold uppercase tracking-wider">{s.service_name}</span>
+                                  <CheckCircle2 size={14} strokeWidth={2.5} className="text-[#81B398] shrink-0" />
                                 </div>
-                                {s.description && <p className="text-[9px] text-slate-400 font-medium leading-relaxed">{s.description}</p>}
+                                {s.description && <p className={`text-[10px] font-medium leading-relaxed ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>{s.description}</p>}
                               </div>
                             ))}
                           </div>
-                        ) : <p className="text-[9px] text-slate-300 font-black uppercase">No services listed</p>}
-                      </DossierSection>
-                      <DossierSection title="Gallery" icon={<Image size={12}/>}>
+                        ) : <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>No services listed</p>}
+                      </div>
+
+                      {/* Gallery */}
+                      <div className={`border rounded-3xl p-5 md:p-6 ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
+                        <h5 className={`text-[10px] font-bold uppercase tracking-wider mb-5 pb-3 border-b flex items-center gap-2 ${isLight ? 'border-[#E2E8F0] text-[#718096]' : 'border-white/10 text-[#9CA3AF]'}`}>
+                          <Image size={14} strokeWidth={2.5} className="text-[#81B398]"/> Gallery
+                        </h5>
                         {selectedUnit.gallery.length > 0 ? (
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                             {selectedUnit.gallery.map((g, i) => (
-                              <div key={i} className="aspect-video bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                              <div key={i} className={`aspect-square rounded-2xl overflow-hidden border ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
                                 {g.image
-                                  ? <img src={resolveUrl(g.image)} alt={g.caption || `Gallery ${i+1}`} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; }} />
-                                  : <div className="w-full h-full flex items-center justify-center text-slate-300"><Image size={20}/></div>
+                                  ? <img src={resolveUrl(g.image)} alt={`Gallery ${i+1}`} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; }} />
+                                  : <div className={`w-full h-full flex items-center justify-center ${isLight ? 'bg-[#F4F5F7] text-[#A0AEC0]' : 'bg-[#222938] text-[#718096]'}`}><Image size={24} strokeWidth={2.5}/></div>
                                 }
                               </div>
                             ))}
                           </div>
-                        ) : <p className="text-[9px] text-slate-300 font-black uppercase">No gallery items</p>}
-                      </DossierSection>
+                        ) : <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>No gallery items</p>}
+                      </div>
+
                     </div>
                   </div>
-                 
-                                 </div>
+                </div>
               )}
-
-              {/* Footer */}
-              <div className="p-5 border-t border-slate-100 shrink-0 bg-slate-50 flex justify-between items-center gap-3">
-                {editMode ? (
-                  <>
-                    <button
-                      onClick={() => setEditMode(false)}
-                      className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all"
-                    >
-                      <XCircle size={14}/> Discard
-                    </button>
-                    <button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="flex items-center gap-2 px-10 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-md disabled:opacity-60"
-                    >
-                      {saving
-                        ? <><Loader2 size={14} className="animate-spin"/> Saving...</>
-                        : <><Save size={14}/> Save Changes</>
-                      }
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => { setSelectedUnit(null); setEditMode(false); }}
-                    className="ml-auto px-10 py-3 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-md"
-                  >
-                    Return to HUB
-                  </button>
-                )}
-              </div>
-            </div>
+            </motion.div>
           </div>
         )}
+      </AnimatePresence>
 
-      {/* ── DELETE CONFIRM MODAL ── */}
+      {/* ── DELETE CONFIRM MODAL (Bento Style) ── */}
+      <AnimatePresence>
         {deleteTarget && (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm">
-            <div className="bg-white w-full max-w-md rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
-              <div className="p-6 bg-red-50 border-b border-red-100 flex items-center gap-4">
-                <div className="h-10 w-10 bg-red-500 rounded-lg flex items-center justify-center shrink-0">
-                  <Trash2 size={18} className="text-white"/>
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Disconnect Unit</h3>
-                  <p className="text-[9px] text-red-500 font-black uppercase tracking-widest mt-0.5">This action cannot be undone</p>
-                </div>
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className={`w-full max-w-sm rounded-3xl border overflow-hidden p-8 text-center ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}
+            >
+              <div className="w-16 h-16 bg-[#F0524F]/10 text-[#F0524F] rounded-2xl flex items-center justify-center mx-auto mb-6 border border-[#F0524F]/20">
+                <Trash2 size={32} strokeWidth={2.5} />
               </div>
-              <div className="p-6 space-y-4">
-                <p className="text-[11px] text-slate-700 font-bold leading-relaxed">
-                  You are about to permanently delete{' '}
-                  <span className="text-slate-900 font-black uppercase">"{deleteTarget.name}"</span>.
-                </p>
-                {deleteTarget.linkedLeads.length > 0 ? (
-                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
-                    <p className="text-[9px] font-black text-amber-700 uppercase tracking-widest">
-                      ⚠ {deleteTarget.linkedLeads.length} linked lead(s) detected
-                    </p>
-                    <p className="text-[10px] text-amber-600 font-medium leading-relaxed">
-                      These leads reference this business unit. Their <code className="bg-amber-100 px-1 rounded text-amber-800">business_unit</code> field will be cleared — the leads themselves will <strong>not</strong> be deleted.
-                    </p>
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {deleteTarget.linkedLeads.map(l => (
-                        <span key={l.name} className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-[8px] font-black font-mono">{l.name}</span>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                    <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wide">No linked leads found. Safe to delete.</p>
-                  </div>
-                )}
-              </div>
-              <div className="px-6 pb-6 flex gap-3">
+              
+              <h3 className="text-xl font-extrabold tracking-tight uppercase mb-2">Disconnect Unit</h3>
+              <p className={`text-[10px] font-bold uppercase tracking-wider mb-6 ${isLight ? 'text-[#F0524F]' : 'text-[#F0524F]'}`}>This action cannot be undone</p>
+              
+              <p className={`text-sm font-medium mb-6 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                You are about to permanently delete <strong className={isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}>"{deleteTarget.name}"</strong>.
+              </p>
+
+              {deleteTarget.linkedLeads.length > 0 ? (
+                <div className={`p-4 rounded-2xl border text-left mb-8 ${isLight ? 'bg-[#F0524F]/5 border-[#F0524F]/10' : 'bg-[#F0524F]/10 border-[#F0524F]/20'}`}>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-[#F0524F] mb-2 flex items-center gap-1.5">
+                    <AlertTriangle size={12} strokeWidth={2.5} /> {deleteTarget.linkedLeads.length} linked lead(s)
+                  </p>
+                  <p className="text-[10px] font-medium text-[#F0524F]">
+                    Their unit field will be cleared — leads will <strong>not</strong> be deleted.
+                  </p>
+                </div>
+              ) : (
+                <div className={`p-4 rounded-2xl border text-center mb-8 ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
+                  <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>No linked leads. Safe to delete.</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 w-full">
                 <button
                   onClick={() => setDeleteTarget(null)}
-                  className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
+                  className={`flex-1 py-3.5 border rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 ${isLight ? 'bg-[#F4F5F7] border-transparent text-[#1A202C] hover:border-[#E2E8F0]' : 'bg-[#131720] border-transparent text-[#F4F5F7] hover:border-white/10'}`}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDelete}
                   disabled={deleting}
-                  className="flex-[2] py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="flex-[1.5] py-3.5 bg-[#F0524F] hover:bg-[#D94A48] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
                 >
-                  {deleting
-                    ? <><Loader2 size={13} className="animate-spin"/> Processing...</>
-                    : deleteTarget.linkedLeads.length > 0
-                      ? <><Trash2 size={13}/> Unlink & Delete</>
-                      : <><Trash2 size={13}/> Confirm Delete</>
-                  }
+                  {deleting ? <Loader2 size={16} strokeWidth={2.5} className="animate-spin"/> : <Trash2 size={16} strokeWidth={2.5}/> }
+                  {deleting ? "Processing" : "Delete"}
                 </button>
               </div>
-            </div>
+            </motion.div>
           </div>
         )}
+      </AnimatePresence>
 
       {/* ── ADD MODAL ── */}
+      <AnimatePresence>
         {showAddModal && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-            <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col">
-              <div className="px-6 py-4 border-b border-slate-50 flex justify-between items-center bg-slate-50 shrink-0">
-                <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Register New Unit</h3>
-                <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-900"><X size={18}/></button>
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className={`w-full max-w-2xl rounded-3xl border overflow-hidden max-h-[90vh] flex flex-col ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}
+            >
+              <div className={`px-6 py-5 border-b flex justify-between items-center shrink-0 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+                <h3 className="text-xs font-extrabold uppercase tracking-wider">Register New Unit</h3>
+                <button onClick={() => setShowAddModal(false)} className={`p-2 rounded-full transition-colors ${isLight ? 'text-[#718096] hover:bg-[#F4F5F7]' : 'text-[#9CA3AF] hover:bg-white/10'}`}><X size={16} strokeWidth={2.5}/></button>
               </div>
-              <AddUnitForm onSubmit={handleCreate} onCancel={() => setShowAddModal(false)} submitting={submitting} />
-            </div>
+              <AddUnitForm onSubmit={handleCreate} onCancel={() => setShowAddModal(false)} submitting={submitting} isLight={isLight} />
+            </motion.div>
           </div>
         )}
+      </AnimatePresence>
     </div>
   );
 };
 
 // ─── Add Unit Form ────────────────────────────────────────────────────────────
-const AddUnitForm = ({ onSubmit, onCancel, submitting }) => {
+const AddUnitForm = ({ onSubmit, onCancel, submitting, isLight }) => {
   const [form, setForm] = useState({
     name: '', category: '', manager: '', phone: '',
     whatsapp: '', email: '', website: '', cityArea: '', address: '', description: '', commision: 10
   });
   const set = (k) => (e) => setForm(prev => ({ ...prev, [k]: e.target.value }));
-const COUNTRY_CODE = "+91";
+  const COUNTRY_CODE = "+91";
 
-const handleSubmit = (e) => {
-  e.preventDefault();
-
-  const formattedData = {
-    ...form,
-    phone: form.phone ? COUNTRY_CODE + form.phone : "",
-    whatsapp: form.whatsapp ? COUNTRY_CODE + form.whatsapp : "",
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formattedData = {
+      ...form,
+      phone: form.phone ? COUNTRY_CODE + form.phone : "",
+      whatsapp: form.whatsapp ? COUNTRY_CODE + form.whatsapp : "",
+    };
+    onSubmit(formattedData);
   };
-
-  onSubmit(formattedData);
-};
 
   return (
     <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormInput label="Business Name *"   value={form.name}      onChange={set('name')}      placeholder="e.g. SKYLINE TECH"        required />
-        <FormInput label="Market Category *" value={form.category}  onChange={set('category')}  placeholder="Enter Category"                required  />
-        <FormInput label="Commission Percentage (%) *" type="number" value={form.commision} onChange={set('commision')} placeholder="e.g. 10" required />
-        <FormInput label="Unit Manager *"    value={form.manager}   onChange={set('manager')}   placeholder="e.g. ABHISHEK"       required />
-        <FormInput label="Primary Phone *"   value={form.phone}     onChange={set('phone')}     placeholder="98475 12025"          required />
-        <FormInput label="WhatsApp Number *" value={form.whatsapp}  onChange={set('whatsapp')}  placeholder="98475 12025"          required />
-        <FormInput label="Email *"           value={form.email}     onChange={set('email')}     placeholder="unit@example.com"          required type="email" />
-        <FormInput label="Website"           value={form.website}   onChange={set('website')}   placeholder="https://example.com"       type="url" />
-        <FormInput label="City / Area"       value={form.cityArea}  onChange={set('cityArea')}  placeholder="e.g. Business Bay, Dubai" />
+        <FormInput label="Business Name *"   value={form.name}      onChange={set('name')}      placeholder="e.g. SKYLINE TECH"        required isLight={isLight}/>
+        <FormInput label="Market Category *" value={form.category}  onChange={set('category')}  placeholder="Enter Category"           required isLight={isLight} />
+        <FormInput label="Commission (%) *"  type="number" value={form.commision} onChange={set('commision')} placeholder="e.g. 10" required isLight={isLight}/>
+        <FormInput label="Unit Manager *"    value={form.manager}   onChange={set('manager')}   placeholder="e.g. ABHISHEK"       required isLight={isLight}/>
+        <FormInput label="Primary Phone *"   value={form.phone}     onChange={set('phone')}     placeholder="98475 12025"          required isLight={isLight}/>
+        <FormInput label="WhatsApp Number *" value={form.whatsapp}  onChange={set('whatsapp')}  placeholder="98475 12025"          required isLight={isLight}/>
+        <FormInput label="Email *"           value={form.email}     onChange={set('email')}     placeholder="unit@example.com"          required type="email" isLight={isLight}/>
+        <FormInput label="Website"           value={form.website}   onChange={set('website')}   placeholder="https://example.com"       type="url" isLight={isLight}/>
+        <FormInput label="City / Area"       value={form.cityArea}  onChange={set('cityArea')}  placeholder="e.g. Business Bay" isLight={isLight}/>
       </div>
-      <FormInput label="Address *"     value={form.address}     onChange={set('address')}     placeholder="Full address..."                                  required isTextarea />
-      <FormInput label="Description *" value={form.description} onChange={set('description')} placeholder="Brief overview of this business unit..." required isTextarea />
-      <div className="flex gap-3 pt-2">
-        <button type="button" onClick={onCancel} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase">Cancel</button>
-        <button type="submit" disabled={submitting}
-          className="flex-[2] py-3 bg-blue-600 hover:bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
-        >
-          {submitting ? <><Loader2 size={14} className="animate-spin"/> Registering...</> : 'Register Unit'}
+      <FormInput label="Address *"     value={form.address}     onChange={set('address')}     placeholder="Full address..."                                  required isTextarea isLight={isLight}/>
+      <FormInput label="Description *" value={form.description} onChange={set('description')} placeholder="Brief overview of this business unit..." required isTextarea isLight={isLight}/>
+      
+      <div className={`flex gap-3 pt-4 border-t ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+        <button type="button" onClick={onCancel} className={`flex-1 py-3.5 border rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 ${isLight ? 'bg-[#F4F5F7] border-transparent text-[#1A202C] hover:border-[#E2E8F0]' : 'bg-[#131720] border-transparent text-[#F4F5F7] hover:border-white/10'}`}>
+          Cancel
+        </button>
+        <button type="submit" disabled={submitting} className="flex-[2] py-3.5 bg-[#81B398] hover:bg-[#6FA085] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2">
+          {submitting ? <><Loader2 size={16} strokeWidth={2.5} className="animate-spin"/> Registering...</> : 'Register Unit'}
         </button>
       </div>
     </form>
@@ -798,73 +776,48 @@ const handleSubmit = (e) => {
 };
 
 // ─── Helper Components ────────────────────────────────────────────────────────
-const StatCard = ({ label, value, icon, color, bg }) => (
-  <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm hover:border-blue-500 transition-all group">
-    <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 border ${bg} ${color} border-current/10 group-hover:scale-110 transition-transform`}>
-      {icon}
-    </div>
-    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{label}</p>
-    <h3 className="text-xl font-black text-slate-900 tracking-tight">{value}</h3>
+
+const InfoItem = ({ label, value, isLight }) => (
+  <div className={`flex justify-between items-center border-b pb-3 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+    <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>{label}</span>
+    <span className="text-xs font-extrabold uppercase">{value}</span>
   </div>
 );
 
-const DossierSection = ({ title, icon, children }) => (
-  <section className="space-y-4">
-    <h5 className="text-[9px] font-black text-blue-600 uppercase tracking-widest border-b border-slate-100 pb-2 flex items-center gap-2">
-      {icon} {title}
-    </h5>
-    <div className="space-y-3">{children}</div>
-  </section>
-);
-
-const InfoItem = ({ label, value }) => (
-  <div className="flex justify-between items-end border-b border-slate-50 pb-1.5">
-    <span className="text-[8px] text-slate-400 font-black uppercase tracking-tighter">{label}</span>
-    <span className="text-xs font-bold text-slate-900 uppercase">{value}</span>
-  </div>
-);
-
-const EditField = ({ label, value, onChange, placeholder, type = 'text', isTextarea, isSelect, options = [] }) => (
-  <div className="space-y-1.5">
-    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
-    {isTextarea ? (
-      <textarea value={value} onChange={onChange} placeholder={placeholder} rows={3}
-        className="w-full px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-500 transition-all placeholder:text-slate-300 resize-none"
-      />
-    ) : isSelect ? (
-      <select value={value} onChange={onChange}
-        className="w-full px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-500 transition-all"
-      >
-        <option value="">Select...</option>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-    ) : (
-      <input type={type} value={value} onChange={onChange} placeholder={placeholder}
-        className="w-full px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-500 transition-all placeholder:text-slate-300"
-      />
-    )}
-  </div>
-);
-
-const FormInput = ({ label, value, onChange, placeholder, type = 'text', required, isTextarea, isSelect, options = [] }) => (
-  <div className="space-y-1.5">
-    <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
+const FormInput = ({ label, value, onChange, placeholder, type = 'text', required, isTextarea, isSelect, options = [], isLight }) => (
+  <div className="w-full">
+    <label className={`text-[10px] font-bold uppercase tracking-wider mb-2 block pl-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>{label}</label>
     {isTextarea ? (
       <textarea value={value} onChange={onChange} placeholder={placeholder} required={required} rows={3}
-        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-blue-600 transition-all placeholder:text-slate-300 resize-none"
+        className={`w-full border rounded-xl p-4 text-sm font-bold transition-all resize-none outline-none ${
+          isLight ? "bg-[#F4F5F7] border-transparent text-[#1A202C] placeholder:text-[#A0AEC0] focus:border-[#81B398]" : "bg-[#131720] border-transparent text-white focus:border-[#81B398]"
+        }`}
       />
-    ) : isSelect ? (
-      <select value={value} onChange={onChange} required={required}
-        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-blue-600 transition-all"
-      >
-        <option value="">Select category...</option>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-    ) : (
+    ) :  (
       <input type={type} value={value} onChange={onChange} placeholder={placeholder} required={required}
-        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-blue-600 transition-all placeholder:text-slate-300"
+        className={`w-full px-4 py-3.5 border rounded-xl text-sm font-bold transition-all outline-none ${
+          isLight ? "bg-[#F4F5F7] border-transparent text-[#1A202C] placeholder:text-[#A0AEC0] focus:border-[#81B398]" : "bg-[#131720] border-transparent text-white focus:border-[#81B398]"
+        }`}
       />
     )}
+  </div>
+);
+
+// ─── SKELETON LOADER ───
+const SkeletonCard = ({ isLight }) => (
+  <div className={`rounded-3xl border p-6 flex flex-col gap-5 animate-pulse ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+    <div className="flex items-center gap-4">
+      <div className={`h-14 w-14 rounded-full shrink-0 ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`} />
+      <div className="space-y-2 flex-1">
+        <div className={`h-4 w-3/4 rounded ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`} />
+        <div className={`h-3 w-1/2 rounded ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`} />
+      </div>
+    </div>
+    <div className={`h-24 rounded-2xl w-full ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`} />
+    <div className="flex gap-2">
+      <div className={`h-10 flex-1 rounded-xl ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`} />
+      <div className={`h-10 w-12 rounded-xl shrink-0 ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`} />
+    </div>
   </div>
 );
 
