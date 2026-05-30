@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
 
 import { supabase } from '../../supabase/supabaseClient';
 import { useTheme } from '../../context/ThemeContext'; 
@@ -137,14 +136,8 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
     setSignupForm({ full_name: '', email: '', phone: '', password: '', confirm: '' });
   };
 
-  const formVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.25 } },
-    exit: { opacity: 0, transition: { duration: 0.15 } },
-  };
-
   return (
-    <div className={`relative min-h-[100dvh] w-full flex flex-col items-center justify-center font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-200 overflow-y-auto overflow-x-hidden ${
+    <div className={`relative min-h-[100dvh] w-full flex flex-col items-center justify-center font-['Plus_Jakarta_Sans',sans-serif] overflow-y-auto overflow-x-hidden ${
       isLight ? 'bg-[#FFFFFF] text-[#1A202C]' : 'bg-[#131720] text-[#F4F5F7]'
     }`}>
       
@@ -152,11 +145,11 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
       <div className="absolute top-10 left-6 z-50">
         <Link 
           to="/"
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 ${
+          className={`w-10 h-10 rounded-full flex items-center justify-center active:scale-90 ${
             isLight ? ' text-[#1A202C] hover:bg-[#E2E8F0]' : ' text-[#F4F5F7] hover:bg-white/10'
           }`}
         >
-          <span className='text-emerald-500'>Back</span>
+          <span className='text-emerald-500 font-semibold'>Back</span>
         </Link>
       </div>
 
@@ -165,42 +158,37 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
         
         <AuthLogo />
 
-        <AnimatePresence mode="wait">
-          {tab === 'login' && (
-            <AppLoginForm 
-              onSubmit={handleLogin}
-              error={loginError}
-              loading={loginLoading}
-              isLight={isLight}
-              setTab={setTab}
-              formVariants={formVariants}
-            />
-          )}
+        {tab === 'login' && (
+          <AppLoginForm 
+            onSubmit={handleLogin}
+            error={loginError}
+            loading={loginLoading}
+            isLight={isLight}
+            setTab={setTab}
+          />
+        )}
 
-          {tab === 'signup' && (
-            <AppSignupForm 
-              onSubmit={handleSignup}
-              error={signupError}
-              loading={signupLoading}
-              form={signupForm}
-              setForm={setSignupForm}
-              isLight={isLight}
-              setTab={setTab}
-              formVariants={formVariants}
-            />
-          )}
+        {tab === 'signup' && (
+          <AppSignupForm 
+            onSubmit={handleSignup}
+            error={signupError}
+            loading={signupLoading}
+            form={signupForm}
+            setForm={setSignupForm}
+            isLight={isLight}
+            setTab={setTab}
+          />
+        )}
 
-          {tab === 'success' && (
-            <AppSuccessView 
-              onReset={handleResetSuccess}
-              isLight={isLight}
-              formVariants={formVariants}
-            />
-          )}
-        </AnimatePresence>
+        {tab === 'success' && (
+          <AppSuccessView 
+            onReset={handleResetSuccess}
+            isLight={isLight}
+          />
+        )}
       </main>
     </div>
   );
 };
 
-export default AuthGatewayApp;
+export default AuthGatewayApp; 

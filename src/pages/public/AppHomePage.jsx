@@ -13,7 +13,7 @@ const AppHomePage = ({ onEnterPortal }) => {
 
   return (
     // STRICTLY NON-SCROLLABLE: Locked to viewport height
-    <div className={`relative h-[100dvh] w-full flex flex-col font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-200 overflow-hidden ${
+    <div className={`relative h-[100dvh] w-full flex flex-col font-['Plus_Jakarta_Sans',sans-serif] overflow-hidden ${
       isLight ? 'bg-[#F4F5F7] text-[#1A202C]' : 'bg-[#131720] text-[#F4F5F7]'
     }`}>
 

@@ -2,34 +2,28 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { 
-  CheckCircle2, Inbox, Search, XCircle, FilterX, 
-  User, ArrowRight, Loader2, Activity
+  CheckCircle2, Search, XCircle, FilterX, 
+  User, ArrowRight, Activity, Calendar
 } from 'lucide-react';
 import { supabase } from '../../supabase/supabaseClient';
 
-const STATUSES = [
-  'All',
-  'Pending',
-  'Verified',
-  'In Progress',
-  'Completed',
-  'Rejected'
-];
+const STATUSES = ['All', 'Pending', 'Verified', 'In Progress', 'Completed', 'Rejected'];
 
 const ManageLeadsApp = () => {
   const navigate = useNavigate();
-  const { theme } = useOutletContext(); // Get global theme from Hub
+  const { theme } = useOutletContext(); 
   const isLight = theme === 'light';
 
   // --- STATE MANAGEMENT ---
   const [leads, setLeads] = useState([]);
   const [summary, setSummary] = useState({});
   const [statusFilter, setStatusFilter] = useState('All');
+  const [dateFilter, setDateFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   // --- API CALLS ---
-  const fetchLeads = async () => {
+const fetchLeads = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -98,131 +92,156 @@ const ManageLeadsApp = () => {
 
   useEffect(() => {
     fetchLeads();
-  }, [statusFilter]);
+  }, [statusFilter, dateFilter]);
 
+  // SAFE FILTERING: Using String() to prevent crashes if ID or Name are numbers/null
   const filteredLeads = leads.filter((lead) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
-    const clientName = lead.customer_name ? lead.customer_name.toLowerCase() : "";
-    const leadId = lead.id ? lead.id.toLowerCase() : "";
-    const agentId = lead.agentId ? lead.agentId.toLowerCase() : "";
+    const clientName = lead.customer_name ? String(lead.customer_name).toLowerCase() : "";
+    const leadId = lead.id ? String(lead.id).toLowerCase() : "";
+    const agentId = lead.agentId ? String(lead.agentId).toLowerCase() : "";
+    
     return clientName.includes(query) || leadId.includes(query) || agentId.includes(query);
   });
 
   // --- UI HELPERS ---
-  const getStatusBadgeStyles = (status) => {
-    if (!isLight) {
-        switch (status) {
-            case 'Pending': return 'bg-amber-400/10 text-amber-400 border-amber-400/20';
-            case 'Completed': return 'bg-[#4ADE80]/10 text-[#4ADE80] border-[#4ADE80]/20';
-            default: return 'bg-white/5 text-slate-400 border-white/10';
-        }
-    }
-    switch (status) {
-      case 'Pending': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'Verified': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'In Progress': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
-      case 'Completed': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'Rejected': return 'bg-rose-100 text-rose-700 border-rose-200';
-      default: return 'bg-slate-100 text-slate-500 border-slate-200';
-    }
+  const getStatusColor = (status) => {
+    const s = status ? String(status).toLowerCase() : '';
+    if (s === 'completed' || s === 'verified') return 'text-[#81B398] bg-[#81B398]/10 border-[#81B398]/20';
+    if (s === 'rejected') return 'text-[#F0524F] bg-[#F0524F]/10 border-[#F0524F]/20';
+    if (s === 'in progress') return 'text-[#48477A] bg-[#48477A]/10 border-[#48477A]/20';
+    return 'text-amber-500 bg-amber-500/10 border-amber-500/20'; // Pending
   };
 
   return (
-    <div className={`space-y-5 pt-[env(safe-area-inset-top)] pb-[calc(4rem+env(safe-area-inset-bottom))] max-w-[1400px] mx-auto px-2 sm:px-0 transition-colors duration-300 ${isLight ? 'text-[#1A1D1F]' : 'text-[#E2E8F0]'}`}>
+    <div className={`font-['Plus_Jakarta_Sans',sans-serif] space-y-4 pt-2 pb-6 transition-colors duration-200 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
       
       {/* 1. HEADER & STATS */}
-      <div className={`p-5 rounded-2xl border transition-all duration-300 flex flex-col lg:flex-row lg:items-center justify-between gap-5 ${
-        isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] shadow-sm' : 'bg-white/5 border-white/10 shadow-sm'
-      }`}>
-        <div className="flex items-center gap-4">
-           <div className={`h-12 w-12 rounded-xl flex items-center justify-center border transition-colors ${
-             isLight ? 'bg-white text-[#61D9DE] border-[#E8ECEF]' : 'bg-blue-50/10 text-[#38BDF8] border-white/5'
-           }`}>
-              <Inbox size={24} />
-           </div>
-           <div>
-              <h2 className="text-xl font-black uppercase tracking-tight">Leads Overview</h2>
-              <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>Management Console</p>
-           </div>
+      <div className="mb-4 px-1">
+        <h2 className="text-2xl font-extrabold tracking-tight mb-4">Manage Leads</h2>
+        
+        {/* Full Width Settled Amount Card */}
+        <div className={`mb-3 rounded-3xl p-6 md:p-8 border transition-all duration-200 flex flex-col justify-center ${
+          isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+        }`}>
+          <p className={`text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+            Total Settled Amount
+          </p>
+          <h3 className="text-4xl md:text-5xl font-extrabold tracking-tighter text-[#81B398]">
+            ₹{summary.settledAmount?.toLocaleString() || 0}
+          </h3>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-           <QuickStat label="Total" count={summary.total || 0} isLight={isLight} color="bg-slate-200/50 text-slate-600" />
-           <QuickStat label="Pending" count={summary.pending || 0} isLight={isLight} color="bg-amber-100 text-amber-700" />
-           <QuickStat label="Active" count={summary.in_progress || 0} isLight={isLight} color="bg-indigo-100 text-indigo-700" />
-           <QuickStat label="Done" count={summary.completed || 0} isLight={isLight} color="bg-emerald-100 text-emerald-700" />
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
+           <QuickStat label="Total Leads" count={summary.total || 0} isLight={isLight} />
+           <QuickStat label="Pending" count={summary.pending || 0} isLight={isLight} />
+           <QuickStat label="In Progress" count={summary.in_progress || 0} isLight={isLight} />
+           <QuickStat label="Completed" count={summary.completed || 0} isLight={isLight} />
         </div>
       </div>
 
-      {/* 2. TOOLBAR */}
-      <div className="flex flex-col md:flex-row items-center gap-3">
-        <div className="relative flex-1 w-full group">
-  {/* Search Icon - Adjusted to Theme Muted Text */}
-  <Search 
-    className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors duration-300 ${
-      isLight ? 'text-[#9A9FA5] group-focus-within:text-[#61D9DE]' : 'text-slate-400 group-focus-within:text-[#38BDF8]'
-    }`} 
-    size={14} 
-  />
+      {/* 2. TOOLBAR (Search & Filters with Labels) */}
+      <div className={`p-4 rounded-3xl border flex flex-col md:flex-row items-end gap-3 transition-colors duration-200 ${
+        isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+      }`}>
+        
+        {/* Search */}
+        <div className="relative flex-1 w-full">
+          <label className={`block mb-1.5 pl-1 text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+            Search
+          </label>
+          <div className="relative">
+            <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} strokeWidth={2.5} />
+            <input 
+              type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search leads..." 
+              className={`w-full pl-12 pr-10 py-3.5 rounded-xl outline-none text-sm font-bold transition-all border ${
+                isLight 
+                  ? 'bg-[#F4F5F7] border-transparent text-[#1A202C] placeholder:text-[#A0AEC0] focus:border-[#81B398]' 
+                  : 'bg-[#131720] border-transparent text-white placeholder:text-[#718096] focus:border-[#81B398]'
+              }`}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className={`absolute right-4 top-1/2 -translate-y-1/2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                <XCircle size={16} strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
+        </div>
 
-  <input 
-    type="text" 
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
-    placeholder="Search by Client, ID, or Agent..." 
-    className={`w-full pl-10 pr-10 py-2.5 rounded-xl outline-none text-xs font-bold transition-all duration-300 border ${
-      isLight 
-        ? 'bg-[#F8FAFB] border-[#E8ECEF] text-[#1A1D1F] placeholder:text-[#9A9FA5]/60 focus:bg-white focus:border-[#61D9DE] focus:shadow-[0_0_0_4px_rgba(97,217,222,0.1)]' 
-        : 'bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-[#38BDF8]/50 focus:bg-white/10'
-    }`}
-  />
-
-  {/* Clear Button - Synced with Theme Colors */}
-  {searchQuery && (
-    <button 
-      onClick={() => setSearchQuery("")} 
-      className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${
-        isLight ? 'text-[#9A9FA5] hover:text-[#1A1D1F]' : 'text-slate-500 hover:text-slate-300'
-      }`}
-    >
-      <XCircle size={14} />
-    </button>
-  )}
-</div>
-
-         <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
-            {STATUSES.map((status) => (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${
-                  statusFilter === status 
-                  ? 'bg-[#61D9DE] text-white border-[#61D9DE] shadow-sm' 
-                  : (isLight ? 'bg-white text-[#9A9FA5] border-[#E8ECEF] hover:bg-[#F8FAFB]' : 'bg-white/5 text-slate-400 border-white/10')
+        {/* Filters */}
+        <div className="flex w-full md:w-auto items-end gap-3">
+          {/* Status Dropdown */}
+          <div className="relative flex-1 md:flex-none md:w-40">
+            <label className={`block mb-1.5 pl-1 text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+              Status
+            </label>
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className={`w-full appearance-none pl-4 pr-10 py-3.5 rounded-xl outline-none text-sm font-bold transition-all border cursor-pointer ${
+                  isLight 
+                    ? 'bg-[#F4F5F7] border-transparent text-[#1A202C] focus:border-[#81B398]' 
+                    : 'bg-[#131720] border-transparent text-white focus:border-[#81B398]'
                 }`}
               >
-                {status}
-              </button>
-            ))}
-         </div>
+                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Date Filter */}
+          <div className="relative flex-1 md:flex-none md:w-44">
+            <label className={`block mb-1.5 pl-1 text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+              Filter by Date
+            </label>
+            <div className="relative">
+              <input 
+                type="date" 
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className={`w-full appearance-none pl-10 pr-4 py-3.5 rounded-xl outline-none text-sm font-bold transition-all border cursor-pointer ${
+                  isLight 
+                    ? 'bg-[#F4F5F7] border-transparent text-[#1A202C] focus:border-[#81B398]' 
+                    : 'bg-[#131720] border-transparent text-white focus:border-[#81B398]'
+                }`}
+              />
+              <Calendar className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} strokeWidth={2.5} />
+              {dateFilter && (
+                <button onClick={() => setDateFilter("")} className={`absolute right-1 top-1/2 -translate-y-1/2 p-1 ${isLight ? 'text-[#F0524F]' : 'text-[#F0524F]'}`}>
+                  <XCircle size={14} strokeWidth={2.5} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 3. REQUEST LISTING */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
         <AnimatePresence mode="popLayout">
 
           {loading && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="col-span-full flex flex-col items-center justify-center py-20">
-              <Loader2 className={`h-10 w-10 animate-spin mb-4 ${isLight ? 'text-[#61D9DE]' : 'text-[#38BDF8]'}`} />
-              <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}`}>Loading Leads...</p>
-            </motion.div>
+            <>
+              {[1, 2, 3, 4].map(i => <SkeletonCard key={i} isLight={isLight} />)}
+            </>
           )}
 
           {!loading && filteredLeads.length === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`col-span-full flex flex-col items-center justify-center py-20 rounded-2xl border ${isLight ? 'bg-[#F8FAFB] border-[#E8ECEF]' : 'bg-white/5 border-white/10'}`}>
-              <FilterX size={32} className="text-slate-300 mb-3" />
-              <h3 className="text-sm font-semibold">No Leads Found</h3>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`col-span-full flex flex-col items-center justify-center py-24 rounded-3xl border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+              <FilterX size={32} strokeWidth={2.5} className="text-[#81B398] mb-4" />
+              <h3 className="text-base font-extrabold tracking-tight">No Leads Found</h3>
+              <p className={`text-sm font-medium mt-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Try adjusting your filters or search query.</p>
             </motion.div>
           )}
 
@@ -230,81 +249,64 @@ const ManageLeadsApp = () => {
             <motion.div
               layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
               key={lead.id}
-              className={`rounded-2xl border transition-all duration-300 flex flex-col overflow-hidden ${
-                isLight ? 'bg-[#F8FAFB] border-[#E8ECEF] hover:border-[#61D9DE] hover:shadow-sm' : 'bg-white/5 border-white/10 hover:border-white/20'
+              className={`rounded-3xl border transition-all duration-200 flex flex-col overflow-hidden ${
+                isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:border-[#81B398]' : 'bg-[#222938] border-white/10 hover:border-[#81B398]'
               }`}
             >
               {/* Header */}
-              <div className={`flex items-center justify-between p-4 border-b ${isLight ? 'bg-white/40 border-[#E8ECEF]' : 'bg-white/5 border-white/10'}`}>
-                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeStyles(lead.status)}`}>
+              <div className={`flex items-center justify-between p-5 border-b ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+                <span className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(lead.status)}`}>
                   {lead.status}
                 </span>
-                <User size={16} className={isLight ? 'text-[#9A9FA5]' : 'text-slate-500'} />
+                <User size={16} strokeWidth={2.5} className={isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'} />
               </div>
 
               {/* Body */}
-              <div className="p-4 flex flex-col gap-3.5 text-xs flex-1">
-                <div className="flex justify-between items-center gap-2">
-                  <span className={isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}>Client</span>
-                  <span className="font-bold text-right truncate">{lead.customer_name || "Unknown"}</span>
-                </div>
-                <div className="flex justify-between items-center gap-2">
-                  <span className={isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}>Date</span>
-                  <span className="font-medium text-right opacity-80">{lead.date ? new Date(lead.date).toLocaleDateString() : 'N/A'}</span>
-                </div>
-                <div className="flex justify-between items-center gap-2">
-                  <span className={isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}>Service</span>
-                  <span className="font-medium text-right truncate">{lead.service}</span>
-                </div>
-                <div className="flex justify-between items-center gap-2">
-                  <span className={isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}>Agent</span>
-                  <span className="font-medium text-right truncate">{lead.agentId || "Unassigned"}</span>
-                </div>
-
-                <div className={`h-px w-full my-1 ${isLight ? 'bg-[#E8ECEF]' : 'bg-white/5'}`}></div>
-
-                <div className="flex justify-between items-center gap-2">
-                  <span className={isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}>Settlement</span>
-                  <div className="flex items-center gap-1.5">
-                    {lead.paymentStatus === "settled" ? (
-                      <><CheckCircle2 size={14} className="text-emerald-500" /><span className="text-emerald-600 font-bold">Settled</span></>
-                    ) : <><Activity size={14} className="text-amber-500" /><span className="text-amber-600 font-bold">Pending</span></>}
+              <div className="p-5 flex flex-col gap-4 text-xs flex-1">
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Client</span>
+                    <span className="font-extrabold text-sm truncate">{lead.customer_name || "Unknown"}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Agent</span>
+                    <span className="font-extrabold text-sm truncate">{lead.agentId || "Unassigned"}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Service</span>
+                    <span className="font-bold truncate">{lead.service}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Date</span>
+                    <span className="font-bold">{lead.date ? new Date(lead.date).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </div>
 
+                <div className={`h-px w-full my-1 ${isLight ? 'bg-[#F4F5F7]' : 'bg-white/5'}`}></div>
+
+                {/* Settlement Status */}
                 <div className="flex justify-between items-center gap-2">
-                  <span className={isLight ? 'text-[#9A9FA5]' : 'text-slate-400'}>Status</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Settlement</span>
                   <div className="flex items-center gap-1.5">
-                    {lead.status === "approved" ? (
-                      <>
-                        <CheckCircle2 size={14} className="text-emerald-500" />
-                        <span className="text-emerald-600 font-bold">Approved</span>
-                      </>
-                    ) : lead.status === "rejected" ? (
-                      <>
-                        <XCircle size={14} className="text-rose-500" />
-                        <span className="text-rose-600 font-bold">Rejected</span>
-                      </>
-                    ) : (
-                      <>
-                        <Activity size={14} className="text-amber-500" />
-                        <span className="text-amber-600 font-bold">Pending</span>
-                      </>
-                    )}
+                    {String(lead.paymentStatus).toLowerCase() === "settled" ? (
+                      <><CheckCircle2 size={14} strokeWidth={2.5} className="text-[#81B398]" /><span className="text-[#81B398] font-bold">Settled</span></>
+                    ) : <><Activity size={14} strokeWidth={2.5} className="text-amber-500" /><span className="text-amber-500 font-bold">Pending</span></>}
                   </div>
                 </div>
-                </div>
-      
+              </div>
 
               {/* Footer */}
-              <div className={`p-3 border-t mt-auto ${isLight ? 'bg-white/40 border-[#E8ECEF]' : 'bg-white/5 border-white/10'}`}>
+              <div className="p-4 pt-0">
                 <button
                   onClick={() => navigate(`/business/leads/${lead.id}`)}
-                  className={`w-full py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 border ${
-                    isLight ? 'bg-white border-[#E8ECEF] text-[#1A1D1F] hover:border-[#61D9DE] hover:text-[#61D9DE]' : 'bg-white/5 border-white/10 text-white hover:border-white/20'
+                  className={`w-full py-3.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 border ${
+                    isLight 
+                      ? 'bg-[#F4F5F7] border-transparent text-[#1A202C] hover:border-[#81B398] hover:text-[#81B398]' 
+                      : 'bg-[#131720] border-transparent text-[#F4F5F7] hover:border-[#81B398] hover:text-[#81B398]'
                   }`}
                 >
-                  Details <ArrowRight size={14} />
+                  View Details <ArrowRight size={14} strokeWidth={2.5} />
                 </button>
               </div>
             </motion.div>
@@ -315,12 +317,37 @@ const ManageLeadsApp = () => {
   );
 };
 
-const QuickStat = ({ label, count, color, isLight }) => (
-  <div className={`px-4 py-2 border rounded-xl text-center min-w-[75px] transition-colors ${
-    isLight ? `bg-white border-[#E8ECEF]` : 'bg-white/5 border-white/10'
+// ─────────────────────────────────────────────────────────────────────────────
+// UI COMPONENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const QuickStat = ({ label, count, isLight }) => (
+  <div className={`rounded-3xl p-5 border transition-all duration-200 flex flex-col justify-center ${
+    isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
   }`}>
-    <p className={`text-[7px] font-black uppercase mb-1 ${isLight ? 'text-[#9A9FA5]' : 'text-slate-500'}`}>{label}</p>
-    <p className={`text-sm font-black ${isLight ? 'text-[#1A1D1F]' : 'text-white'}`}>{count}</p>
+    <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+      {label}
+    </p>
+    <h3 className="text-2xl font-extrabold tracking-tighter">
+      {count}
+    </h3>
+  </div>
+);
+
+const SkeletonCard = ({ isLight }) => (
+  <div className={`rounded-3xl border p-5 flex flex-col gap-4 animate-pulse ${
+    isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+  }`}>
+    <div className="flex justify-between">
+      <div className={`w-20 h-6 rounded-lg ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}></div>
+      <div className={`w-6 h-6 rounded-full ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}></div>
+    </div>
+    <div className={`w-full h-10 rounded-xl ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}></div>
+    <div className="grid grid-cols-2 gap-4">
+      <div className={`w-full h-8 rounded-xl ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}></div>
+      <div className={`w-full h-8 rounded-xl ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}></div>
+    </div>
+    <div className={`w-full h-10 mt-2 rounded-xl ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}></div>
   </div>
 );
 
