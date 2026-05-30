@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 
 // --- THEME CONTEXT ---
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -71,12 +72,21 @@ import NotificationToast from './components/NotificationToast';
 import { cleanupPushNotifications } from './services/pushNotifications';
 import { cleanupWebPush } from './services/webPush';
 
+// Read localStorage once, synchronously, before any async work.
+// This lets returning users render immediately without waiting for getSession().
+const _readCache = () => {
+  try { return JSON.parse(localStorage.getItem('vynx_user') || 'null'); }
+  catch { return null; }
+};
+
 const AppContent = () => {
-  const [userRole, setUserRole] = useState(null);
-  const [authUserId, setAuthUserId] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [userRole, setUserRole] = useState(() => _readCache()?.role || null);
+  const [authUserId, setAuthUserId] = useState(() => _readCache()?.id || null);
+  // Skip the loader entirely if we already have a cached role
+  const [isLoading, setIsLoading] = useState(() => !_readCache()?.role);
   const isMountedRef = useRef(true);
-  const userRoleRef = useRef(null);
+  const userRoleRef = useRef(_readCache()?.role || null);
+  const isVisibilityHandlerRunningRef = useRef(false);
   const { theme } = useTheme();
   const isNative = Capacitor.isNativePlatform();
 
@@ -192,30 +202,78 @@ const AppContent = () => {
       }
     }, 5 * 60 * 1000);
 
-    const handleVisibility = async () => {
-      if (document.visibilityState === 'visible') {
-        try {
-          const { data: { session }, error } = await supabase.auth.getSession();
-          if (error) console.error('visibilitychange getSession error:', error);
-          if (session?.user) {
-            const now = Math.floor(Date.now() / 1000);
-            const expiresIn = (session.expires_at ?? 0) - now;
-            if (expiresIn < 600) {
-              const { error: refreshErr } = await supabase.auth.refreshSession();
-              if (refreshErr) console.warn('Token refresh on visibility failed:', refreshErr);
-            }
-            await fetchUserRole(session.user.id).catch(() => {});
+    // Unified resume handler — called by both native and web lifecycle events.
+    // Single guard prevents concurrent runs that would pile up auth lock requests.
+    const handleResume = async (source = 'web') => {
+      if (isVisibilityHandlerRunningRef.current) return;
+      isVisibilityHandlerRunningRef.current = true;
+      console.log(`[App] Resume detected (${source})`);
+
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) console.error('[App] getSession on resume error:', error);
+
+        if (session?.user) {
+          const now = Math.floor(Date.now() / 1000);
+          if ((session.expires_at ?? 0) - now < 600) {
+            console.log('[App] Token expiring soon — refreshing');
+            await supabase.auth.refreshSession().catch((e) =>
+              console.warn('[App] Token refresh failed:', e)
+            );
           }
-        } catch (e) {
-          console.error('Error on visibilitychange handler:', e);
+          await fetchUserRole(session.user.id).catch(() => {});
         }
+
+        // Force realtime WebSocket reconnect — the connection is suspended
+        // when the Android WebView is paused and must be explicitly restarted.
+        if (Capacitor.isNativePlatform()) {
+          console.log('[App] Reconnecting Supabase realtime');
+          try {
+            supabase.realtime.disconnect();
+            supabase.realtime.connect();
+            console.log('[App] Realtime reconnected');
+          } catch (e) {
+            console.warn('[App] Realtime reconnect failed:', e);
+          }
+
+          // Wait 600ms for the native HTTP stack to fully stabilise after
+          // the WebView wakes up before signalling pages to refetch.
+          // Without this delay, new Supabase queries fire before the
+          // CapacitorHttp connection pool is ready, causing them to hang.
+          await new Promise((r) => setTimeout(r, 600));
+          console.log('[App] Broadcasting app-resume to pages');
+          window.dispatchEvent(new CustomEvent('app-resume'));
+        }
+      } catch (e) {
+        console.error('[App] Resume handler failed:', e);
+      } finally {
+        isVisibilityHandlerRunningRef.current = false;
       }
     };
+
+    // Web: visibilitychange (reliable on Chrome/Firefox/Safari)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') handleResume('visibilitychange');
+    };
+
+    // Native: Capacitor appStateChange (the only reliable signal on Android)
+    let appStateListener = null;
+    if (Capacitor.isNativePlatform()) {
+      CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) {
+          handleResume('capacitor-resume');
+        } else {
+          console.log('[App] Native app paused');
+        }
+      }).then((handle) => {
+        appStateListener = handle;
+      });
+    }
 
     const handleOnline = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) console.error('online getSession error:', error);
+        if (error) console.error('[App] online getSession error:', error);
         if (session?.user) {
           const now = Math.floor(Date.now() / 1000);
           if (((session.expires_at ?? 0) - now) < 600) {
@@ -224,7 +282,7 @@ const AppContent = () => {
           await fetchUserRole(session.user.id).catch(() => {});
         }
       } catch (e) {
-        console.error('Error on online handler:', e);
+        console.error('[App] Online handler error:', e);
       }
     };
 
@@ -237,6 +295,7 @@ const AppContent = () => {
       clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('online', handleOnline);
+      appStateListener?.remove();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

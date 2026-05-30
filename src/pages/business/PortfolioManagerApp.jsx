@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import useAppResume from '../../hooks/useAppResume';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Trash2, Save, Loader2, Settings, Briefcase, 
@@ -36,37 +38,54 @@ const PortfolioManagerApp = () => {
   /* =======================
      FETCH BUSINESS UNIT
   ======================= */
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const { data: authData, error: authError } = await supabase.auth.getUser();
-        if (authError) {
-          console.error("Supabase auth error", authError);
-          return;
-        }
+  const load = useCallback(async () => {
+    console.log('[PortfolioManagerApp] load() started');
+    setLoading(true);
 
-        const userId = authData?.user?.id;
-        if (!userId) {
-          console.error("No authenticated user found");
-          return;
-        }
+    let timedOut = false;
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      console.warn('[PortfolioManagerApp] Fetch timed out — clearing loading state');
+      setLoading(false);
+    }, 10000);
+
+    try {
+      const userId = JSON.parse(localStorage.getItem('vynx_user') || '{}')?.id;
+      if (!userId) { console.error('[PortfolioManagerApp] No cached user id'); return; }
 
         const { data, error } = await supabase
           .from('business_units')
           .select(`
-            id, business_name, website, email, primary_phone,
-            location, address, description, logo_url,
-            instagram, facebook, linkedin,
-            business_unit_services ( id, service_name, description ),
-            business_unit_gallery ( id, image_url )
+            id,
+            business_name,
+            website,
+            email,
+            primary_phone,
+            location,
+            address,
+            description,
+            logo_url,
+            instagram,
+            facebook,
+            linkedin,
+
+            business_unit_services (
+              id,
+              service_name,
+              description
+            ),
+
+            business_unit_gallery (
+              id,
+              image_url
+            )
           `)
           .eq('manager_id', userId)
           .single();
 
-        if (error) {
-          console.error("Failed to load business unit", error);
-          return;
-        }
+      console.log('[PortfolioManagerApp] Query result:', { data: !!data, error: !!error, timedOut });
+      if (timedOut) return;
+      if (error) { console.error('[PortfolioManagerApp] Load error', error); return; }
 
         const normalized = {
           id: data.id,
@@ -77,10 +96,14 @@ const PortfolioManagerApp = () => {
           location: data.location || '',
           address: data.address || '',
           description: data.description || '',
-          services: data.business_unit_services?.map((s) => ({
-              id: s.id, name: s.service_name, description: s.description
+          services:
+            data.business_unit_services?.map((s) => ({
+              id: s.id,
+              name: s.service_name,
+              description: s.description
             })) || [],
-          gallery: data.business_unit_gallery?.map((g) => g.image_url) || [],
+          gallery:
+            data.business_unit_gallery?.map((g) => g.image_url) || [],
           logo: data.logo_url || '',
           instagram: data.instagram || '',
           facebook: data.facebook || '',
@@ -88,7 +111,8 @@ const PortfolioManagerApp = () => {
         };
 
         galleryItemsRef.current = data.business_unit_gallery?.map((g) => ({
-          id: g.id, url: g.image_url,
+          id: g.id,
+          url: g.image_url,
         })) || [];
         originalServices.current = normalized.services.map((service) => ({ ...service }));
 
@@ -102,6 +126,13 @@ const PortfolioManagerApp = () => {
 
     load();
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  useAppResume(() => {
+    console.log('[PortfolioManagerApp] useAppResume triggered');
+    load();
+  });
 
   const saveServices = async () => {
     if (!unit.id) return unit.services;
