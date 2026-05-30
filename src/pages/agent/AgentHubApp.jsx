@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   NavLink, 
@@ -16,7 +16,6 @@ import { supabase } from '../../supabase/supabaseClient';
 
 // Lead Modal Import
 import LeadFormAppModal from './LeadFormModalApp';
-import useAppResume from '../../hooks/useAppResume';
 
 const AgentHubApp = ({ onLogout }) => {
   // ==========================================
@@ -35,83 +34,97 @@ const AgentHubApp = ({ onLogout }) => {
   const [leads, setLeads] = useState([]);
   const [currentUser, setCurrentUser] = useState({});
 
-  const channelRef = useRef(null);
-
-  const fetchData = useCallback(async () => {
-    try {
-      setIsAppLoading(true);
-
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        console.error('[AgentHubApp] Auth Error:', authError);
-        return;
-      }
-
-      const { data: profileData, error: profileError } = await supabase
-        .from('users').select('*').eq('id', user.id).single();
-
-      if (profileError) {
-        console.error('[AgentHubApp] Profile Fetch Error:', profileError);
-      } else {
-        setCurrentUser({
-          id: user.id,
-          name: profileData.full_name,
-          role: profileData.role,
-          avatar: profileData.avatar_url,
-          email: user.email
-        });
-      }
-
-      const { data: leadsData, error: leadsError } = await supabase.from('leads').select('*');
-      if (leadsError) console.error('[AgentHubApp] Leads Fetch Error:', leadsError);
-      else setLeads(leadsData || []);
-
-      const { data: businessData, error: businessError } = await supabase.from('business_units').select('*');
-      if (businessError) {
-        console.error('[AgentHubApp] Business Units Error:', businessError);
-      } else {
-        const groupedUnits = {};
-        businessData.forEach((item) => {
-          if (!groupedUnits[item.category]) groupedUnits[item.category] = [];
-          groupedUnits[item.category].push(item.unit_name);
-        });
-        setBusinessUnits(groupedUnits);
-      }
-    } catch (error) {
-      console.error('[AgentHubApp] Unexpected Error:', error);
-    } finally {
-      setIsAppLoading(false);
-    }
-  }, []);
-
-  const connectRealtime = useCallback(() => {
-    if (channelRef.current) supabase.removeChannel(channelRef.current);
-    const ch = supabase
-      .channel('realtime-leads-app')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, async () => {
-        const { data } = await supabase.from('leads').select('*');
-        setLeads(data || []);
-      })
-      .subscribe();
-    channelRef.current = ch;
-    console.log('[AgentHubApp] Realtime channel subscribed');
-  }, []);
-
   useEffect(() => {
-    fetchData();
-    connectRealtime();
-    return () => {
-      if (channelRef.current) supabase.removeChannel(channelRef.current);
-    };
-  }, [fetchData, connectRealtime]);
+    const fetchData = async () => {
+      try {
+        setIsAppLoading(true);
 
-  // On native resume: refetch data and reconnect the realtime channel.
-  // The global App.jsx handler reconnects the WebSocket; this re-subscribes the channel.
-  useAppResume(async () => {
-    console.log('[AgentHubApp] Resuming — refetching data');
-    await fetchData();
-    connectRealtime();
-  });
+        const {
+          data: { user },
+          error: authError
+        } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+          console.error('Auth Error:', authError);
+          return;
+        }
+
+        const { data: profileData, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Profile Fetch Error:', profileError);
+        } else {
+          setCurrentUser({
+            id: user.id,
+            name: profileData.full_name,
+            role: profileData.role,
+            avatar: profileData.avatar_url,
+            email: user.email
+          });
+        }
+
+        const { data: leadsData, error: leadsError } = await supabase
+          .from('leads')
+          .select('*');
+
+        if (leadsError) {
+          console.error('Leads Fetch Error:', leadsError);
+        } else {
+          setLeads(leadsData || []);
+        }
+
+        const { data: businessData, error: businessError } = await supabase
+          .from('business_units')
+          .select('*');
+
+        if (businessError) {
+          console.error('Business Units Error:', businessError);
+        } else {
+          const groupedUnits = {};
+          businessData.forEach((item) => {
+            if (!groupedUnits[item.category]) {
+              groupedUnits[item.category] = [];
+            }
+            groupedUnits[item.category].push(item.unit_name);
+          });
+          setBusinessUnits(groupedUnits);
+        }
+
+      } catch (error) {
+        console.error('Unexpected Error:', error);
+      } finally {
+        setIsAppLoading(false);
+      }
+    };
+
+    fetchData();
+
+    const channel = supabase
+      .channel('realtime-leads')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads'
+        },
+        async () => {
+          const { data } = await supabase
+            .from('leads')
+            .select('*');
+          setLeads(data || []);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleLeadSubmitted = () => {
     setIsModalOpen(false);
