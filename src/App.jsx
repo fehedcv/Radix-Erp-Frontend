@@ -62,6 +62,9 @@ import CreditSettlementApp from './pages/admin/CreditSettlementApp';
 import MasterLeadTrackerApp from './pages/admin/MasterLeadTrackerApp';
 import BusinessControlApp from './pages/admin/BusinessControlApp';
 
+// --- LOADER ---
+import GlobalLoader from './components/Loader';
+
 // --- PUSH NOTIFICATIONS ---
 import PushNotificationHandler from './components/PushNotificationHandler';
 import NotificationToast from './components/NotificationToast';
@@ -101,13 +104,15 @@ const AppContent = () => {
     isMountedRef.current = true;
 
     const restoreSession = async () => {
+      let userId = null;
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Error getting session on startup:', error);
-        }
+        if (error) console.error('Error getting session on startup:', error);
+
         if (session?.user) {
-          await fetchUserRole(session.user.id);
+          userId = session.user.id;
+          // Render immediately from cache — eliminates white screen on reload
+          restoreRoleFromCache(userId);
         } else if (isMountedRef.current) {
           setUserRole(null);
           setAuthUserId(null);
@@ -119,7 +124,13 @@ const AppContent = () => {
           setAuthUserId(null);
         }
       } finally {
+        // Always resolves fast (localStorage only) — no more white screen
         if (isMountedRef.current) setIsLoading(false);
+      }
+
+      // Refresh role from DB in background without blocking render
+      if (userId && isMountedRef.current) {
+        await fetchUserRole(userId).catch(() => {});
       }
     };
 
@@ -249,20 +260,22 @@ const AppContent = () => {
   };
 
   const fetchUserRole = async (userId) => {
-    const TIMEOUT_MS = 12000;
+    const TIMEOUT_MS = 10000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      console.warn('[fetchUserRole] Request timed out, falling back to cache');
+    }, TIMEOUT_MS);
+
     try {
-      const rolePromise = supabase
+      const { data, error } = await supabase
         .from('users')
         .select('role, full_name')
         .eq('id', userId)
-        .single();
+        .single()
+        .abortSignal(controller.signal);
 
-      const timer = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('timeout fetching role')), TIMEOUT_MS)
-      );
-
-      const result = await Promise.race([rolePromise, timer]);
-      const { data, error } = result || {};
+      clearTimeout(timeoutId);
 
       if (!isMountedRef.current) return;
 
@@ -281,20 +294,22 @@ const AppContent = () => {
         try {
           localStorage.setItem('vynx_user', JSON.stringify({
             id: userId,
-            role: role,
+            role,
             name: data.full_name
           }));
         } catch {} // eslint-disable-line no-empty
       }
     } catch (err) {
-      console.error('Error fetching user role:', err);
-      if (isMountedRef.current) {
+      clearTimeout(timeoutId);
+      if (!isMountedRef.current) return;
+      // AbortError = timeout — cache already restored by the setTimeout callback
+      if (err?.name !== 'AbortError') {
+        console.error('Error fetching user role:', err);
         restoreRoleFromCache(userId);
       }
     } finally {
-      if (isMountedRef.current) {
-        setIsLoading(false);
-      }
+      clearTimeout(timeoutId);
+      if (isMountedRef.current) setIsLoading(false);
     }
   };
 
@@ -321,7 +336,7 @@ const AppContent = () => {
     }
   }
 
-  if (isLoading) return null;
+  if (isLoading) return <GlobalLoader text="Loading..." />;
 
   return (
     <BrowserRouter>

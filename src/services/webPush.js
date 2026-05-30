@@ -8,8 +8,18 @@ let _isInitialized = false;
 let _currentToken = null;
 let _unsubscribe = null;
 
+const isBrave = async () => {
+  try {
+    return !!(navigator.brave && await navigator.brave.isBrave());
+  } catch {
+    return false;
+  }
+};
+
 /**
  * Initializes Firebase Cloud Messaging for web browsers.
+ * Skipped on Brave — Brave Shields block Google's FCM CDN causing the
+ * service worker to hang on install, which freezes the app.
  *
  * @param {function} showToast - toast callback({ title, body, data }) for foreground display
  */
@@ -17,6 +27,11 @@ export const initializeWebPush = async (showToast) => {
   if (_isInitialized) return;
 
   try {
+    if (await isBrave()) {
+      console.info('[WebPush] Skipping — Brave browser blocks FCM');
+      return;
+    }
+
     if (!('Notification' in window)) {
       console.warn('[WebPush] Browser does not support notifications');
       return;
