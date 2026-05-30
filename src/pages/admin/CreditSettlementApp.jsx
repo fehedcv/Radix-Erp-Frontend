@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   CheckCircle2, Search, Wallet, X, Loader2, User,
   Phone, Info, MapPin,
@@ -15,12 +15,14 @@ import Chart from 'react-apexcharts';
 import ApexCharts from 'apexcharts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { supabase } from '../../supabase/supabaseClient';
+import { useTheme } from '../../context/ThemeContext';
 
 // ─── Field map ─────────────────────────────────────────────────────────────────
 const mapWithdrawal = (w) => ({
   id: w.id,
   agentName: w.agent_name || '—',
   agentPhone: w.agent_phone || '',
+  agentAvatar: w.agent_avatar || '',
   amount: w.requested_credits || 0,
   status: w.status || 'pending',
   remarks: w.remarks || '',
@@ -53,7 +55,7 @@ const CreditSettlementApp = () => {
   const [isProcessing,  setIsProcessing]  = useState(false);
 
   // ── Theme context ─────────────────────────────────────────────────────────────
-  const { theme } = useOutletContext() || { theme: 'light' };
+  const { theme } = useTheme();
   const isLight = theme === 'light';
 
   const resolveUrl = (url) => {
@@ -357,7 +359,7 @@ const CreditSettlementApp = () => {
                 const commissionVal = item.commission || (item.totalAmount ? item.totalAmount * 0.10 : 0);
                 
                 return (
-                  <div key={item.ledgerId} className={`border rounded-3xl p-5 transition-all duration-200 flex flex-col group ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:border-[#81B398]' : 'bg-[#222938] border-white/10 hover:border-[#81B398]'}`}>
+                  <div key={item.ledgerId} className={`border rounded-3xl p-5 transition-all duration-200 flex flex-col group ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] hover:border-[#81B398]' : 'bg-[#131720] border-white/10 hover:border-[#81B398]'}`}>
                     
                     {/* Header */}
                     <div className="flex justify-between items-start gap-4 mb-4">
@@ -367,7 +369,7 @@ const CreditSettlementApp = () => {
                           <Briefcase size={10} className="text-[#81B398]"/> {item.businessUnit}
                         </p>
                       </div>
-                      <div className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center font-extrabold text-sm uppercase shrink-0 border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C]' : 'bg-[#131720] border-white/10 text-[#F4F5F7]'}`}>
+                      <div className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center font-extrabold text-sm uppercase shrink-0 border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C]' : 'bg-[#222938] border-white/10 text-[#F4F5F7]'}`}>
                         {item.agentAvatar ? (
                            <img src={resolveUrl(item.agentAvatar)} alt={item.agentName} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
                         ) : (
@@ -378,20 +380,16 @@ const CreditSettlementApp = () => {
                     </div>
 
                     {/* Info Grid */}
-                    <div className={`rounded-2xl p-4 border mb-4 flex-1 ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
-                      <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider mb-3">
-                        <span className={isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}>Agent</span>
-                        <span className={`text-right truncate max-w-[120px] ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{item.agentName}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider mb-3">
+                    <div className={`rounded-2xl p-4 border mb-4 flex-1 ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
+                      <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider mb-2.5">
                         <span className={isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}>Service</span>
-                        <span className={`text-right truncate max-w-[120px] text-[#81B398]`}>{item.service}</span>
+                        <span className={`text-right truncate max-w-[120px] ${isLight ? 'text-[#81B398]' : 'text-[#81B398]'}`}>{item.service}</span>
                       </div>
-                      <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider mb-3">
+                      <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider mb-2.5">
                         <span className={isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}>Admin Commission</span>
-                        <span className={`text-right font-extrabold ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>₹{commissionVal.toLocaleString()}</span>
+                        <span className="text-right font-extrabold">₹{commissionVal.toLocaleString()}</span>
                       </div>
-                      <div className={`flex justify-between items-center pt-3 border-t text-[10px] font-bold uppercase tracking-wider ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+                      <div className={`flex justify-between items-center pt-3 mt-3 border-t text-[10px] font-bold uppercase tracking-wider ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
                         <span className={isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}>Agent Credit</span>
                         <span className="text-sm font-extrabold text-[#81B398]">{item.agentCredit?.toLocaleString() ?? 'N/A'} CR</span>
                       </div>
@@ -451,16 +449,15 @@ const CreditSettlementApp = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
               {pendingPayouts.map(item => {
                 const rawDate = new Date(item.date);
-                const isValid = !isNaN(rawDate.getTime());
-                const displayDate = isValid ? rawDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : item.date;
+                const displayDate = !isNaN(rawDate.getTime()) ? rawDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : item.date;
 
                 return (
-                  <div key={item.id} className={`border rounded-3xl p-5 md:p-6 transition-all duration-200 flex flex-col h-full group ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:border-[#81B398]' : 'bg-[#222938] border-white/10 hover:border-[#81B398]'}`}>
+                  <div key={item.id} className={`border rounded-3xl p-5 md:p-6 transition-all duration-200 flex flex-col h-full group ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] hover:border-[#81B398]' : 'bg-[#131720] border-white/10 hover:border-[#81B398]'}`}>
                     <div className="flex justify-between items-start mb-5">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={`h-12 w-12 rounded-full overflow-hidden flex items-center justify-center font-extrabold text-sm uppercase shrink-0 border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C]' : 'bg-[#131720] border-white/5 text-[#F4F5F7]'}`}>
+                        <div className={`h-12 w-12 rounded-full overflow-hidden flex items-center justify-center font-extrabold text-sm uppercase shrink-0 border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C]' : 'bg-[#222938] border-white/5 text-[#F4F5F7]'}`}>
                           {item.agentAvatar ? (
-                             <img src={resolveUrl(item.agentAvatar)} alt={item.agentName} className="w-full h-full object-cover rounded-full" />
+                             <img src={resolveUrl(item.agentAvatar)} alt={item.agentName} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
                           ) : (
                              <span>{item.agentName?.charAt(0) || '?'}</span>
                           )}
@@ -473,7 +470,7 @@ const CreditSettlementApp = () => {
                       </div>
                     </div>
 
-                    <div className={`p-4 rounded-2xl border mb-5 flex-1 ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/10'}`}>
+                    <div className={`p-4 rounded-2xl border mb-5 flex-1 ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-transparent'}`}>
                       <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider mb-2.5">
                         <span className={isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}>Claim Amount</span>
                         <span className="text-lg font-extrabold">{item.amount?.toLocaleString()} <span className="text-[10px]">CR</span></span>
@@ -898,8 +895,8 @@ const SkeletonLoader = ({ isLight }) => (
     </div>
 
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className={`h-28 rounded-3xl border ${i===3 ? 'col-span-2' : ''} ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`} />
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className={`h-28 rounded-3xl border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`} />
       ))}
     </div>
 
