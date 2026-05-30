@@ -77,6 +77,7 @@ const AppContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const isMountedRef = useRef(true);
   const userRoleRef = useRef(null);
+  const isFetchingRoleRef = useRef(false);
   const { theme } = useTheme();
   const isNative = Capacitor.isNativePlatform();
 
@@ -103,140 +104,58 @@ const AppContent = () => {
   useEffect(() => {
     isMountedRef.current = true;
 
-    const restoreSession = async () => {
-      let userId = null;
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) console.error('Error getting session on startup:', error);
-
-        if (session?.user) {
-          userId = session.user.id;
-          // Render immediately from cache — eliminates white screen on reload
-          restoreRoleFromCache(userId);
-        } else if (isMountedRef.current) {
-          setUserRole(null);
-          setAuthUserId(null);
-        }
-      } catch (err) {
-        console.error('Failed to restore Supabase session:', err);
-        if (isMountedRef.current) {
-          setUserRole(null);
-          setAuthUserId(null);
-        }
-      } finally {
-        // Always resolves fast (localStorage only) — no more white screen
-        if (isMountedRef.current) setIsLoading(false);
+    // Render from cache immediately — eliminates white screen on reload
+    try {
+      const cached = JSON.parse(localStorage.getItem('vynx_user') || 'null');
+      if (cached?.id && cached?.role) {
+        userRoleRef.current = cached.role;
+        setUserRole(cached.role);
+        setAuthUserId(cached.id);
       }
+    } catch {} // eslint-disable-line no-empty
 
-      // Refresh role from DB in background without blocking render
-      if (userId && isMountedRef.current) {
-        await fetchUserRole(userId).catch(() => {});
-      }
-    };
+    // onAuthStateChange is the single driver for all auth state.
+    // Supabase internally handles token auto-refresh, visibility, and online events
+    // — we must not call getSession()/refreshSession() ourselves or we race the lock.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMountedRef.current) return;
+      console.log('[auth] event:', event, session?.user?.id ?? 'no user');
 
-    restoreSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, payload) => {
-      try {
-        switch (event) {
-          case 'SIGNED_IN':
-            if (payload?.session?.user) {
-              await fetchUserRole(payload.session.user.id);
-            } else {
-              const { data: { session } } = await supabase.auth.getSession();
-              if (session?.user) await fetchUserRole(session.user.id);
-            }
-            break;
-          case 'TOKEN_REFRESHED':
-            try {
-              const { data: { session }, error } = await supabase.auth.getSession();
-              if (error) console.error('Error getting session after token refresh:', error);
-              if (session?.user) await fetchUserRole(session.user.id);
-            } catch (e) {
-              console.error('TOKEN_REFRESHED handling failed:', e);
-            }
-            break;
-          case 'SIGNED_OUT':
-            if (isMountedRef.current) {
-              userRoleRef.current = null;
-              setUserRole(null);
-              setAuthUserId(null);
-              setIsLoading(false);
-              localStorage.removeItem('vynx_user');
-            }
-            break;
-          case 'USER_UPDATED':
-            if (payload?.user?.id) await fetchUserRole(payload.user.id).catch(() => {});
-            break;
-          default:
-            await restoreSession();
-        }
-      } catch (e) {
-        console.error('Error in auth state handler:', e);
-      }
-    });
-
-    // Periodic session validation (every 5 minutes)
-    const intervalId = setInterval(async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Periodic session check failed:', error);
-          return;
-        }
-        if (session?.user && !userRoleRef.current) {
-          await fetchUserRole(session.user.id).catch(() => {});
-        }
-      } catch (e) {
-        console.error('Error during periodic session validation:', e);
-      }
-    }, 5 * 60 * 1000);
-
-    const handleVisibility = async () => {
-      if (document.visibilityState === 'visible') {
-        try {
-          const { data: { session }, error } = await supabase.auth.getSession();
-          if (error) console.error('visibilitychange getSession error:', error);
+      switch (event) {
+        case 'INITIAL_SESSION':
           if (session?.user) {
-            const now = Math.floor(Date.now() / 1000);
-            const expiresIn = (session.expires_at ?? 0) - now;
-            if (expiresIn < 600) {
-              const { error: refreshErr } = await supabase.auth.refreshSession();
-              if (refreshErr) console.warn('Token refresh on visibility failed:', refreshErr);
-            }
+            await fetchUserRole(session.user.id).catch(() => {});
+          } else {
+            setUserRole(null);
+            setAuthUserId(null);
+          }
+          if (isMountedRef.current) setIsLoading(false);
+          break;
+
+        case 'SIGNED_IN':
+        case 'TOKEN_REFRESHED':
+        case 'USER_UPDATED':
+          if (session?.user) {
             await fetchUserRole(session.user.id).catch(() => {});
           }
-        } catch (e) {
-          console.error('Error on visibilitychange handler:', e);
-        }
-      }
-    };
+          break;
 
-    const handleOnline = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) console.error('online getSession error:', error);
-        if (session?.user) {
-          const now = Math.floor(Date.now() / 1000);
-          if (((session.expires_at ?? 0) - now) < 600) {
-            await supabase.auth.refreshSession().catch(() => {});
-          }
-          await fetchUserRole(session.user.id).catch(() => {});
-        }
-      } catch (e) {
-        console.error('Error on online handler:', e);
-      }
-    };
+        case 'SIGNED_OUT':
+          userRoleRef.current = null;
+          setUserRole(null);
+          setAuthUserId(null);
+          setIsLoading(false);
+          localStorage.removeItem('vynx_user');
+          break;
 
-    document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('online', handleOnline);
+        default:
+          break;
+      }
+    });
 
     return () => {
       isMountedRef.current = false;
       try { subscription?.unsubscribe(); } catch {} // eslint-disable-line no-empty
-      clearInterval(intervalId);
-      document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('online', handleOnline);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -260,22 +179,36 @@ const AppContent = () => {
   };
 
   const fetchUserRole = async (userId) => {
-    const TIMEOUT_MS = 10000;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-      console.warn('[fetchUserRole] Request timed out, falling back to cache');
-    }, TIMEOUT_MS);
+    if (isFetchingRoleRef.current) {
+      console.log('[auth] fetchUserRole skipped — already in progress');
+      return;
+    }
+    console.log('[auth] fetchUserRole start');
+    isFetchingRoleRef.current = true;
 
     try {
-      const { data, error } = await supabase
+      const TIMEOUT_MS = 10000;
+      const queryPromise = supabase
         .from('users')
         .select('role, full_name')
         .eq('id', userId)
-        .single()
-        .abortSignal(controller.signal);
+        .single();
 
-      clearTimeout(timeoutId);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('FETCH_TIMEOUT')), TIMEOUT_MS)
+      );
+
+      let data, error;
+      try {
+        ({ data, error } = await Promise.race([queryPromise, timeoutPromise]));
+      } catch (raceErr) {
+        if (raceErr?.message === 'FETCH_TIMEOUT') {
+          console.warn('[fetchUserRole] Request timed out, falling back to cache');
+          restoreRoleFromCache(userId);
+          return;
+        }
+        throw raceErr;
+      }
 
       if (!isMountedRef.current) return;
 
@@ -300,15 +233,11 @@ const AppContent = () => {
         } catch {} // eslint-disable-line no-empty
       }
     } catch (err) {
-      clearTimeout(timeoutId);
       if (!isMountedRef.current) return;
-      // AbortError = timeout — cache already restored by the setTimeout callback
-      if (err?.name !== 'AbortError') {
-        console.error('Error fetching user role:', err);
-        restoreRoleFromCache(userId);
-      }
+      console.error('Error fetching user role:', err);
+      restoreRoleFromCache(userId);
     } finally {
-      clearTimeout(timeoutId);
+      isFetchingRoleRef.current = false;
       if (isMountedRef.current) setIsLoading(false);
     }
   };

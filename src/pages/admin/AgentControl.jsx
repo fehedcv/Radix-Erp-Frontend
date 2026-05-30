@@ -29,7 +29,7 @@ const mapLead = (l) => ({
   id: l.id,
   clientName: l.customer_name || '—',
   // Attempt to grab the business unit name, fallback to service if not directly joined
-  businessUnit: l.business_unit_name || l.business_units?.business_name || l.service || l.business_unit_services?.service_name || 'Unknown Unit',
+  businessUnit: l.business_name || l.business_units?.business_name || l.service || l.business_unit_services?.service_name || 'Unknown Unit',
   status: l.status || 'pending',
   agentId: l.source_user_id,
 });
