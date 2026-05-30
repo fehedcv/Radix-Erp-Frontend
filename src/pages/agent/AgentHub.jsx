@@ -462,7 +462,7 @@ const AgentHub = ({ onLogout }) => {
             <div className="max-w-[1400px] mx-auto p-4 lg:p-8">
 
               <motion.div
-                key={`${location.pathname}-${theme}`}
+                key={`${location.pathname}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
