@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Trash2, Save, Loader2, Settings, Briefcase, 
   MapPin, Mail, Phone, Globe, Camera, X, UploadCloud, 
-  Instagram, Facebook, Linkedin, Share2, AlertTriangle, User
+  Instagram, Facebook, Linkedin, Share2, AlertTriangle, User , Image
 } from "lucide-react";
 
 import { supabase } from "../../supabase/supabaseClient";
@@ -528,7 +528,7 @@ const PortfolioManager = () => {
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all rounded-xl" />
                       <button
                         onClick={() => removeGalleryImage(i)}
-                        className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-lg text-[#F0524F] opacity-0 group-hover:opacity-100 transition-all shadow-sm hover:bg-white hover:scale-110"
+                        className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-lg text-[#F0524F] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-sm hover:bg-white hover:scale-110"
                       >
                         <X size={14} />
                       </button>

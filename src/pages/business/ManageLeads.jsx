@@ -33,10 +33,13 @@ const ManageLeads = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   // --- API CALLS ---
   const fetchLeads = async () => {
+   if (leads.length === 0) {
     setLoading(true);
+  }
     try {
       const { data, error } = await supabase
         .from('leads')
@@ -74,16 +77,33 @@ const ManageLeads = () => {
       }));
 
       setLeads(mappedLeads);
+
+sessionStorage.setItem(
+  "manageLeads",
+  JSON.stringify(mappedLeads)
+);
     } catch (err) {
       console.error('Failed to load leads:', err);
     } finally {
       setLoading(false);
+      setHasLoaded(true);
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
+  const cachedLeads = sessionStorage.getItem("manageLeads");
+
+  if (cachedLeads) {
+    setLeads(JSON.parse(cachedLeads));
+    setLoading(false);
+    setHasLoaded(true);
+
+    // Fetch latest data silently
     fetchLeads();
-  }, []);
+  } else {
+    fetchLeads();
+  }
+}, []);
 
   // --- MEMOIZED DERIVATIONS ---
   const summary = useMemo(() => {
@@ -191,7 +211,7 @@ const ManageLeads = () => {
   };
 
   // SKELETON LOADER
-  if (loading && leads.length === 0) {
+  if (!hasLoaded && loading) {
     return (
       <div className="max-w-[1400px] mx-auto space-y-6 lg:space-y-8 pb-16 font-['Plus_Jakarta_Sans',sans-serif] mt-2 lg:mt-4 px-4 lg:px-0">
         <div className="pt-2 mb-6">

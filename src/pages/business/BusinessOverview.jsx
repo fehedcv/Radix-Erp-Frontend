@@ -12,8 +12,13 @@ import { supabase } from '../../supabase/supabaseClient';
 import { useTheme } from '../../context/ThemeContext';
 
 const BusinessOverview = () => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cachedData = sessionStorage.getItem("businessOverview");
+
+const [data, setData] = useState(
+  cachedData ? JSON.parse(cachedData) : null
+);
+
+const [loading, setLoading] = useState(!cachedData);
   const { theme } = useTheme();
   const isLight = theme === 'light';
 
@@ -25,9 +30,15 @@ const BusinessOverview = () => {
 
   useEffect(() => {
     const loadDashboard = async () => {
-      setLoading(true);
+      if (!data) {
+  setLoading(true);
+}
       try {
         const { data: rpcData, error } = await supabase.rpc('get_business_overview');
+        sessionStorage.setItem(
+  "businessOverview",
+  JSON.stringify(rpcData)
+);
         if (error) {
           console.error('Failed to load business overview:', error);
           return;
@@ -52,9 +63,13 @@ const BusinessOverview = () => {
 
   const { total, verified, in_progress, completion_rate, trend } = safeData;
 
+  // Ensure arrays are never empty to prevent ApexCharts axis crashing
+  const trendLabels = trend?.labels?.length ? trend.labels : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const trendData = trend?.data?.length ? trend.data : [0, 0, 0, 0, 0, 0, 0];
+
   // Chart Configurations mapped to Earth-Tech Palette
   const areaChartConfig = useMemo(() => ({
-    series: [{ name: 'Leads Received', data: trend.data.length ? trend.data : [0, 0, 0, 0, 0, 0, 0] }],
+    series: [{ name: 'Leads Received', data: trendData }],
     options: {
       chart: { 
         type: 'area', 
@@ -62,7 +77,16 @@ const BusinessOverview = () => {
         fontFamily: 'Plus Jakarta Sans', 
         zoom: { enabled: false }, 
         background: 'transparent', 
-        parentHeightOffset: 0 
+        parentHeightOffset: 0,
+        animations: {
+          enabled: true,
+          easing: 'easeinout',
+          speed: 800,
+          dynamicAnimation: {
+            enabled: true,
+            speed: 350
+          }
+        }
       },
       colors: ['#DAC18A'], // Earth-Tech Sand
       stroke: { curve: 'smooth', width: 3 },
@@ -72,7 +96,7 @@ const BusinessOverview = () => {
       },
       dataLabels: { enabled: false },
       xaxis: {
-        categories: trend.labels,
+        categories: trendLabels,
         labels: { style: { colors: isLight ? '#718096' : '#9CA3AF', fontSize: '12px', fontFamily: 'Plus Jakarta Sans', fontWeight: 500 } },
         axisBorder: { show: false },
         axisTicks: { show: false },
@@ -90,7 +114,7 @@ const BusinessOverview = () => {
       },
       tooltip: { theme: isLight ? 'light' : 'dark' },
     },
-  }), [trend, isLight]);
+  }), [trendData, trendLabels, isLight]);
 
   const radialConfig = {
     series: [completion_rate],
@@ -126,7 +150,7 @@ const BusinessOverview = () => {
         {/* Top Row: Metric Cards Skeleton */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8">
           {[1, 2, 3].map(i => (
-            <div key={i} className={`p-6 rounded-2xl border flex flex-col justify-between h-[140px] animate-pulse min-w-0 ${surfaceClass}`}>
+            <div key={i} className={`p-6 rounded-2xl border flex flex-col justify-between h-[140px] lg:h-[160px] animate-pulse min-w-0 ${surfaceClass}`}>
               <div className="flex justify-between items-start mb-4">
                 <div className={`h-4 w-20 rounded-md ${pulseClass}`} />
                 <div className={`h-8 w-8 rounded-lg ${pulseClass}`} />
@@ -187,20 +211,43 @@ const BusinessOverview = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         
         {/* Left Side: Trend Chart (Col Span 2) */}
-        <div className={`lg:col-span-2 min-w-0 p-6 lg:p-8 rounded-2xl border transition-all duration-300 flex flex-col ${surfaceClass}`}>
-          <div className="flex justify-between items-center mb-6 shrink-0">
-            <h3 className={`text-xl font-bold tracking-tight ${textPrimary}`}>Activity</h3>
-            <div className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors border ${
-              isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/5 text-[#9CA3AF]'
-            }`}>
-              <TrendingUp size={14} /> Earning Trends
-            </div>
-          </div>
-          {/* Strictly constrained height block for ApexCharts */}
-          <div className="w-full h-[260px] overflow-hidden">
-            <Chart options={areaChartConfig.options} series={areaChartConfig.series} type="area" height="100%" width="100%" />
-          </div>
-        </div>
+    <div className={`lg:col-span-2 min-w-0 p-6 lg:p-8 rounded-2xl border transition-all duration-300 flex flex-col ${surfaceClass}`}>
+  <div className="flex justify-between items-center mb-6 shrink-0">
+    <h3 className={`text-xl font-bold tracking-tight ${textPrimary}`}>Activity</h3>
+    <div className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors border ${
+      isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/5 text-[#9CA3AF]'
+    }`}>
+      <TrendingUp size={14} /> Earning Trends
+    </div>
+  </div>
+  
+  {/* Removed overflow-hidden to prevent clipping the line at the bottom when values are 0 */}
+  <div className="w-full h-[260px]">
+    <Chart 
+      key={`trend-chart-${isLight ? 'light' : 'dark'}`} 
+      options={{
+        ...areaChartConfig.options,
+        stroke: { 
+          ...areaChartConfig.options?.stroke,
+          show: true, 
+          curve: 'smooth', 
+          width: 3 
+        },
+        markers: { 
+          size: 5, 
+          colors: ['#DAC18A'],
+          strokeColors: isLight ? '#FFFFFF' : '#131720',
+          strokeWidth: 2,
+          hover: { size: 7 }
+        }
+      }} 
+      series={areaChartConfig.series} 
+      type="area" 
+      height="100%" 
+      width="100%" 
+    />
+  </div>
+</div>
 
         {/* Right Side: Success Rate Radial Highlight (Col Span 1) */}
         <div className={`lg:col-span-1 min-w-0 p-6 lg:p-8 rounded-2xl border flex flex-col transition-all duration-300 ${surfaceClass}`}>
@@ -215,7 +262,14 @@ const BusinessOverview = () => {
           </div>
           {/* Strictly constrained flex container for Radial Chart */}
           <div className="flex-1 w-full h-[200px] flex items-center justify-center overflow-hidden -my-2">
-            <Chart options={radialConfig.options} series={radialConfig.series} type="radialBar" height="100%" width="100%" />
+            <Chart 
+              key={`radial-chart-${isLight ? 'light' : 'dark'}`}
+              options={radialConfig.options} 
+              series={radialConfig.series} 
+              type="radialBar" 
+              height="100%" 
+              width="100%" 
+            />
           </div>
           <div className="w-full mt-auto pt-2 shrink-0 flex justify-center">
             <span className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest ${

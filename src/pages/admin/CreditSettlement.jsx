@@ -31,6 +31,11 @@ const mapWithdrawal = (w) => ({
   date: w.requested_on || '—',
   userId: w.user_id,
 });
+// Module Cache
+let creditSettlementCache = null;
+let creditSettlementCacheTime = 0;
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 const CreditSettlement = () => {
@@ -66,6 +71,21 @@ const CreditSettlement = () => {
 
   // ── Single API fetch ─────────────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
+    if (
+  creditSettlementCache &&
+  Date.now() - creditSettlementCacheTime < CACHE_DURATION
+) {
+  setLeads(creditSettlementCache.leads);
+  setWithdrawals(creditSettlementCache.withdrawals);
+
+  setLoadingLeads(false);
+  setLoadingWD(false);
+
+  return;
+
+} 
+
+
     setLoadingLeads(true);
     setLoadingWD(true);
     setErrorLeads(null);
@@ -82,31 +102,43 @@ const CreditSettlement = () => {
 
       const payload = data || {};
 
-      setLeads((payload.paid_leads || []).map(l => ({
-        ledgerId: l.ledger_id,
-        id: l.lead_id,
-        clientName: l.client_name,
-        clientPhone: l.client_phone,
-        clientAddress: l.client_address,
-        businessUnit: l.business_unit,
-        service: l.service,
-        description: l.description,
-        status: l.lead_status,
-        agentName: l.agent_name,
-        agentId: l.agent_id,
-        agentAvatar: l.agent_avatar || '',
-        agentEmail: l.agent_email || '',
-        agentPhone: l.agent_phone,
-        date: l.date,
-        credits: l.credits,
-        remarks: l.ledger_remarks,
-        totalAmount: l.total_sale_amount,
-        commission: l.commission_amount,
-        agentCredit: l.agent_credit,
-        creditStatus: (l.credit_status || 'pending').toLowerCase(),
-      })));
+      const leadsData = (payload.paid_leads || []).map(l => ({
+  ledgerId: l.ledger_id,
+  id: l.lead_id,
+  clientName: l.client_name,
+  clientPhone: l.client_phone,
+  clientAddress: l.client_address,
+  businessUnit: l.business_unit,
+  service: l.service,
+  description: l.description,
+  status: l.lead_status,
+  agentName: l.agent_name,
+  agentId: l.agent_id,
+  agentAvatar: l.agent_avatar || '',
+  agentEmail: l.agent_email || '',
+  agentPhone: l.agent_phone,
+  date: l.date,
+  credits: l.credits,
+  remarks: l.ledger_remarks,
+  totalAmount: l.total_sale_amount,
+  commission: l.commission_amount,
+  agentCredit: l.agent_credit,
+  creditStatus: (l.credit_status || 'pending').toLowerCase(),
+}));
 
-      setWithdrawals((payload.withdrawals || []).map(mapWithdrawal));
+
+
+const withdrawalData =
+(payload.withdrawals || []).map(mapWithdrawal);
+
+setLeads(leadsData);
+setWithdrawals(withdrawalData);
+creditSettlementCache = {
+  leads: leadsData,
+  withdrawals: withdrawalData,
+};
+
+creditSettlementCacheTime = Date.now();
     } catch (err) {
       console.error('Error fetching settlement data:', err);
       setErrorLeads('Failed to load settlement data.');
@@ -130,6 +162,8 @@ const CreditSettlement = () => {
         p_admin_remarks: settleRemarks || null,
       });
       if (error) throw error;
+      creditSettlementCache = null;
+creditSettlementCacheTime = 0;
       closeAllModals();
       await fetchAll();
     } catch (err) {
@@ -154,6 +188,8 @@ const CreditSettlement = () => {
         alert(error.message || 'Failed to approve withdrawal. Check permissions.');
         return;
       }
+      creditSettlementCache = null;
+creditSettlementCacheTime = 0;
 
       await fetchAll();
       closeAllModals();
@@ -402,10 +438,23 @@ const CreditSettlement = () => {
                   </div>
 
                   <div className={`p-4 rounded-xl border mb-6 ${isLight ? 'bg-[#81B398]/10 border-[#81B398]/20' : 'bg-[#81B398]/5 border-[#81B398]/10'}`}>
-                    <div className="flex justify-between items-center mb-3">
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#48477A]' : 'text-[#9CA3AF]'}`}>Admin Comm. (10%)</span>
-                      <span className="text-xs font-bold">₹{(item.totalAmount * 0.10).toLocaleString()}</span>
-                    </div>
+                   <div className="flex justify-between items-center mb-3">
+  <span
+    className={`text-[10px] font-bold uppercase tracking-wider ${
+      isLight ? 'text-[#48477A]' : 'text-[#9CA3AF]'
+    }`}
+  >
+    Admin Comm. ({item.commission || 0}%)
+  </span>
+
+  <span className="text-xs font-bold">
+    ₹
+    {(
+      (item.totalAmount || 0) *
+      ((item.commission || 0) / 100)
+    ).toLocaleString()}
+  </span>
+</div>
                     <div className="flex justify-between items-center pt-3 border-t" style={{ borderColor: isLight ? 'rgba(129, 179, 152, 0.3)' : 'rgba(129, 179, 152, 0.1)' }}>
                       <span className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
                         <Wallet size={12} className="text-[#81B398]" /> Agent Credit
@@ -661,8 +710,9 @@ const CreditSettlement = () => {
                            </div>
                            <div className={`px-4 py-2 rounded-lg border text-center ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-transparent'}`}>
                              <p className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary}`}>Date</p>
-                             <p className="text-sm font-bold truncate max-w-[150px]">{selectedItem.date}</p>
-                           </div>
+<p className="text-sm font-bold truncate max-w-[150px]">
+  {selectedItem.date?.split('T')[0] || '—'}
+</p>                           </div>
                          </div>
                       </div>
 
@@ -743,13 +793,46 @@ const CreditSettlement = () => {
                              Financials
                           </h5>
                           <div className="space-y-2">
-                            <InfoItem label="Total Sale Amount" value={`₹${selectedItem.totalAmount?.toLocaleString() ?? '0'}`} textPrimary={textPrimary} textSecondary={textSecondary} />
-                            <InfoItem label="Admin Commission (10%)" value={`₹${selectedItem.totalAmount ? (selectedItem.totalAmount * 0.10).toLocaleString() : '0'}`} textPrimary={textPrimary} textSecondary={textSecondary} />
-                            <div className="pt-3 mt-3 border-t flex justify-between items-center" style={{ borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' }}>
-                               <span className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>Agent Credit</span>
-                               <span className="text-xl font-extrabold text-[#81B398]">{selectedItem.agentCredit?.toLocaleString() ?? '0'} CR</span>
-                            </div>
-                          </div>
+  <InfoItem
+    label="Total Sale Amount"
+    value={`₹${selectedItem.totalAmount?.toLocaleString() ?? '0'}`}
+    textPrimary={textPrimary}
+    textSecondary={textSecondary}
+  />
+
+  <InfoItem
+    label={`Admin Commission (${selectedItem?.commission || 0}%)`}
+    value={`₹${
+      selectedItem.totalAmount
+        ? (
+            selectedItem.totalAmount *
+            ((selectedItem?.commission || 0) / 100)
+          ).toLocaleString()
+        : '0'
+    }`}
+    textPrimary={textPrimary}
+    textSecondary={textSecondary}
+  />
+
+  <div
+    className="pt-3 mt-3 border-t flex justify-between items-center"
+    style={{
+      borderColor: isLight
+        ? '#E2E8F0'
+        : 'rgba(255,255,255,0.05)'
+    }}
+  >
+    <span
+      className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}
+    >
+      Agent Credit
+    </span>
+
+    <span className="text-xl font-extrabold text-[#81B398]">
+      {selectedItem.agentCredit?.toLocaleString() ?? '0'} CR
+    </span>
+  </div>
+</div>
                         </section>
                       </div>
                     </div>
@@ -964,7 +1047,7 @@ const ChartCard = ({ title, subtitle, children, isLight, surfaceClass, className
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+      initial={{y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
       className={`min-w-0 p-6 lg:p-8 rounded-2xl border flex flex-col transition-all duration-300 ${surfaceClass} ${className || ''}`}
     >
       <div className="mb-6 shrink-0">

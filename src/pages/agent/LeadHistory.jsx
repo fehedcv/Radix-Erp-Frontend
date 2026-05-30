@@ -60,7 +60,8 @@ const LeadHistory = () => {
           .from('leads')
           .select(`
             id, customer_name, status, service_id, created_at, credit_status,
-            business_units ( business_name )
+            business_units ( business_name ),
+            business_unit_services ( service_name )
           `)
           .order('created_at', { ascending: false });
 
@@ -73,6 +74,7 @@ const LeadHistory = () => {
           id: lead.id,
           clientName: lead.customer_name,
           status: lead.status,
+          service: lead.business_unit_services?.service_name || 'General Service',
           service_id: lead.service_id,
           date: new Date(lead.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           creditStatus: lead.credit_status,
@@ -191,7 +193,7 @@ const LeadHistory = () => {
       </div>
 
       <div className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 lg:p-6 rounded-xl border transition-all ${
-        isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/5'
+        isLight ? 'bg-[#F4F5F7] border-red-500' : 'bg-[#131720] border-red-500'
       }`}>
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
           isLight ? 'bg-[#FFFFFF] border border-[#E2E8F0]' : 'bg-[#222938] border border-white/5'
@@ -201,7 +203,7 @@ const LeadHistory = () => {
         <div>
           <h5 className="text-sm font-bold tracking-tight">Payout Information</h5>
           <p className={`text-xs mt-1 leading-relaxed ${textSecondary}`}>
-            Credits are only added to your wallet <strong>after</strong> the lead is officially marked as <span className="font-bold text-[#81B398]">Completed</span>.
+            Credits are only added to your wallet <strong>after</strong> the lead is officially marked as <span className="font-bold text-[#81B398]">Completed Within 24 Hours</span>.
           </p>
         </div>
       </div>
@@ -269,84 +271,110 @@ const LeadHistory = () => {
 
       {/* 4. LIST (Horizontal Scannable Rows) */}
       <div className="space-y-4">
-        {filteredLeads.length ? filteredLeads.map((lead, i) => {
-          const status = normalizeStatus(lead.status);
-          const colorHex = getStatusColor(status);
-          
-          return (
-            <motion.div
-              key={lead.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className={`rounded-2xl border p-5 lg:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6 transition-all duration-300 group ${
-                isLight 
-                ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:shadow-sm hover:border-[#E2E8F0]' 
-                : 'bg-[#222938] border-white/5 hover:bg-[#2A3241]'
-              }`}
-            >
-              {/* Left: Avatar & Identity */}
-              <div className="flex items-center gap-5 lg:w-[35%]">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 border transition-colors ${
-                  isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/5 text-[#9CA3AF]'
-                }`}>
-                  <User size={20} />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-base font-bold tracking-tight truncate mb-1">{lead.clientName}</h3>
-     
-                </div>
-              </div>
-
-              {/* Middle: Details (Business & Date) */}
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 lg:w-[40%]">
-                <div className="flex items-center gap-3">
-                  <div className={`p-1.5 rounded-md ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
-                    <Building2 size={14} className={textSecondary} />
-                  </div>
-                  <span className={`text-sm font-medium truncate ${textSecondary}`}>{lead.businessUnit}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className={`p-1.5 rounded-md ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
-                    <Calendar size={14} className={textSecondary} />
-                  </div>
-                  <span className={`text-sm font-medium shrink-0 ${textSecondary}`}>{lead.date}</span>
-                </div>
-              </div>
-
-              {/* Right: Status & Wallet */}
-              <div className="flex items-center gap-4 lg:w-[25%] lg:justify-end pt-4 lg:pt-0 border-t lg:border-0 border-inherit" style={{ borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' }}>
-                {/* Status Pill */}
-                <span 
-                  className="px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider border"
-                  style={{ backgroundColor: `${colorHex}15`, color: colorHex, borderColor: `${colorHex}30` }}
-                >
-                  {status}
-                </span>
-
-                {/* Wallet Status */}
-                <div className={`px-3 py-1.5 rounded-md border flex items-center gap-1.5 ${
-                  lead.creditStatus === "credited" 
-                  ? 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20' 
-                  : (isLight ? 'bg-[#F4F5F7] text-[#718096] border-[#E2E8F0]' : 'bg-[#131720] text-[#9CA3AF] border-white/5')
-                }`}>
-                  {lead.creditStatus === "credited" ? <CheckCircle2 size={14} /> : <Clock size={14} />}
-                  <span className="text-[11px] font-bold uppercase tracking-wider">
-                    {/* {console.log(`Credit status current : ${lead.creditStatus}`)} */}
-                    {lead.creditStatus === "credited" ? "Settled" : "Pending"}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          );
-        }) : (
-          <div className={`col-span-full py-20 text-center rounded-2xl border transition-all ${surfaceClass}`}>
-            <Activity size={40} className={`mx-auto mb-4 opacity-30 ${textSecondary}`} />
-            <p className={`text-sm font-semibold mb-1 ${textPrimary}`}>No Lead History Found</p>
-            <p className={`text-xs ${textSecondary}`}>No referrals match your current filters.</p>
+  {filteredLeads.length ? filteredLeads.map((lead, i) => {
+    const status = normalizeStatus(lead.status);
+    const colorHex = getStatusColor(status);
+    
+    return (
+      <motion.div
+        key={lead.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: i * 0.05 }}
+        className={`rounded-2xl border p-5 lg:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6 transition-all duration-300 group ${
+          isLight 
+          ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:shadow-sm hover:border-[#E2E8F0]' 
+          : 'bg-[#222938] border-white/5 hover:bg-[#2A3241]'
+        }`}
+      >
+        {/* Left: Avatar & Identity */}
+        <div className="flex items-center gap-5 lg:w-[35%]">
+          <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 border transition-colors ${
+            isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/5 text-[#9CA3AF]'
+          }`}>
+            <User size={20} />
           </div>
-        )}
-      </div>
+          <div className="min-w-0 flex flex-col items-start gap-1">
+            <h3 className="text-base font-bold tracking-tight truncate">{lead.clientName}</h3>
+            
+            {/* Added Service Label */}
+            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
+              isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/5 text-[#9CA3AF]'
+            }`}>
+              {lead.service}
+            </span>
+          </div>
+        </div>
+
+        {/* Middle: Details (Business & Date) */}
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 lg:w-[40%]">
+          <div className="flex items-center gap-3">
+            <div className={`p-1.5 rounded-md ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
+              <Building2 size={14} className={textSecondary} />
+            </div>
+            <span className={`text-sm font-medium truncate ${textSecondary}`}>{lead.businessUnit}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className={`p-1.5 rounded-md ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
+              <Calendar size={14} className={textSecondary} />
+            </div>
+            <span className={`text-sm font-medium shrink-0 ${textSecondary}`}>{lead.date}</span>
+          </div>
+        </div>
+
+        {/* Right: Status & Wallet */}
+        <div className="flex lg:w-[25%] lg:justify-end pt-4 lg:pt-0 border-t lg:border-0 border-inherit" style={{ borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' }}>
+          
+          {/* Combined Status Card */}
+          <div className={`flex items-center gap-4 p-3 rounded-xl border ${
+            isLight ? 'bg-[#F4F5F7]/50 border-[#E2E8F0]' : 'bg-[#131720]/50 border-white/5'
+          }`}>
+            
+            {/* Lead Status */}
+            <div className="flex flex-col gap-1.5 min-w-[90px]">
+              <span className={`text-[10px] font-semibold uppercase tracking-wider pl-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                Lead Status
+              </span>
+              <span 
+                className="px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider border text-center"
+                style={{ backgroundColor: `${colorHex}15`, color: colorHex, borderColor: `${colorHex}30` }}
+              >
+                {status}
+              </span>
+            </div>
+
+            {/* Vertical Divider */}
+            <div className={`w-px h-10 ${isLight ? 'bg-[#E2E8F0]' : 'bg-white/10'}`}></div>
+
+            {/* Credit Status */}
+            <div className="flex flex-col gap-1.5 min-w-[90px]">
+              <span className={`text-[10px] font-semibold uppercase tracking-wider pl-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                Credit Status
+              </span>
+              <div className={`px-3 py-1.5 rounded-md border flex items-center justify-center gap-1.5 ${
+                lead.creditStatus === "credited" 
+                ? 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20' 
+                : (isLight ? 'bg-[#FFFFFF] text-[#718096] border-[#E2E8F0]' : 'bg-[#222938] text-[#9CA3AF] border-white/5')
+              }`}>
+                {lead.creditStatus === "credited" ? <CheckCircle2 size={14} /> : <Clock size={14} />}
+                <span className="text-[11px] font-bold uppercase tracking-wider">
+                  {lead.creditStatus === "credited" ? "Settled" : "Pending"}
+                </span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </motion.div>
+    );
+  }) : (
+    <div className={`col-span-full py-20 text-center rounded-2xl border transition-all ${surfaceClass}`}>
+      <Activity size={40} className={`mx-auto mb-4 opacity-30 ${textSecondary}`} />
+      <p className={`text-sm font-semibold mb-1 ${textPrimary}`}>No Lead History Found</p>
+      <p className={`text-xs ${textSecondary}`}>No referrals match your current filters.</p>
+    </div>
+  )}
+</div>
     </div>
   );
 };

@@ -40,6 +40,9 @@ const BusinessDetail = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
+  // Full screen image state
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const isLight = theme === 'light';
 
@@ -341,7 +344,13 @@ const BusinessDetail = () => {
             {unit.gallery?.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 h-full overflow-y-auto no-scrollbar">
                 {unit.gallery.map((img, i) => (
-                  <img key={i} src={img} alt="gallery" className={`w-full aspect-square object-cover rounded-xl border ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`} />
+                  <img 
+                    key={i} 
+                    src={img} 
+                    alt="gallery" 
+                    onClick={() => setSelectedImage(img)}
+                    className={`w-full aspect-square object-cover rounded-xl border cursor-pointer hover:opacity-90 transition-opacity ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`} 
+                  />
                 ))}
               </div>
             ) : (
@@ -611,6 +620,35 @@ const BusinessDetail = () => {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* FULL SCREEN IMAGE MODAL */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setSelectedImage(null)}
+          >
+            <button 
+              onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }}
+              className="absolute top-4 right-4 md:top-8 md:right-8 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-[301]"
+            >
+              <X size={24} />
+            </button>
+            <motion.img 
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              src={selectedImage} 
+              alt="Full screen gallery" 
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
     </motion.div>

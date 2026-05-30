@@ -8,7 +8,8 @@ import {
   History,
   Loader2,
   ArrowUpRight,
-  ArrowDownLeft
+  ArrowDownLeft,
+  IndianRupee
 } from 'lucide-react';
 import { supabase } from '../../supabase/supabaseClient';
 import { useTheme } from '../../context/ThemeContext'; 
@@ -65,6 +66,7 @@ const WalletPage = () => {
         return;
       }
 
+      // Fetch Ledger
       const { data: ledgerData, error: ledgerError } = await supabase
         .from('agent_credit_ledger')
         .select('id, credits, transaction_type, status, remarks, created_at')
@@ -81,9 +83,22 @@ const WalletPage = () => {
         return;
       }
 
-      const available_cash = ledgerData
+      // 1. Fetch pending withdrawal requests to subtract from the available balance
+      const { data: pendingData } = await supabase
+        .from('agent_withdrawals')
+        .select('requested_credits')
+        .eq('user_id', userId)
+        .eq('status', 'pending');
+
+      const totalPending = pendingData?.reduce((sum, item) => sum + Number(item.requested_credits), 0) || 0;
+
+      // 2. Calculate the raw balance before pending requests
+      const raw_available = ledgerData
         .filter(item => ['approved', 'credited'].includes(item.status?.toLowerCase()))
         .reduce((sum, item) => sum + item.credits, 0);
+
+      // 3. Deduct pending withdrawal requests from the raw available cash
+      const available_cash = Math.max(0, raw_available - totalPending);
 
       const earned_credits = ledgerData
         .filter(item => ['approved', 'credited'].includes(item.status?.toLowerCase()) && item.credits > 0)
@@ -346,17 +361,21 @@ const WalletPage = () => {
             </h3>
           </div>
 
-          <div className={`flex-1 p-6 lg:p-8 rounded-2xl border flex flex-col justify-center transition-all ${surfaceClass}`}>
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isLight ? 'bg-[#48477A]/10 text-[#48477A]' : 'bg-[#48477A]/20 text-[#81B398]'}`}>
-                <ArrowDownLeft size={16} />
-              </div>
-              <p className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>Total Withdrawn</p>
-            </div>
-            <h3 className="text-3xl font-bold tracking-tight">
-              {summary.total_withdrawn.toLocaleString()} <span className={`text-lg font-medium ${textSecondary}`}>CR</span>
-            </h3>
-          </div>
+       <div className={`flex-1 p-6 lg:p-8 rounded-2xl border flex flex-col justify-center transition-all ${surfaceClass}`}>
+  <div className="flex items-center gap-3 mb-3">
+    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isLight ? 'bg-[#48477A]/10 text-[#48477A]' : 'bg-[#48477A]/20 text-[#81B398]'}`}>
+      <ArrowDownLeft size={16} />
+    </div>
+    <p className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>
+      Total Withdrawn
+    </p>
+  </div>
+
+  <h3 className="text-3xl font-bold tracking-tight flex items-center ">
+    <IndianRupee size={24} />
+    {summary.total_withdrawn.toLocaleString()}
+  </h3>
+</div>
         </div>
       </div>
 
@@ -374,8 +393,8 @@ const WalletPage = () => {
             {[
               { value: 'all', label: 'All' },
               { value: 'pending', label: 'Pending' },
-              { value: 'credited', label: 'Credited' },
-              { value: 'rejected', label: 'Rejected' }
+              { value: 'approved', label: 'Approved' },
+            
             ].map((status) => (
               <button
                 key={status.value}
@@ -456,8 +475,6 @@ const WalletPage = () => {
             {[
               { value: 'all', label: 'All' },
               { value: 'credited', label: 'Credited' },
-              { value: 'approved', label: 'Approved' },
-              { value: 'pending', label: 'Pending' },
               { value: 'withdrawal', label: 'Withdrawal' }
             ].map((filterOption) => (
               <button

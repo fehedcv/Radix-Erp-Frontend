@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
   Phone,
@@ -10,7 +10,8 @@ import {
   CheckCircle2,
   Settings,
   Loader2,
-  Target
+  Target,
+  Trash2
 } from 'lucide-react';
 
 import { supabase } from '../../supabase/supabaseClient';
@@ -22,6 +23,7 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const [user, setUser] = useState(null);
 
@@ -32,7 +34,8 @@ const ProfilePage = () => {
     status: 'agent',
     totalLeads: 0,
     avatar: null,
-    avatarFile: null
+    avatarFile: null,
+    removeAvatar: false
   });
 
   const fileInputRef = useRef(null);
@@ -51,6 +54,10 @@ const ProfilePage = () => {
   const textSecondary = isLight
     ? 'text-[#718096]'
     : 'text-[#9CA3AF]';
+
+  const pulseClass = isLight 
+    ? 'bg-[#E2E8F0]' 
+    : 'bg-[#334155]';
 
   // FETCH PROFILE
   useEffect(() => {
@@ -104,7 +111,8 @@ const ProfilePage = () => {
           status: data?.role || 'agent',
           totalLeads: count || 0,
           avatar: data?.avatar_url || null,
-          avatarFile: null
+          avatarFile: null,
+          removeAvatar: false
         });
 
       } catch (err) {
@@ -160,7 +168,18 @@ const ProfilePage = () => {
     setProfile(prev => ({
       ...prev,
       avatarFile: file,
-      avatar: preview
+      avatar: preview,
+      removeAvatar: false
+    }));
+  };
+
+  // REMOVE AVATAR
+  const handleDeleteAvatar = () => {
+    setProfile(prev => ({
+      ...prev,
+      avatar: null,
+      avatarFile: null,
+      removeAvatar: true
     }));
   };
 
@@ -173,9 +192,12 @@ const ProfilePage = () => {
 
       let avatarUrl = profile.avatar;
 
+      // Check if we need to remove the avatar completely
+      if (profile.removeAvatar) {
+        avatarUrl = null;
+      } 
       // Upload avatar if changed
-      if (profile.avatarFile) {
-
+      else if (profile.avatarFile) {
         const extension = profile.avatarFile.name
           .split('.')
           .pop()
@@ -227,12 +249,15 @@ const ProfilePage = () => {
       setProfile(prev => ({
         ...prev,
         avatar: avatarUrl,
-        avatarFile: null
+        avatarFile: null,
+        removeAvatar: false
       }));
 
       setIsEditing(false);
 
-      alert('Profile updated successfully.');
+      // Trigger the success popup
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 3000); // Auto-hide after 3 seconds
 
     } catch (err) {
       console.error(err);
@@ -242,11 +267,41 @@ const ProfilePage = () => {
     }
   };
 
-  // LOADING
+  // SKELETON LOADING
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="animate-spin text-[#81B398]" size={32} />
+      <div className={`max-w-[1400px] mx-auto pb-16 font-['Plus_Jakarta_Sans',sans-serif]`}>
+        <div className="flex justify-between items-center mb-8 animate-pulse">
+          <div>
+            <div className={`h-10 w-48 rounded-md mb-2 ${pulseClass}`} />
+            <div className={`h-4 w-64 rounded-md ${pulseClass}`} />
+          </div>
+          <div className={`h-12 w-36 rounded-xl ${pulseClass}`} />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-pulse">
+          <div className={`rounded-2xl border p-8 flex flex-col items-center ${surfaceClass}`}>
+            <div className={`w-32 h-32 rounded-full mb-6 ${pulseClass}`} />
+            <div className={`h-8 w-40 rounded-md mb-4 ${pulseClass}`} />
+            <div className={`h-8 w-32 rounded-lg ${pulseClass}`} />
+          </div>
+          <div className={`lg:col-span-2 rounded-2xl border p-8 ${surfaceClass}`}>
+            <div className={`h-6 w-32 rounded-md mb-8 ${pulseClass}`} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <div className={`h-4 w-24 rounded-md ${pulseClass}`} />
+                <div className={`h-12 w-full rounded-xl ${pulseClass}`} />
+              </div>
+              <div className="space-y-2">
+                <div className={`h-4 w-24 rounded-md ${pulseClass}`} />
+                <div className={`h-12 w-full rounded-xl ${pulseClass}`} />
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <div className={`h-4 w-24 rounded-md ${pulseClass}`} />
+                <div className={`h-12 w-full rounded-xl ${pulseClass}`} />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -255,17 +310,17 @@ const ProfilePage = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`max-w-[1400px] mx-auto pb-16 ${textPrimary}`}
+      className={`max-w-[1400px] mx-auto pb-16 font-['Plus_Jakarta_Sans',sans-serif] ${textPrimary}`}
     >
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-4xl font-extrabold">
+          <h1 className="text-4xl font-extrabold tracking-tight">
             My Profile
           </h1>
 
-          <p className={`text-sm mt-1 ${textSecondary}`}>
+          <p className={`text-sm mt-1 font-medium ${textSecondary}`}>
             Verified Partner Management System
           </p>
         </div>
@@ -273,7 +328,7 @@ const ProfilePage = () => {
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#81B398] text-white font-semibold"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#81B398] text-white font-semibold hover:bg-[#6FA085] transition-colors shadow-sm"
           >
             <Edit3 size={16} />
             Edit Profile
@@ -282,14 +337,13 @@ const ProfilePage = () => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#81B398] text-white font-semibold disabled:opacity-60"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#81B398] text-white font-semibold disabled:opacity-60 hover:bg-[#6FA085] transition-colors shadow-sm"
           >
             {saving ? (
               <Loader2 size={16} className="animate-spin" />
             ) : (
               <Save size={16} />
             )}
-
             Save
           </button>
         )}
@@ -299,19 +353,19 @@ const ProfilePage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
         {/* LEFT */}
-        <div className={`rounded-2xl border p-8 flex flex-col items-center ${surfaceClass}`}>
+        <div className={`rounded-2xl border p-8 flex flex-col items-center transition-all ${surfaceClass}`}>
 
           {/* AVATAR */}
-          <div className="relative mb-6">
+          <div className="relative mb-6 flex flex-col items-center">
 
             <div
               onClick={handleImageClick}
               className={`
                 w-32 h-32 rounded-full overflow-hidden
                 flex items-center justify-center
-                border-2 transition-all
+                border-2 transition-all relative group
                 ${isEditing
-                  ? 'cursor-pointer border-dashed border-[#81B398]'
+                  ? 'cursor-pointer border-dashed border-[#81B398] hover:bg-[#81B398]/5'
                   : 'border-white/10'
                 }
               `}
@@ -324,11 +378,11 @@ const ProfilePage = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User size={48} />
+                <User size={48} className={textSecondary} />
               )}
 
               {isEditing && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <Camera size={24} className="text-white" />
                 </div>
               )}
@@ -343,35 +397,45 @@ const ProfilePage = () => {
               onChange={handleImageChange}
             />
 
+            {/* DELETE AVATAR OPTION */}
+            {isEditing && profile.avatar && (
+              <button 
+                onClick={handleDeleteAvatar}
+                className="mt-4 text-xs font-bold uppercase tracking-wider text-[#F0524F] hover:text-[#D44846] flex items-center gap-1.5 transition-colors"
+              >
+                <Trash2 size={14} /> Remove Picture
+              </button>
+            )}
+
             {/* LEADS BADGE */}
-            <div className="absolute -bottom-2 -right-2 bg-[#81B398] text-white px-3 py-1 rounded-lg flex items-center gap-1">
+            <div className="absolute top-0 -right-2 bg-[#81B398] text-white px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
               <Target size={12} />
-              <span className="text-xs font-bold">
+              <span className="text-xs font-bold tracking-wide">
                 {profile.totalLeads} Leads
               </span>
             </div>
           </div>
 
           {/* NAME */}
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-2xl font-bold tracking-tight">
             {profile.name}
           </h2>
 
           {/* ROLE */}
           <div className="mt-4 px-4 py-2 rounded-lg bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20 flex items-center gap-2">
             <CheckCircle2 size={14} />
-            <span className="text-xs font-semibold uppercase">
-              {profile.status} Partner
+            <span className="text-xs font-semibold uppercase tracking-wider">
+              Radix Partner
             </span>
           </div>
         </div>
 
         {/* RIGHT */}
-        <div className={`lg:col-span-2 rounded-2xl border p-8 ${surfaceClass}`}>
+        <div className={`lg:col-span-2 rounded-2xl border p-8 transition-all ${surfaceClass}`}>
 
-          <div className="flex items-center gap-2 mb-8">
+          <div className={`flex items-center gap-2 mb-8 border-b pb-4 ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>
             <Settings size={18} className="text-[#81B398]" />
-            <h3 className="font-bold uppercase tracking-wider">
+            <h3 className="font-bold uppercase tracking-wider text-sm">
               Partner Data
             </h3>
           </div>
@@ -390,6 +454,7 @@ const ProfilePage = () => {
               }
               icon={<User size={18} />}
               editable={isEditing}
+              isLight={isLight}
             />
 
             {/* PHONE */}
@@ -404,6 +469,7 @@ const ProfilePage = () => {
               }
               icon={<Phone size={18} />}
               editable={isEditing}
+              isLight={isLight}
             />
 
             {/* EMAIL */}
@@ -414,12 +480,46 @@ const ProfilePage = () => {
                 icon={<Mail size={18} />}
                 editable={false}
                 readonly
+                isLight={isLight}
               />
             </div>
 
           </div>
         </div>
       </div>
+
+      {/* SUCCESS POPUP MODAL */}
+      <AnimatePresence>
+        {showSuccessPopup && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`border rounded-2xl max-w-sm w-full p-8 text-center relative overflow-hidden transition-all ${surfaceClass}`}
+            >
+              <div className="relative z-10 flex flex-col items-center">
+                <div className="w-16 h-16 bg-[#81B398]/10 border border-[#81B398]/20 rounded-full flex items-center justify-center mb-5">
+                  <CheckCircle2 size={32} className="text-[#81B398]" />
+                </div>
+                <h3 className={`text-xl font-bold mb-2 ${textPrimary}`}>Success!</h3>
+                <p className={`text-sm leading-relaxed mb-6 ${textSecondary}`}>
+                  Your profile has been updated successfully.
+                </p>
+                <button 
+                  onClick={() => setShowSuccessPopup(false)} 
+                  className={`w-full py-3 rounded-lg text-sm font-semibold transition-colors ${
+                    isLight ? 'bg-[#F4F5F7] border border-[#E2E8F0] text-[#1A202C] hover:bg-[#E2E8F0]' : 'bg-[#131720] border border-white/5 text-[#F4F5F7] hover:bg-[#1A202C]'
+                  }`}
+                >
+                  Okay
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      
     </motion.div>
   );
 };
@@ -433,25 +533,27 @@ const ProfileField = ({
   readonly,
   isLight
 }) => {
+  const textSecondary = isLight ? 'text-[#718096]' : 'text-[#9CA3AF]';
+
   return (
     <div className="space-y-2">
 
-      <div className="flex justify-between">
-        <label className="text-sm font-semibold text-gray-400">
+      <div className="flex justify-between items-center px-1">
+        <label className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>
           {label}
         </label>
 
         {readonly && (
-          <span className="text-xs text-red-400 font-bold uppercase">
+          <span className="text-[10px] text-[#F0524F] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#F0524F]/10 border border-[#F0524F]/20">
             Read Only
           </span>
         )}
       </div>
 
       {editable && !readonly ? (
-        <div className="relative">
+        <div className="relative group">
 
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+          <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${textSecondary} group-focus-within:text-[#81B398]`}>
             {icon}
           </div>
 
@@ -460,35 +562,27 @@ const ProfileField = ({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             className={`
-  w-full
-  pl-12
-  pr-4
-  py-3
-  rounded-xl
-  border
-  outline-none
-  transition-all
-
-  ${isLight
-    ? "bg-white border-gray-200 text-gray-900 focus:border-[#81B398]"
-    : "bg-[#1f2937] border-white/10 text-white focus:border-[#81B398]"
-  }
-`}
+              w-full pl-11 pr-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all
+              ${isLight
+                ? "bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] focus:bg-[#FFFFFF] focus:border-[#81B398]"
+                : "bg-[#131720] border-transparent text-[#F4F5F7] focus:bg-[#222938] focus:border-[#81B398]"
+              }
+            `}
           />
         </div>
       ) : (
         <div className={`
-  flex items-center gap-3 px-4 py-3 rounded-xl border
-  transition-all
+          flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-sm font-medium
+          ${isLight
+            ? "bg-[#F4F5F7] border-[#E2E8F0] text-[#718096] opacity-80"
+            : "bg-[#131720] border-white/5 text-[#9CA3AF] opacity-80"
+          }
+        `}>
+          <div className={textSecondary}>
+            {icon}
+          </div>
 
-  ${isLight
-    ? "bg-gray-100 border-gray-200 text-gray-800"
-    : "bg-[#111827] border-white/10 text-gray-200"
-  }
-`}>
-          {icon}
-
-          <span className="font-medium truncate">
+          <span className="truncate">
             {value || 'Not provided'}
           </span>
         </div>

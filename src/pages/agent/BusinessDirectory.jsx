@@ -118,7 +118,7 @@ const BusinessDirectory = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 ">
         <div className="space-y-1.5">
           <h1 className={`text-3xl md:text-4xl font-extrabold tracking-tight ${textPrimary}`}>
-            Directory
+            Businesses
           </h1>
           <p className={`text-sm font-medium max-w-xl ${textSecondary}`}>
             Explore registered businesses and submit client referrals.

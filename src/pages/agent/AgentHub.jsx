@@ -252,7 +252,7 @@ const AgentHub = ({ onLogout }) => {
               </h2>
 
               <p className="text-[12px] font-normal text-[#9CA3AF] mt-0.5">
-                {currentUser.role || "Lead Developer"}
+                { "Radix Partner"}
               </p>
             </div>
           )}
@@ -307,25 +307,63 @@ const AgentHub = ({ onLogout }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 pb-6 space-y-2 shrink-0">
-          <div className={`flex items-center justify-between px-3 py-2.5 rounded-md ${
-            theme === 'light'
-              ? 'bg-[#F4F5F7]/5'
-              : 'bg-[#131720]/50'
-          }`}>
-            <span className="text-[11px] font-medium tracking-[0.025em] text-[#9CA3AF]">
-              Theme
-            </span>
-            <ThemeToggle />
-          </div>
+      <div className="p-4 pb-6 space-y-2 shrink-0">
+  <div className={`flex items-center justify-between px-3 py-2.5 rounded-md ${
+    theme === 'light'
+      ? 'bg-[#F4F5F7]/5'
+      : 'bg-[#131720]/50'
+  }`}>
+    <span className="text-[11px] font-medium tracking-[0.025em] text-[#9CA3AF]">
+      Theme
+    </span>
+    
+    {/* Modern Pill Theme Toggle */}
+    <div 
+      onClick={toggleTheme} 
+      className={`relative flex items-center w-16 h-8 p-1 rounded-full cursor-pointer transition-colors duration-300 ${
+        theme === 'light' ? 'bg-[#E2E8F0]' : 'bg-[#0B0E14]'
+      }`}
+    >
+      {/* Sliding Background Pill */}
+      <div 
+        className={`absolute left-1 top-1 w-6 h-6 rounded-full transition-transform duration-300 ease-out ${
+          theme === 'light' 
+            ? 'bg-white shadow-[0_2px_4px_rgba(0,0,0,0.1)] translate-x-0' 
+            : 'bg-[#222938] shadow-[0_2px_4px_rgba(0,0,0,0.4)] translate-x-8'
+        }`}
+      />
+      
+      {/* Sun Icon */}
+      <div className="relative z-10 w-1/2 flex items-center justify-center">
+        <Sun 
+          size={14} 
+          strokeWidth={2.5} 
+          className={`transition-colors duration-300 ${
+            theme === 'light' ? 'text-[#1A202C]' : 'text-[#718096]'
+          }`} 
+        />
+      </div>
+      
+      {/* Moon Icon */}
+      <div className="relative z-10 w-1/2 flex items-center justify-center">
+        <Moon 
+          size={14} 
+          strokeWidth={2.5} 
+          className={`transition-colors duration-300 ${
+            theme === 'dark' ? 'text-[#F4F5F7]' : 'text-[#718096]'
+          }`} 
+        />
+      </div>
+    </div>
+  </div>
 
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md text-[13px] font-medium text-[#9CA3AF] hover:text-[#F0524F] hover:bg-[#F0524F]/10 transition-colors"
-          >
-            <LogOut size={16} /> Log Out
-          </button>
-        </div>
+  <button
+    onClick={() => setShowLogoutConfirm(true)}
+    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md text-[13px] font-medium text-[#9CA3AF] hover:text-[#F0524F] hover:bg-[#F0524F]/10 transition-colors"
+  >
+    <LogOut size={16} /> Log Out
+  </button>
+</div>
       </aside>
 
       {/* MAIN AREA */}
@@ -371,19 +409,34 @@ const AgentHub = ({ onLogout }) => {
             </div>
 
             <div className="flex items-center gap-3">
-              <ThemeToggle />
+  {/* Single Icon Theme Toggle */}
+  <button
+    onClick={toggleTheme}
+    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+      theme === 'light'
+        ? 'bg-[#F4F5F7] text-[#718096] hover:bg-[#E2E8F0] hover:text-[#1A202C]'
+        : 'bg-[#131720] text-[#9CA3AF] hover:bg-[#222938] hover:text-[#F4F5F7]'
+    }`}
+    aria-label="Toggle theme"
+  >
+    {theme === 'light' ? (
+      <Moon size={18} strokeWidth={2.5} className="transition-transform duration-300 hover:-rotate-12" />
+    ) : (
+      <Sun size={18} strokeWidth={2.5} className="transition-transform duration-300 hover:rotate-90" />
+    )}
+  </button>
 
-              <button
-                onClick={() => setShowLogoutConfirm(true)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                  theme === 'light'
-                    ? 'bg-[#F0524F]/10 text-[#F0524F]'
-                    : 'bg-[#F0524F]/20 text-[#F0524F]'
-                }`}
-              >
-                <LogOut size={16} strokeWidth={2.5} />
-              </button>
-            </div>
+  <button
+    onClick={() => setShowLogoutConfirm(true)}
+    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+      theme === 'light'
+        ? 'bg-[#F0524F]/10 text-[#F0524F]'
+        : 'bg-[#F0524F]/20 text-[#F0524F]'
+    }`}
+  >
+    <LogOut size={16} strokeWidth={2.5} />
+  </button>
+</div>
           </header>
 
           {/* DESKTOP HEADER */}

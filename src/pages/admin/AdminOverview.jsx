@@ -14,7 +14,7 @@ import {
 import Chart from 'react-apexcharts';
 import { supabase } from '../../supabase/supabaseClient';
 import { useTheme } from '../../context/ThemeContext';
-
+let dashboardCache = null;
 const AdminOverview = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -45,10 +45,29 @@ const AdminOverview = () => {
     allAgents: []
   });
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!dashboardCache);
+
 
   useEffect(() => {
     const fetchDashboard = async () => {
+      if (dashboardCache) {
+    setDashboard(dashboardCache);
+
+    setStats({
+      totalLeads: Number(dashboardCache.totalLeads || 0),
+      totalUnits: Number(dashboardCache.totalBusinessUnits || 0),
+      totalCredits: Number(dashboardCache.totalAgents || 0),
+      statusCounts: {
+        Pending: Number(dashboardCache.inquiryPending || 0),
+        Verified: Number(dashboardCache.inquiryVerified || 0),
+        Completed: Number(dashboardCache.inquiryCompleted || 0)
+      }
+    });
+
+    setLoading(false);
+    return;
+  }
+
       try {
         const { data, error } = await supabase.rpc('get_admin_dashboard_data');
         if (error) {
@@ -57,6 +76,7 @@ const AdminOverview = () => {
         }
 
         setDashboard(data);
+        dashboardCache = data; 
         setStats({
           totalLeads: Number(data.totalLeads || 0),
           totalUnits: Number(data.totalBusinessUnits || 0),
@@ -194,7 +214,7 @@ const AdminOverview = () => {
           { label: 'Total Agents', val: dashboard.totalAgents, icon: <Users size={18}/>, color: isLight ? 'text-[#48477A] bg-[#F4F5F7]' : 'text-[#48477A] bg-[#48477A]/10' },
           { label: 'Pending Requests', val: dashboard.inquiryPending, icon: <Clock size={18}/>, color: isLight ? 'text-[#DAC18A] bg-[#F4F5F7]' : 'text-[#DAC18A] bg-[#DAC18A]/10' }
         ].map((m, i) => (
-          <motion.div 
+          <div 
             key={i}
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
             className={`p-5 lg:p-6 rounded-2xl border flex flex-col justify-between h-[140px] lg:h-[160px] transition-all duration-300 min-w-0 ${surfaceClass}`}
@@ -206,18 +226,23 @@ const AdminOverview = () => {
               </div>
             </div>
             <h3 className="text-3xl lg:text-4xl font-bold tracking-tight truncate">{m.val.toLocaleString()}</h3>
-          </motion.div>
+          </div>
         ))}
       </div>
 
       {/* 3. ANALYTICS SUITE (CHARTS) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 bg-">
         <ChartCard title="Daily Activity" subtitle="Real-time inquiry flow" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-1">
           <Chart options={activityTrendConfig.options} series={activityTrendConfig.series} type="area" height="100%" width="100%" />
         </ChartCard>
         
         <ChartCard title="Inquiry Status" subtitle="Verification distribution" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-1">
-          <Chart options={statusDistributionConfig.options} series={statusDistributionConfig.series} type="donut" height="100%" width="100%" />
+          <Chart
+           options={statusDistributionConfig.options} 
+           series={statusDistributionConfig.series} 
+           type="donut"
+            height="100%" 
+            width="100%" />
         </ChartCard>
 
         <ChartCard title="Partner Ranking" subtitle="Top performing business units" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-1">
@@ -304,7 +329,7 @@ const ChartCard = ({ title, subtitle, children, isLight, surfaceClass, className
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+      initial={{  y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
       className={`min-w-0 p-6 lg:p-8 rounded-2xl border flex flex-col transition-all duration-300 ${surfaceClass} ${className || ''}`}
     >
       <div className="mb-6 shrink-0">

@@ -19,6 +19,8 @@ const STATUSES = [
   'Rejected'
 ];
 
+let leadsCache = null;
+
 const MasterLeadTracker = () => {
   const navigate = useNavigate();
   const { theme } = useTheme(); 
@@ -38,51 +40,70 @@ const MasterLeadTracker = () => {
   const [agentFilter, setAgentFilter] = useState("All");
   const [customerSearch, setCustomerSearch] = useState("");
 
-  const [leads, setLeads] = useState([]);
-  const [loading, setLoading] = useState(true);
+ const [leads, setLeads] = useState(leadsCache || []);
+const [loading, setLoading] = useState(!leadsCache);
   const [error, setError] = useState(null);
 
   // --- API CALLS ---
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+const fetchData = useCallback(async (forceRefresh = false) => {
 
-    try {
-      const { data, error } = await supabase.rpc('get_admin_leads_dashboard');
+  if (leadsCache && !forceRefresh) {
+    setLeads(leadsCache);
+    setLoading(false);
+    return;
+  }
 
-      if (error) {
-        console.error('Failed to load admin leads:', error);
-        setError('Failed to load leads.');
-        return;
-      }
+  setLoading(true);
+  setError(null);
 
-      const normalizeStatus = (s) => {
-        const map = {
-          'pending': 'Pending',
-          'verified': 'Verified',
-          'in progress': 'In Progress',
-          'completed': 'Completed',
-          'rejected': 'Rejected',
-          'started': 'Started',
-        };
-        return map[(s || '').toLowerCase()] || s || 'Pending';
+  try {
+
+    const { data, error } =
+      await supabase.rpc('get_admin_leads_dashboard');
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    const normalizeStatus = (s) => {
+      const map = {
+        pending: 'Pending',
+        verified: 'Verified',
+        'in progress': 'In Progress',
+        completed: 'Completed',
+        rejected: 'Rejected',
+        started: 'Started'
       };
 
-      const normalized = (data?.leads || []).map((lead, index) => ({
+      return map[(s || '').toLowerCase()] || s;
+    };
+
+    const normalized =
+      (data?.leads || []).map((lead, index) => ({
         ...lead,
         displayId: `Lead-${index + 1}`,
         status: normalizeStatus(lead.status),
-        date: (lead.date || '').split('T')[0],
+        date: (lead.date || '').split('T')[0]
       }));
 
-      setLeads(normalized);
-    } catch (err) {
-      console.error('Failed to load admin leads:', err);
-      setError('Failed to load leads.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+
+    // SAVE TO CACHE
+    leadsCache = normalized;
+
+    setLeads(normalized);
+
+  } catch (err) {
+
+    console.error(err);
+
+  } finally {
+
+    setLoading(false);
+
+  }
+
+}, []);
 
   useEffect(() => {
     fetchData();
@@ -362,7 +383,7 @@ const MasterLeadTracker = () => {
             <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead>
                 <tr className={`${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
-                  {['Reference', 'Customer', 'Branch', 'Assigned To', 'Status', 'Action'].map((h, i) => (
+                  {['Reference', 'Customer', 'Branch', 'Agent', 'Status', 'Action'].map((h, i) => (
                     <th key={h} className={`px-6 py-4 text-xs font-bold uppercase tracking-wider border-b ${textSecondary} ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'} ${i >= 4 ? 'text-center' : ''} ${i === 5 ? 'text-right' : ''}`}>
                       {h}
                     </th>
@@ -572,7 +593,7 @@ const ChartCard = ({ title, subtitle, children, isLight, surfaceClass, className
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+      initial={{ y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
       className={`min-w-0 p-5 lg:p-6 rounded-2xl border flex flex-col transition-all duration-300 ${surfaceClass} ${className || ''}`}
     >
       <div className="mb-6 shrink-0">

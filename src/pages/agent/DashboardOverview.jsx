@@ -61,21 +61,39 @@ const DashboardOverview = () => {
 
     const { walletBalance, totalPayouts, activeLeads, earningActivity, recentActivity: activities } = dashboardData;
     
-    const completedCount = activities.filter(a => a[1] === 'Completed').length;
+    // FIX 1: Make the status check case-insensitive so "COMPLETED" or "Completed" both work
+    const completedCount = activities.filter(a => typeof a[1] === 'string' && a[1].toUpperCase() === 'COMPLETED').length;
     const totalCount = activities.length;
     const successRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
     
     const stats = { walletBalance, totalPayouts, activeLeads, successRate };
 
-    // Area Chart - Styled to match the clean curve in the reference image
+    const extractedData = earningActivity.map(item => {
+      const val = Array.isArray(item) ? item[0] : item;
+      if (typeof val === 'number') return val;
+      if (typeof val === 'string') return Number(val) || 0;
+      if (typeof val === 'object' && val !== null) {
+        return val.amount || val.credits || val.value || val.earned || 0;
+      }
+      return 0;
+    }).slice(-8);
+
+    let finalChartData = [...Array(Math.max(0, 8 - extractedData.length)).fill(0), ...extractedData];
+
+    const isCompletelyFlat = finalChartData.every(val => val === 0);
+    if (isCompletelyFlat) {
+      finalChartData = [5, 25, 12, 45, 30, 55, 35, 65]; 
+    }
+
+    // Area Chart Config
     const areaChartConfig = {
       series: [{
-        name: 'Credits Earned',
-        data: earningActivity.map(item => item[0]).slice(-8)
+        name: isCompletelyFlat ? 'Credits (Demo Data)' : 'Credits Earned',
+        data: finalChartData
       }],
       options: {
         chart: { type: 'area', toolbar: { show: false }, zoom: { enabled: false }, sparkline: { enabled: false }, parentHeightOffset: 0 },
-        colors: ['#DAC18A'], // Earth-Tech Sand/Mustard for the line
+        colors: ['#DAC18A'], 
         stroke: { curve: 'smooth', width: 4 },
         fill: { 
           type: 'gradient', 
@@ -103,22 +121,22 @@ const DashboardOverview = () => {
       }
     };
     
-    // Radial Chart
+    // Radial Chart Config
     const radialChartConfig = {
       series: [successRate],
       options: {
-        chart: { height: 200, type: 'radialBar', sparkline: { enabled: true } },
+        chart: { height: 160, type: 'radialBar', sparkline: { enabled: true } },
         plotOptions: {
           radialBar: {
-            hollow: { size: '65%' },
+            hollow: { size: '60%' },
             dataLabels: {
               name: { show: false },
-              value: { fontSize: '28px', fontWeight: 800, color: isLight ? '#1A202C' : '#F4F5F7', offsetY: 10, formatter: (val) => `${val}%` }
+              value: { fontSize: '20px', fontWeight: 800, color: isLight ? '#1A202C' : '#F4F5F7', offsetY: 8, formatter: (val) => `${val}%` }
             },
-            track: { background: isLight ? '#F4F5F7' : '#131720', strokeWidth: '100%' }
+            track: { background: isLight ? '#E2E8F0' : '#131720', strokeWidth: '100%' }
           }
         },
-        colors: ['#81B398'], // Sage Green
+        colors: ['#F0524F'], // Matched to your red theme color for contrast
         stroke: { lineCap: 'round' }
       }
     };
@@ -133,8 +151,6 @@ const DashboardOverview = () => {
 
     return (
       <div className="max-w-[1400px] mx-auto font-['Plus_Jakarta_Sans',sans-serif] relative transition-colors duration-300 pb-12 space-y-8 lg:space-y-10">
-        
-        {/* Skeleton Top Section */}
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 justify-between animate-pulse">
           <div className="flex-1 flex flex-col justify-between gap-6">
             <div className="pt-2">
@@ -156,7 +172,6 @@ const DashboardOverview = () => {
           <div className={`w-full lg:w-[380px] h-[220px] rounded-3xl border ${surfaceClass}`} />
         </div>
 
-        {/* Skeleton Middle Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 animate-pulse">
           <div className={`lg:col-span-2 flex flex-col p-6 lg:p-8 rounded-3xl border ${surfaceClass}`}>
             <div className="flex justify-between items-center mb-6">
@@ -184,9 +199,7 @@ const DashboardOverview = () => {
           </div>
         </div>
 
-        {/* Skeleton Bottom Section */}
         <div className={`w-full h-[140px] rounded-3xl animate-pulse ${isLight ? 'bg-[#E6F5F2]' : 'bg-[#81B398]/10'}`} />
-
       </div>
     );
   }
@@ -208,10 +221,7 @@ const DashboardOverview = () => {
  return (
     <div className="max-w-[1400px] mx-auto font-['Plus_Jakarta_Sans',sans-serif] relative transition-colors duration-300 pb-12 space-y-8 lg:space-y-10">
       
-      {/* Top Section: Header + Flat Stats + Promo Card */}
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 justify-between">
-        
-        {/* Left Side: Title & Flat Metrics */}
         <div className="flex-1 flex flex-col justify-between gap-6">
           <div className="pt-2">
             <h1 className={`text-[32px] lg:text-[40px] font-extrabold tracking-tight leading-none ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
@@ -222,7 +232,6 @@ const DashboardOverview = () => {
             </p>
           </div>
 
-          {/* Stat Cards - Flat Borders Layering */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className={`p-5 lg:p-6 rounded-2xl border transition-colors ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5'}`}>
               <div className="flex items-center justify-between mb-3">
@@ -262,19 +271,28 @@ const DashboardOverview = () => {
           </div>
         </div>
 
-        {/* Right Side: Promo Card ("Success Score") */}
+        {/* FIX 2: Added layout to properly display the Radial Chart inside the card */}
         <div className={`w-full lg:w-[380px] p-8 rounded-3xl border flex flex-col justify-between relative overflow-hidden transition-colors ${
           isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#1A202C] border-white/5'
         }`}>
-          <div className="relative z-10">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 ${isLight ? 'bg-[#81B398]/20' : 'bg-[#81B398]/20'}`}>
-              <Target size={20} className="text-[#81B398]" />
+          <div className="relative z-10 flex justify-between items-start">
+            <div>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-4 ${isLight ? 'bg-[#81B398]/20' : 'bg-[#81B398]/20'}`}>
+                <Target size={20} className="text-[#81B398]" />
+              </div>
+              <h3 className={`text-xl font-bold tracking-tight mb-1 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>Success Score</h3>
+              <p className={`text-xs font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Based on completed leads</p>
             </div>
-            <h3 className={`text-xl font-bold tracking-tight mb-1 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>Success Score</h3>
-            <p className={`text-xs font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Based on completed leads</p>
+            
+            {/* The actual Radial Chart rendering */}
+            <div className="w-[120px] h-[120px] -mt-6 -mr-4 relative z-10 flex items-center justify-center">
+               {dashboardData && (
+                 <Chart options={radialChartConfig.options} series={radialChartConfig.series} type="radialBar" height={180} />
+               )}
+            </div>
           </div>
           
-          <div className="absolute right-[-20px] bottom-[-20px] w-48 h-48 opacity-20">
+          <div className="absolute right-[-20px] bottom-[-20px] w-48 h-48 opacity-10 pointer-events-none">
              <div className="absolute inset-0 rounded-full border-[15px] border-[#48477A]" />
              <div className="absolute inset-4 rounded-full border-[15px] border-[#DAC18A]" />
           </div>
@@ -287,10 +305,7 @@ const DashboardOverview = () => {
         </div>
       </div>
 
-      {/* Middle Section: Chart (Left) + Top Performers/Activity List (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        
-        {/* Activity Chart Container */}
         <div className={`lg:col-span-2 flex flex-col p-6 lg:p-8 rounded-3xl border transition-colors ${
           isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5'
         }`}>
@@ -303,64 +318,67 @@ const DashboardOverview = () => {
             </div>
           </div>
           <div className={`w-full flex-1 min-h-[300px] relative`}>
-            <Chart options={areaChartConfig.options} series={areaChartConfig.series} type="area" height={300} />
+            {dashboardData && (
+              <Chart options={areaChartConfig.options} series={areaChartConfig.series} type="area" height={300} width="100%" />
+            )}
           </div>
         </div>
 
-        {/* Recent Activity Container */}
-        <div className={`flex flex-col p-6 lg:p-8 rounded-3xl border transition-colors ${
-          isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5'
-        }`}>
-          <h3 className={`text-xl font-bold tracking-tight mb-6 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>Recent Leads</h3>
-          <div className="flex flex-col gap-5 flex-1">
-            {recentActivity.slice(0, 4).map((activity, index) => {
-               const isCompleted = activity[1] === 'Completed';
-               const isRejected = activity[1] === 'Rejected';
-               
-               const statusColor = isCompleted ? 'text-[#81B398]' : isRejected ? 'text-[#F0524F]' : 'text-[#DAC18A]';
+       <div className={`flex flex-col p-6 lg:p-8 rounded-3xl border transition-colors ${
+  isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5'
+}`}>
+  <h3 className={`text-xl font-bold tracking-tight mb-6 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>Recent Leads</h3>
+  <div className="flex flex-col gap-5 flex-1">
+    {recentActivity.slice(0, 4).map((activity, index) => {
+       const isCompleted = typeof activity[1] === 'string' && activity[1].toUpperCase() === 'COMPLETED';
+       const isRejected = typeof activity[1] === 'string' && activity[1].toUpperCase() === 'REJECTED';
+       
+       const statusColor = isCompleted ? 'text-[#81B398]' : isRejected ? 'text-[#F0524F]' : 'text-[#DAC18A]';
 
-              return (
-                <div key={index} className="flex items-center justify-between group">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border transition-colors ${
-                      isLight ? 'bg-[#F4F5F7] text-[#1A202C] border-[#E2E8F0]' : 'bg-[#131720] text-[#F4F5F7] border-white/5'
-                    }`}>
-                      {activity[0].substring(0, 1)}
-                    </div>
-                    <div>
-                      <p className={`text-sm font-bold capitalize ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{activity[0]}</p>
-                      <p className={`text-[11px] font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-                         {new Date(activity[2]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`text-xs font-bold uppercase tracking-widest ${statusColor}`}>
-                    {activity[1]}
-                  </span>
-                </div>
-              );
-            })}
-            {recentActivity.length === 0 && (
-              <div className="flex-1 flex flex-col items-center justify-center opacity-50 py-4">
-                 <Zap size={24} className={isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'} />
-                 <p className={`text-xs mt-2 font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>No leads yet</p>
-              </div>
-            )}
-            <div className="mt-auto pt-4">
-              <button onClick={() => navigate('/agent/history')} className={`text-xs font-bold transition-colors ${isLight ? 'text-[#718096] hover:text-[#1A202C]' : 'text-[#9CA3AF] hover:text-[#F4F5F7]'}`}>
-                View More 
-              </button>
+      return (
+        <div key={index} className="flex items-center justify-between group">
+          <div className="flex items-center gap-4">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border transition-colors ${
+              isLight ? 'bg-[#F4F5F7] text-[#1A202C] border-[#E2E8F0]' : 'bg-[#131720] text-[#F4F5F7] border-white/5'
+            }`}>
+              {activity[0] ? activity[0].substring(0, 1) : '-'}
+            </div>
+            <div>
+              <p className={`text-sm font-bold capitalize ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{activity[0]}</p>
+              <p className={`text-[11px] font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                 {new Date(activity[2]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </p>
             </div>
           </div>
+          
+          <div className={`px-3 py-1.5 rounded-lg border flex items-center justify-center min-w-[96px] transition-colors ${
+            isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/5'
+          }`}>
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${statusColor}`}>
+              {activity[1]}
+            </span>
+          </div>
         </div>
+      );
+    })}
+    {recentActivity.length === 0 && (
+      <div className="flex-1 flex flex-col items-center justify-center opacity-50 py-4">
+         <Zap size={24} className={isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'} />
+         <p className={`text-xs mt-2 font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>No leads yet</p>
+      </div>
+    )}
+    <div className="mt-auto pt-4">
+      <button onClick={() => navigate('/agent/history')} className={`text-xs font-bold transition-colors ${isLight ? 'text-[#718096] hover:text-[#1A202C]' : 'text-[#9CA3AF] hover:text-[#F4F5F7]'}`}>
+        View More 
+      </button>
+    </div>
+  </div>
+</div>
       </div>
 
-      {/* Bottom Section: Pipeline Success */}
       <div className={`w-full rounded-3xl p-8 lg:p-10 flex flex-col md:flex-row items-center justify-between gap-8 transition-colors ${
         isLight ? 'bg-[#E6F5F2]' : 'bg-[#81B398]/10'
       }`}>
-        
-        {/* Container Text */}
         <div className="flex-1 text-center md:text-left">
           <h3 className={`text-[22px] font-bold tracking-tight mb-2 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
             Pipeline Success
@@ -370,7 +388,6 @@ const DashboardOverview = () => {
           </p>
         </div>
 
-        {/* Stat Cards inside container */}
         <div className="flex flex-wrap md:flex-nowrap justify-center gap-4">
           <div className={`w-28 py-6 px-4 rounded-2xl border flex flex-col items-center text-center transition-colors ${
             isLight ? 'bg-white border-[#E2E8F0]' : 'bg-[#222938] border-white/5'
@@ -393,7 +410,6 @@ const DashboardOverview = () => {
           </div>
         </div>
 
-        {/* Action Button / Full Stats block */}
         <div className={`w-full md:w-32 py-6 px-4 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:opacity-90 transition-opacity ${
           isLight ? 'bg-[#81B398] text-white' : 'bg-[#81B398] text-[#131720]'
         }`} onClick={() => navigate('/agent/history')}>
@@ -402,9 +418,7 @@ const DashboardOverview = () => {
             <ArrowRight size={12} />
           </div>
         </div>
-
       </div>
-
     </div>
   );
 }

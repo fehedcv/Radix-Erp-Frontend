@@ -34,6 +34,10 @@ const mapLead = (l) => ({
   agentId: l.source_user_id,
 });
 
+let agentDashboardCache = null;
+let agentDashboardCacheTime = 0;
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 // ─── Main Component ───────────────────────────────────────────────────────────
 const AgentControl = () => {
   const { theme } = useTheme();
@@ -50,35 +54,68 @@ const AgentControl = () => {
   const [selectedAgent,  setSelectedAgent]  = useState(null);
   const [agents,         setAgents]         = useState([]);
   const [leads,          setLeads]          = useState([]);
-  const [loading,        setLoading]        = useState(true);
+  const [loading,        setLoading]        = useState(!agentDashboardCache);
   const [error,          setError]          = useState(null);
   const [togglingId,     setTogglingId]     = useState(null);
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error } = await supabase.rpc('get_admin_agents_dashboard');
+  const now = Date.now();
 
-      if (error) {
-        console.error('Failed to load team data:', error);
-        setError('Failed to load team data. Check your connection.');
-        return;
-      }
+  // Use cache first
+  if (
+    agentDashboardCache &&
+    now - agentDashboardCacheTime < CACHE_DURATION
+  ) {
+    setAgents(agentDashboardCache.agents);
+    setLeads(agentDashboardCache.leads);
+    setLoading(false);
+    return;
+  }
 
-      const payload = data || {};
-      setAgents((payload.agents || []).map(mapAgent));
-      setLeads((payload.leads || []).map(mapLead));
-    } catch (err) {
-      console.error('Error fetching team data:', err);
-      setError('Failed to load team data. Check your connection.');
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  setError(null);
+
+  try {
+    const { data, error } = await supabase.rpc(
+      'get_admin_agents_dashboard'
+    );
+
+    if (error) {
+      setError('Failed to load team data.');
+      return;
     }
-  }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+    const payload = data || {};
+
+    const mappedAgents = (payload.agents || []).map(mapAgent);
+    const mappedLeads = (payload.leads || []).map(mapLead);
+
+    // Save cache
+    agentDashboardCache = {
+      agents: mappedAgents,
+      leads: mappedLeads,
+    };
+
+    agentDashboardCacheTime = now;
+
+    setAgents(mappedAgents);
+    setLeads(mappedLeads);
+  } catch (err) {
+    setError('Failed to load team data.');
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
+ useEffect(() => {
+  if (agentDashboardCache) {
+    setAgents(agentDashboardCache.agents);
+    setLeads(agentDashboardCache.leads);
+  }
+
+  fetchData();
+}, [fetchData]);
 
   // ── Toggle active/restricted ─────────────────────────────────────────────
   const toggleAgentStatus = async (agent) => {
@@ -501,7 +538,7 @@ const ChartCard = ({ title, subtitle, children, isLight, surfaceClass, className
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+      initial={{ y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
       className={`min-w-0 p-6 lg:p-8 rounded-2xl border flex flex-col transition-all duration-300 ${surfaceClass} ${className || ''}`}
     >
       <div className="mb-6 shrink-0">

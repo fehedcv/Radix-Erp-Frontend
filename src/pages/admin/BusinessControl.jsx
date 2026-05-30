@@ -47,6 +47,9 @@ const normalizeBusinessUnit = (doc) => ({
 const CATEGORIES = ['Technology','Real Estate','Finance','Healthcare','Retail','Construction','Other'];
 const STATUSES   = ['Active','Inactive','Suspended'];
 
+let businessUnitsCache = null;
+let lastFetchTime = null;
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 const BusinessHub = () => {
   const { theme } = useTheme();
@@ -58,8 +61,12 @@ const BusinessHub = () => {
   const textSecondary = isLight ? 'text-[#718096]' : 'text-[#9CA3AF]';
   const pulseClass = isLight ? 'bg-[#E2E8F0]' : 'bg-[#334155]';
 
-  const [units,         setUnits]         = useState([]);
-  const [loading,       setLoading]       = useState(true);
+  const [units, setUnits] = useState(
+  businessUnitsCache || []
+);
+ const [loading, setLoading] = useState(
+  !businessUnitsCache
+);
   const [error,         setError]         = useState(null);
   const [showAddModal,  setShowAddModal]  = useState(false);
   const [submitting,    setSubmitting]    = useState(false);
@@ -80,14 +87,31 @@ const BusinessHub = () => {
         setError('Failed to load business units. Check your connection or permissions.');
         return;
       }
-      setUnits((data || []).map(normalizeBusinessUnit));
+      const formattedUnits = (data || []).map(normalizeBusinessUnit);
+      setUnits(formattedUnits);
+      businessUnitsCache = formattedUnits;
+      lastFetchTime = Date.now();
+      
     } catch (err) {
       console.error('Failed to load business units:', err);
       setError('Failed to load business units. Check your connection or permissions.');
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchUnits(); }, [fetchUnits]);
+useEffect(() => {
+  const CACHE_DURATION =
+    5 * 60 * 1000;
+
+  if (
+    businessUnitsCache &&
+    lastFetchTime &&
+    Date.now() - lastFetchTime < CACHE_DURATION
+  ) {
+    return;
+  }
+
+  fetchUnits();
+}, []);
 
   // ── Search & Filter ───────────────────────────────────────────────────────
   const filteredUnits = useMemo(() => {
