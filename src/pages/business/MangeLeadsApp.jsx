@@ -36,6 +36,7 @@ const fetchLeads = async () => {
           payment_status,
           credit_status,
           source_user_id,
+          total_sale_amount,
           business_unit_services (
             service_name
           ),
@@ -58,6 +59,7 @@ const fetchLeads = async () => {
         date: lead.created_at,
         agentId: lead.users?.full_name || 'Unknown',
         paymentStatus: lead.payment_status,
+        totalSaleAmount: lead.total_sale_amount,
         creditStatus: lead.credit_status === 'credited' ? 'Credited' : 'Pending'
       }));
 
@@ -71,7 +73,11 @@ const fetchLeads = async () => {
         ).length,
         completed: mappedLeads.filter(
           (l) => l.status?.toLowerCase() === 'completed'
-        ).length
+        ).length ,
+
+        settledAmount: mappedLeads
+          .filter((l) => String(l.paymentStatus).toLowerCase() === 'settled')
+          .reduce((sum, lead) => sum + Number(lead.totalSaleAmount), 0)
       };
 
       const visibleLeads =

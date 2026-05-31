@@ -3,21 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { 
   CheckCircle2, Search, XCircle, FilterX, 
-  User, ArrowRight, Activity, Clock
+  User, ArrowRight, Activity, Calendar, Clock
 } from 'lucide-react';
-import Chart from 'react-apexcharts'; // <-- Added ApexCharts
+import Chart from 'react-apexcharts';
 import { supabase } from '../../supabase/supabaseClient';
 
-const STATUSES = [
-  'All',
-  'Pending',
-  'Verified',
-  'In Progress',
-  'Completed',
-  'Rejected'
-];
+const STATUSES = ['All', 'Pending', 'Verified', 'In Progress', 'Completed', 'Rejected'];
 
-const ManageLeads = () => {
+const ManageLeadsApp = () => {
   const navigate = useNavigate();
   const { theme } = useOutletContext(); 
   const isLight = theme === 'light';
@@ -30,7 +23,9 @@ const ManageLeads = () => {
 
   // --- STATE MANAGEMENT ---
   const [leads, setLeads] = useState([]);
+  const [summaryState, setSummaryState] = useState({});
   const [statusFilter, setStatusFilter] = useState('All');
+  const [dateFilter, setDateFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -51,6 +46,7 @@ const ManageLeads = () => {
           payment_status,
           credit_status,
           source_user_id,
+          total_sale_amount,
           business_unit_services (
             service_name
           ),
@@ -73,15 +69,33 @@ const ManageLeads = () => {
         date: lead.created_at,
         agentId: lead.users?.full_name || 'Unknown',
         paymentStatus: lead.payment_status,
+        totalSaleAmount: lead.total_sale_amount || 0,
         creditStatus: lead.credit_status === 'credited' ? 'Credited' : 'Pending'
       }));
 
-      setLeads(mappedLeads);
+      const calculatedSummary = {
+        total: mappedLeads.length,
+        pending: mappedLeads.filter(
+          (l) => l.status?.toLowerCase() === 'pending'
+        ).length,
+        in_progress: mappedLeads.filter(
+          (l) => l.status?.toLowerCase() === 'in progress'
+        ).length,
+        completed: mappedLeads.filter(
+          (l) => l.status?.toLowerCase() === 'completed'
+        ).length,
+        settledAmount: mappedLeads
+          .filter((l) => String(l.paymentStatus).toLowerCase() === 'settled')
+          .reduce((sum, lead) => sum + Number(lead.totalSaleAmount || 0), 0)
+      };
 
-sessionStorage.setItem(
-  "manageLeads",
-  JSON.stringify(mappedLeads)
-);
+      setLeads(mappedLeads);
+      setSummaryState(calculatedSummary);
+
+      sessionStorage.setItem(
+        "manageLeads",
+        JSON.stringify(mappedLeads)
+      );
     } catch (err) {
       console.error('Failed to load leads:', err);
     } finally {
@@ -90,20 +104,20 @@ sessionStorage.setItem(
     }
   };
 
-useEffect(() => {
-  const cachedLeads = sessionStorage.getItem("manageLeads");
+  useEffect(() => {
+    const cachedLeads = sessionStorage.getItem("manageLeads");
 
-  if (cachedLeads) {
-    setLeads(JSON.parse(cachedLeads));
-    setLoading(false);
-    setHasLoaded(true);
+    if (cachedLeads) {
+      setLeads(JSON.parse(cachedLeads));
+      setLoading(false);
+      setHasLoaded(true);
 
-    // Fetch latest data silently
-    fetchLeads();
-  } else {
-    fetchLeads();
-  }
-}, []);
+      // Fetch latest data silently
+      fetchLeads();
+    } else {
+      fetchLeads();
+    }
+  }, []);
 
   // --- MEMOIZED DERIVATIONS ---
   const summary = useMemo(() => {
@@ -111,7 +125,10 @@ useEffect(() => {
       total: leads.length,
       pending: leads.filter((l) => l.status?.toLowerCase() === 'pending').length,
       in_progress: leads.filter((l) => l.status?.toLowerCase() === 'in progress').length,
-      completed: leads.filter((l) => l.status?.toLowerCase() === 'completed').length
+      completed: leads.filter((l) => l.status?.toLowerCase() === 'completed').length,
+      settledAmount: leads
+        .filter((l) => String(l.paymentStatus).toLowerCase() === 'settled')
+        .reduce((sum, lead) => sum + Number(lead.totalSaleAmount || 0), 0)
     };
   }, [leads]);
 
@@ -259,11 +276,26 @@ useEffect(() => {
       </div>
 
       {/* 2. TOP SUMMARY STATS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
-         <QuickStat label="Total Leads" count={summary.total || 0} isLight={isLight} color="bg-[#48477A]/10 text-[#48477A] border-[#48477A]/20" />
-         <QuickStat label="Pending" count={summary.pending || 0} isLight={isLight} color="bg-[#DAC18A]/10 text-[#DAC18A] border-[#DAC18A]/20" />
-         <QuickStat label="In Progress" count={summary.in_progress || 0} isLight={isLight} color="bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/20" />
-         <QuickStat label="Completed" count={summary.completed || 0} isLight={isLight} color="bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20" />
+      <div className="mb-4 px-1">
+        {/* Full Width Settled Amount Card */}
+        <div className={`mb-3 rounded-3xl p-6 md:p-8 border transition-all duration-200 flex flex-col justify-center ${
+          isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+        }`}>
+          <p className={`text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+            Total Settled Amount
+          </p>
+          <h3 className="text-4xl md:text-5xl font-extrabold tracking-tighter text-[#81B398]">
+            ₹{summary.settledAmount?.toLocaleString() || 0}
+          </h3>
+        </div>
+
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
+           <QuickStat label="Total Leads" count={summary.total || 0} isLight={isLight} color="bg-[#48477A]/10 text-[#48477A] border-[#48477A]/20" />
+           <QuickStat label="Pending" count={summary.pending || 0} isLight={isLight} color="bg-[#DAC18A]/10 text-[#DAC18A] border-[#DAC18A]/20" />
+           <QuickStat label="In Progress" count={summary.in_progress || 0} isLight={isLight} color="bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/20" />
+           <QuickStat label="Completed" count={summary.completed || 0} isLight={isLight} color="bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20" />
+        </div>
       </div>
 
       {/* 3. CHARTS ROW */}
@@ -291,45 +323,86 @@ useEffect(() => {
       {/* 4. TOOLBAR (Search & Filters) */}
       <div className={`p-4 lg:p-5 rounded-2xl border transition-all flex flex-col md:flex-row gap-4 ${surfaceClass}`}>
         <div className="relative flex-1 w-full group">
-          <Search 
-            className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-300 ${textSecondary}`} 
-            size={16} 
-          />
-          <input 
-            type="text" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by Client, ID, or Agent..." 
-            className={`w-full pl-11 pr-10 py-2.5 rounded-lg outline-none text-sm font-medium transition-all duration-300 border ${
-              isLight 
-                ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] placeholder:text-[#718096] focus:bg-[#FFFFFF] focus:border-[#81B398]' 
-                : 'bg-[#131720] border-transparent text-[#F4F5F7] placeholder:text-[#9CA3AF] focus:bg-[#222938] focus:border-[#81B398]'
-            }`}
-          />
-          {searchQuery && (
-            <button 
-              onClick={() => setSearchQuery("")} 
-              className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${textSecondary} hover:text-[#F0524F]`}
-            >
-              <XCircle size={16} />
-            </button>
-          )}
+          <label className={`block mb-1.5 pl-1 text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+            Search
+          </label>
+          <div className="relative">
+            <Search 
+              className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-300 ${textSecondary}`} 
+              size={16} 
+            />
+            <input 
+              type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by Client, ID, or Agent..." 
+              className={`w-full pl-11 pr-10 py-3.5 rounded-xl outline-none text-sm font-bold transition-all duration-300 border ${
+                isLight 
+                  ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] placeholder:text-[#718096] focus:bg-[#FFFFFF] focus:border-[#81B398]' 
+                  : 'bg-[#131720] border-transparent text-[#F4F5F7] placeholder:text-[#9CA3AF] focus:bg-[#222938] focus:border-[#81B398]'
+              }`}
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")} 
+                className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${textSecondary} hover:text-[#F0524F]`}
+              >
+                <XCircle size={16} />
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-1 md:pb-0">
-          {STATUSES.map((status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-4 py-2.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap border border-transparent ${
-                statusFilter === status 
-                ? 'bg-[#81B398] text-[#FFFFFF]' 
-                : (isLight ? 'bg-[#F4F5F7] text-[#718096] hover:bg-[#E2E8F0]' : 'bg-[#131720] text-[#9CA3AF] hover:bg-[#222938]')
-              }`}
-            >
-              {status}
-            </button>
-          ))}
+        <div className="flex w-full md:w-auto items-end gap-3">
+          {/* Status Dropdown */}
+          <div className="relative flex-1 md:flex-none md:w-40">
+            <label className={`block mb-1.5 pl-1 text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+              Status
+            </label>
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className={`w-full appearance-none pl-4 pr-10 py-3.5 rounded-xl outline-none text-sm font-bold transition-all border cursor-pointer ${
+                  isLight 
+                    ? 'bg-[#F4F5F7] border-transparent text-[#1A202C] focus:border-[#81B398]' 
+                    : 'bg-[#131720] border-transparent text-white focus:border-[#81B398]'
+                }`}
+              >
+                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Date Filter */}
+          <div className="relative flex-1 md:flex-none md:w-44">
+            <label className={`block mb-1.5 pl-1 text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+              Filter by Date
+            </label>
+            <div className="relative">
+              <input 
+                type="date" 
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className={`w-full appearance-none pl-10 pr-4 py-3.5 rounded-xl outline-none text-sm font-bold transition-all border cursor-pointer ${
+                  isLight 
+                    ? 'bg-[#F4F5F7] border-transparent text-[#1A202C] focus:border-[#81B398]' 
+                    : 'bg-[#131720] border-transparent text-white focus:border-[#81B398]'
+                }`}
+              />
+              <Calendar className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`} size={16} strokeWidth={2.5} />
+              {dateFilter && (
+                <button onClick={() => setDateFilter("")} className={`absolute right-1 top-1/2 -translate-y-1/2 p-1 ${isLight ? 'text-[#F0524F]' : 'text-[#F0524F]'}`}>
+                  <XCircle size={14} strokeWidth={2.5} />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -355,7 +428,7 @@ useEffect(() => {
             >
               {/* Card Header */}
               <div className={`flex items-center justify-between p-5 border-b ${isLight ? 'bg-[#F4F5F7]/40 border-[#E2E8F0]' : 'bg-[#131720]/30 border-white/5'}`}>
-                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeStyles(lead.status)}`}>
+                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getStatusBadgeStyles(lead.status)}`}>
                   {lead.status}
                 </span>
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isLight ? 'bg-[#F4F5F7] text-[#718096]' : 'bg-[#131720] text-[#9CA3AF]'}`}>
@@ -365,6 +438,7 @@ useEffect(() => {
 
               {/* Card Body */}
               <div className="p-5 flex flex-col gap-4 text-xs flex-1">
+                
                 <div className="flex justify-between items-center gap-2">
                   <span className={`font-semibold ${textSecondary}`}>Client</span>
                   <span className={`font-bold text-right truncate text-sm ${textPrimary}`}>{lead.customer_name || "Unknown"}</span>
@@ -384,10 +458,11 @@ useEffect(() => {
 
                 <div className={`h-px w-full my-2 ${isLight ? 'bg-[#E2E8F0]' : 'bg-white/5'}`}></div>
 
+                {/* Settlement Status */}
                 <div className="flex justify-between items-center gap-2">
                   <span className={`font-semibold ${textSecondary}`}>Settlement</span>
                   <div className="flex items-center gap-1.5">
-                    {lead.paymentStatus === "settled" ? (
+                    {String(lead.paymentStatus).toLowerCase() === "settled" ? (
                       <span className={`flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider ${isLight ? 'text-[#81B398]' : 'text-[#81B398]'}`}>
                         <CheckCircle2 size={12} /> Settled
                       </span>
@@ -440,19 +515,38 @@ useEffect(() => {
   );
 };
 
-const QuickStat = ({ label, count, color, isLight }) => {
-  const surfaceClass = isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5';
-  
-  return (
-    <div className={`p-5 rounded-2xl border flex flex-col justify-center items-center text-center transition-colors ${surfaceClass}`}>
-      <div className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider border mb-3 ${color}`}>
-        {label}
-      </div>
-      <p className={`text-3xl lg:text-4xl font-extrabold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
-        {count}
-      </p>
-    </div>
-  );
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// UI COMPONENTS
+// ─────────────────────────────────────────────────────────────────────────────
 
-export default ManageLeads;
+const QuickStat = ({ label, count, color, isLight }) => (
+  <div className={`rounded-3xl p-5 border transition-all duration-200 flex flex-col justify-center ${
+    isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+  }`}>
+    <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+      {label}
+    </p>
+    <h3 className="text-2xl font-extrabold tracking-tighter">
+      {count}
+    </h3>
+  </div>
+);
+
+const SkeletonCard = ({ isLight }) => (
+  <div className={`rounded-3xl border p-5 flex flex-col gap-4 animate-pulse ${
+    isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+  }`}>
+    <div className="flex justify-between">
+      <div className={`w-20 h-6 rounded-lg ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}></div>
+      <div className={`w-6 h-6 rounded-full ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}></div>
+    </div>
+    <div className={`w-full h-10 rounded-xl ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}></div>
+    <div className="grid grid-cols-2 gap-4">
+      <div className={`w-full h-8 rounded-xl ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}></div>
+      <div className={`w-full h-8 rounded-xl ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}></div>
+    </div>
+    <div className={`w-full h-10 mt-2 rounded-xl ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}></div>
+  </div>
+);
+
+export default ManageLeadsApp;
