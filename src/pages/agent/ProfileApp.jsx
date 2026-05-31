@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Phone, Mail, Edit3, Camera, Save, X, 
-  CheckCircle2, Settings, Loader2 
+  CheckCircle2, Settings, Loader2, Trash2 
 } from 'lucide-react';
 import { supabase } from '../../supabase/supabaseClient'; 
 import { useTheme } from '../../context/ThemeContext'; 
@@ -77,7 +77,8 @@ const ProfilePageApp = () => {
     status: "Active",
     totalLeads: 0,
     avatar: null,
-    avatarFile: null 
+    avatarFile: null,
+    removeAvatar: false
   });
 
   const fileInputRef = useRef(null);
@@ -126,7 +127,8 @@ const ProfilePageApp = () => {
           status: profileData.role || 'Active',
           totalLeads: count || 0,
           avatar: profileData.avatar_url || null,
-          avatarFile: null
+          avatarFile: null,
+          removeAvatar: false
         });
 
       } catch (error) {
@@ -170,7 +172,17 @@ const ProfilePageApp = () => {
     setProfile(prev => ({
       ...prev,
       avatar: preview,
-      avatarFile: file
+      avatarFile: file,
+      removeAvatar: false
+    }));
+  };
+
+  const handleDeleteAvatar = () => {
+    setProfile(prev => ({
+      ...prev,
+      avatar: null,
+      avatarFile: null,
+      removeAvatar: true
     }));
   };
 
@@ -181,8 +193,10 @@ const ProfilePageApp = () => {
     try {
       let avatarUrl = profile.avatar;
 
-      // Supabase Avatar Upload Logic
-      if (profile.avatarFile) {
+      // Supabase Avatar Upload / Removal Logic
+      if (profile.removeAvatar) {
+        avatarUrl = null;
+      } else if (profile.avatarFile) {
         const extension = profile.avatarFile.name.split('.').pop()?.toLowerCase();
         const filePath = `${user.id}/avatar.${extension}`;
 
@@ -225,7 +239,8 @@ const ProfilePageApp = () => {
       setProfile(prev => ({
         ...prev,
         avatarFile: null,
-        avatar: avatarUrl
+        avatar: avatarUrl,
+        removeAvatar: false
       }));
       
       setIsEditing(false);
@@ -321,6 +336,15 @@ const ProfilePageApp = () => {
               </div>
               <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
             </div>
+
+            {isEditing && profile.avatar && (
+              <button 
+                onClick={handleDeleteAvatar}
+                className="mb-5 text-[10px] font-bold uppercase tracking-wider text-[#F0524F] flex items-center gap-1.5 active:scale-95 transition-all"
+              >
+                <Trash2 size={14} /> Remove Picture
+              </button>
+            )}
 
             <h3 className={`text-2xl font-extrabold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
               {profile.name}

@@ -23,6 +23,7 @@ const AgentHubApp = ({ onLogout }) => {
   // ==========================================
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState("");
   const [businessUnits, setBusinessUnits] = useState({});
   const [isAppLoading, setIsAppLoading] = useState(true);
@@ -33,6 +34,8 @@ const AgentHubApp = ({ onLogout }) => {
 
   const [leads, setLeads] = useState([]);
   const [currentUser, setCurrentUser] = useState({});
+
+  const isLight = theme === 'light';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -138,6 +141,9 @@ const AgentHubApp = ({ onLogout }) => {
     { id: 'profile', label: 'Profile', icon: User, path: '/agent/profile' },
   ];
 
+  const currentTab = navItems.find(item => location.pathname.startsWith(item.path));
+  const currentTabName = currentTab?.label || "Home";
+
   const myLeads = leads.filter(
     (l) => l.agent_id === currentUser.id || l.user_id === currentUser.id
   );
@@ -147,71 +153,118 @@ const AgentHubApp = ({ onLogout }) => {
   // ==========================================
   return (
     <div className={`flex flex-col h-screen w-full font-['Plus_Jakarta_Sans',sans-serif] overflow-hidden relative transition-colors duration-200 ${
-      theme === 'light' ? 'bg-[#F4F5F7] text-[#1A202C]' : 'bg-[#131720] text-[#F4F5F7]'
+      isLight ? 'bg-[#F4F5F7] text-[#1A202C]' : 'bg-[#131720] text-[#F4F5F7]'
     }`}>
       
       {/* Maximum Width Constraint for Dashboard Consistency */}
       <div className="flex flex-col h-full w-full max-w-[1400px] mx-auto relative">
 
       {/* NATIVE APP BAR (Top) - Flat Layering */}
-        <header className="flex items-center justify-between px-6 pt-12 pb-4 z-10 bg-transparent shrink-0">
+        <header className="flex items-center justify-between px-6 pt-12 pb-4 z-20 bg-transparent shrink-0">
           
-          {/* LEFT: Logo & User Info */}
-          <div className="flex items-center gap-2">
-            {/* 
-              Logo Wrapper: Fixed to w-8 and h-8. Added shrink-0.
-              Restored the bento border logic so it pops nicely on the canvas. 
-            */}
-            <div className={`w-8  shrink-0 rounded-lg flex items-center justify-center overflow-hidden 
-              `}>
-               <img 
-                src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775799844/Stylised__X__logo_on_black_background-removebg-preview_nnmney.png" 
-                alt="Profile" 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            
-            {/* Text alignment tightened to match the 32px logo height */}
-            <div className="flex flex-col justify-center">
-              <span className={`text-[10px] font-bold uppercase tracking-wider mb-[2px] leading-none ${
-                theme === 'light' ? 'text-[#718096]' : 'text-[#9CA3AF]'
+          {/* LEFT: User Profile Info with Dropdown */}
+          <div className="relative">
+            <button 
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center gap-3 text-left focus:outline-none transition-opacity active:opacity-70"
+            >
+              <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center overflow-hidden border-2 shadow-sm ${
+                isLight ? 'border-[#E2E8F0] bg-[#FFFFFF]' : 'border-white/10 bg-[#222938]'
               }`}>
-                Welcome Back
-              </span>
-              <span className="text-base font-extrabold tracking-tight leading-none">
-                {currentUser.name?.split(' ')[0] || 'Agent'}
-              </span>
-            </div>
+                {currentUser.avatar ? (
+                  <img 
+                    src={currentUser.avatar} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User size={18} className={isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'} />
+                )}
+              </div>
+              
+              <div className="flex flex-col justify-center">
+                <span className={`text-[10px] font-bold uppercase tracking-wider mb-[2px] leading-none ${
+                  isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'
+                }`}>
+                  Welcome Back
+                </span>
+                <span className="text-base font-extrabold tracking-tight leading-none">
+                  {currentUser.name?.split(' ')[0] || 'Agent'}
+                </span>
+              </div>
+            </button>
+
+            {/* Profile Menu Popover */}
+            <AnimatePresence>
+              {showProfileMenu && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-30" 
+                    onClick={() => setShowProfileMenu(false)} 
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className={`absolute top-full left-0 mt-3 w-56 p-2 rounded-2xl border shadow-xl z-40 ${
+                      isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+                    }`}
+                  >
+                    <div className={`px-3 py-3 border-b mb-2 flex flex-col ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+                      <span className="text-sm font-bold truncate">{currentUser.name || 'Agent User'}</span>
+                      <span className={`text-xs truncate mt-0.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                        {currentUser.email || 'agent@example.com'}
+                      </span>
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        setShowLogoutConfirm(true);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 active:scale-95 bg-[#F0524F]/10 text-[#F0524F] hover:bg-[#F0524F]/20"
+                    >
+                      <LogOut size={16} strokeWidth={2.5} />
+                      Sign Out
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
           
           {/* RIGHT: Top Right Controls Container */}
           <div className="flex items-center gap-3">
+            
+            {/* Dynamic Page Label */}
+            <span className={`text-xs font-bold tracking-tight px-3 py-1.5 rounded-lg border ${
+              isLight 
+              ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C]' 
+              : 'bg-[#222938] border-white/10 text-[#F4F5F7]'
+            }`}>
+              {currentTabName}
+            </span>
+
             {/* Bento Theme Toggle */}
             <button 
               onClick={toggleTheme}
               className={`w-14 h-8 rounded-xl p-1 flex items-center transition-all duration-200 active:scale-95 border ${
-                theme === 'light' 
+                isLight 
                   ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:border-[#81B398]' 
                   : 'bg-[#222938] border-white/10 hover:border-[#81B398]'
               }`}
             >
               <motion.div 
-                animate={{ x: theme === 'light' ? 0 : 24 }}
+                animate={{ x: isLight ? 0 : 24 }}
                 className={`w-6 h-6 rounded-lg flex items-center justify-center ${
-                  theme === 'light' ? 'bg-[#F4F5F7]' : 'bg-[#131720]'
+                  isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'
                 }`}
               >
-                {theme === 'light' ? <Sun size={12} className="text-[#1A202C]" /> : <Moon size={12} className="text-[#F4F5F7]" />}
+                {isLight ? <Sun size={12} className="text-[#1A202C]" /> : <Moon size={12} className="text-[#F4F5F7]" />}
               </motion.div>
             </button>
 
-            {/* Destructive Logout Button (Opacity Logic: 10/100/20) */}
-            <button
-              onClick={() => setShowLogoutConfirm(true)}
-              className="w-8 h-8 shrink-0 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-95 bg-[#F0524F]/10 text-[#F0524F] border border-[#F0524F]/20 hover:bg-[#F0524F]/20"
-            >
-              <LogOut size={14} strokeWidth={2.5} />
-            </button>
           </div>
         </header>
 
@@ -238,8 +291,8 @@ const AgentHubApp = ({ onLogout }) => {
         </div>
 
         {/* FLAT BENTO BOTTOM NAVIGATION */}
-        <nav className={`fixed bottom-0 left-0 right-0 z-50 px-6 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] flex justify-between items-center transition-colors duration-200 border-t ${
-          theme === 'light' 
+        <nav className={`fixed bottom-0 left-0 right-0 z-50 px-6 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] flex justify-between items-center transition-colors duration-200 border-t ${
+          isLight 
             ? 'bg-[#FFFFFF] border-[#E2E8F0]' 
             : 'bg-[#222938] border-white/10'
         }`}>
@@ -248,21 +301,18 @@ const AgentHubApp = ({ onLogout }) => {
               <NavLink 
                 key={item.id}
                 to={item.path} 
-                className={({ isActive }) => `relative flex flex-col items-center justify-center w-12 h-12 transition-all duration-200 active:scale-95 ${
+                className={({ isActive }) => `relative flex flex-col items-center justify-center w-14 h-12 transition-all duration-200 active:scale-95 ${
                   isActive 
                     ? 'text-[#81B398]' 
-                    : (theme === 'light' ? 'text-[#718096]' : 'text-[#9CA3AF]')
+                    : (isLight ? 'text-[#718096]' : 'text-[#9CA3AF]')
                 }`}
               >
                 {({ isActive }) => (
                    <>
-                    <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'mb-1' : ''} />
-                    {isActive && (
-                      <motion.div 
-                        layoutId="nav-indicator"
-                        className="absolute bottom-0 w-1.5 h-1.5 rounded-full bg-[#81B398]"
-                      />
-                    )}
+                    <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                    <span className={`text-[10px] font-bold mt-1 tracking-wide transition-opacity ${isActive ? 'opacity-100' : 'opacity-70 font-semibold'}`}>
+                      {item.label}
+                    </span>
                    </>
                 )}
               </NavLink>
@@ -280,7 +330,7 @@ const AgentHubApp = ({ onLogout }) => {
                 exit={{ opacity: 0, scale: 0.95 }} 
                 transition={{ duration: 0.2 }}
                 className={`w-full max-w-sm rounded-3xl p-8 text-center space-y-6 border ${
-                  theme === 'light' ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
+                  isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
                 }`}
               >
                 {/* Destructive Icon Badge */}
@@ -289,10 +339,10 @@ const AgentHubApp = ({ onLogout }) => {
                 </div>
                 
                 <div>
-                  <h3 className={`text-xl font-bold tracking-tight ${theme === 'light' ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+                  <h3 className={`text-xl font-bold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
                     Sign Out
                   </h3>
-                  <p className={`text-sm mt-2 font-medium ${theme === 'light' ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                  <p className={`text-sm mt-2 font-medium ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
                     Are you sure you want to end your session?
                   </p>
                 </div>
@@ -309,7 +359,7 @@ const AgentHubApp = ({ onLogout }) => {
                   <button 
                     onClick={() => setShowLogoutConfirm(false)} 
                     className={`w-full py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 border ${
-                      theme === 'light' 
+                      isLight 
                         ? 'bg-[#F4F5F7] text-[#1A202C] border-transparent hover:bg-[#E2E8F0]' 
                         : 'bg-[#131720] text-[#F4F5F7] border-white/10 hover:bg-[#222938]'
                     }`}
@@ -337,4 +387,4 @@ const AgentHubApp = ({ onLogout }) => {
   );
 };
 
-export default AgentHubApp; 
+export default AgentHubApp;

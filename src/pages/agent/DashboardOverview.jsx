@@ -30,9 +30,21 @@ const DashboardOverview = () => {
           console.error(error);
           return;
         }
+        // PASTE STEPS 1 & 2 HERE
+        const { data: authData } = await supabase.auth.getUser();
+        const userId = authData?.user?.id;
+
+        const { data: pendingData } = await supabase
+          .from('agent_withdrawals')
+          .select('requested_credits')
+          .eq('user_id', userId)
+          .eq('status', 'pending');
+
+        const totalPending = pendingData?.reduce((sum, item) => sum + Number(item.requested_credits), 0) || 0;
 
         const transformedData = {
           ...data,
+          walletBalance: Math.max(0, (data.walletBalance || 0) - totalPending),
           earningActivity: (data.earningActivity || []).map(val => [val])
         };
 
@@ -241,6 +253,7 @@ const DashboardOverview = () => {
                 </div>
               </div>
               <h3 className={`text-2xl lg:text-3xl font-bold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+                {console.log(stats.walletBalance)}
                 {stats.walletBalance.toLocaleString()}
               </h3>
             </div>

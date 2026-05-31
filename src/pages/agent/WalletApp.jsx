@@ -135,10 +135,23 @@ const WalletApp = () => {
         console.error('No ledger data returned from Supabase');
         return;
       }
+      // 1. Fetch pending withdrawal requests to subtract from the available balance
+      const { data: pendingData } = await supabase
+        .from('agent_withdrawals')
+        .select('requested_credits')
+        .eq('user_id', userId)
+        .eq('status', 'pending');
 
-      const available_cash = ledgerData
+      const totalPending = pendingData?.reduce((sum, item) => sum + Number(item.requested_credits), 0) || 0;
+
+
+      // 2. Calculate raw balance before pending requests
+      const raw_available = ledgerData
         .filter(item => ['approved', 'credited'].includes(item.status?.toLowerCase()))
         .reduce((sum, item) => sum + item.credits, 0);
+
+      // 3. Deduct pending withdrawals from the raw available cash (preventing negative numbers)
+      const available_cash = Math.max(0, raw_available - totalPending);
 
       const earned_credits = ledgerData
         .filter(item => ['approved', 'credited'].includes(item.status?.toLowerCase()) && item.credits > 0)

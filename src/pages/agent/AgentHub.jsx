@@ -248,7 +248,7 @@ const AgentHub = ({ onLogout }) => {
               </div>
 
               <h2 className="text-[15px] font-semibold text-[#FFFFFF] tracking-tight leading-tight">
-                {currentUser.name || "Muhammed Shahad T."}
+                {currentUser.name || "Usrename not loaded"}
               </h2>
 
               <p className="text-[12px] font-normal text-[#9CA3AF] mt-0.5">
@@ -510,39 +510,52 @@ const AgentHub = ({ onLogout }) => {
           const isActive = location.pathname.includes(item.path);
 
           return (
-            <NavLink
-              key={item.id}
-              to={item.path}
-              className="flex flex-col items-center justify-center w-14 h-14 relative"
-            >
-              <item.icon
-                size={24}
-                strokeWidth={isActive ? 2.5 : 2}
-                className={`transition-colors duration-300 ${
-                  isActive
-                    ? (theme === 'light'
-                      ? 'text-[#1A202C]'
-                      : 'text-[#FFFFFF]')
-                    : 'text-[#718096]'
-                }`}
-              />
+           <NavLink
+  key={item.id}
+  to={item.path}
+  className="flex flex-col items-center justify-center w-16 h-16 relative"
+>
+  <item.icon
+    size={22}
+    strokeWidth={isActive ? 2.5 : 2}
+    className={`transition-colors duration-300 ${
+      isActive
+        ? (theme === 'light'
+          ? 'text-[#1A202C]'
+          : 'text-[#FFFFFF]')
+        : 'text-[#718096]'
+    }`}
+  />
 
-              {isActive && (
-                <motion.div
-                  layoutId="mobile-nav-dot"
-                  className={`absolute bottom-1 w-1 h-1 rounded-full ${
-                    theme === 'light'
-                      ? 'bg-[#1A202C]'
-                      : 'bg-[#FFFFFF]'
-                  }`}
-                  transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 30
-                  }}
-                />
-              )}
-            </NavLink>
+  {/* Label */}
+  <span
+    className={`text-[10px] mt-1 font-medium transition-colors duration-300 ${
+      isActive
+        ? (theme === 'light'
+          ? 'text-[#1A202C]'
+          : 'text-[#FFFFFF]')
+        : 'text-[#718096]'
+    }`}
+  >
+    {item.label}
+  </span>
+
+  {isActive && (
+    <motion.div
+      layoutId="mobile-nav-dot"
+      className={`absolute bottom-0.5 w-1 h-1 rounded-full ${
+        theme === 'light'
+          ? 'bg-[#1A202C]'
+          : 'bg-[#FFFFFF]'
+      }`}
+      transition={{
+        type: "spring",
+        stiffness: 400,
+        damping: 30
+      }}
+    />
+  )}
+</NavLink>
           );
         })}
       </nav>

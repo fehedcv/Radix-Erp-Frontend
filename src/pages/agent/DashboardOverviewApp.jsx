@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { Wallet, Clock, ArrowRight, BarChart3, TrendingUp, Zap, Target } from 'lucide-react';
+import { Wallet, Clock, ArrowRight, Target, TrendingUp, Zap, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Chart from 'react-apexcharts';
+import { supabase } from '../../supabase/supabaseClient';
 import Loader from '../../components/Loader';
-import { useTheme } from '../../context/ThemeContext'; 
-import { supabase } from '../../supabase/supabaseClient'; 
+import { useTheme } from '../../context/ThemeContext';
 
 // ==========================================
 // 1:1 STRUCTURAL SKELETON (BENTO STYLE)
@@ -84,9 +84,21 @@ const DashboardOverviewApp = () => {
           console.error(error);
           return;
         }
+        
+        const { data: authData } = await supabase.auth.getUser();
+        const userId = authData?.user?.id;
+
+        const { data: pendingData } = await supabase
+          .from('agent_withdrawals')
+          .select('requested_credits')
+          .eq('user_id', userId)
+          .eq('status', 'pending');
+
+        const totalPending = pendingData?.reduce((sum, item) => sum + Number(item.requested_credits), 0) || 0;
 
         const transformedData = {
           ...data,
+          walletBalance: Math.max(0, (data.walletBalance || 0) - totalPending),
           earningActivity: (data.earningActivity || []).map(val => [val])
         };
 
@@ -115,20 +127,55 @@ const DashboardOverviewApp = () => {
 
     const { walletBalance, totalPayouts, activeLeads, earningActivity, recentActivity: activities } = dashboardData;
     
-    const completedCount = activities.filter(a => a[1] === 'Completed').length;
+    // Safely calculate completed count regardless of casing
+    const completedCount = activities.filter(a => typeof a[1] === 'string' && a[1].toUpperCase() === 'COMPLETED').length;
     const totalCount = activities.length;
-    const successRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    
+    let successRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    let displayTotalLeads = totalCount;
+
+    // Provide dummy fallback for Pipeline and Success Score if completely new account
+    if (totalCount === 0) {
+      successRate = 72; // Dummy 72% success rate
+      displayTotalLeads = 14; // Dummy 14 leads
+    }
     
     const stats = { walletBalance, totalPayouts, activeLeads, successRate };
+
+    // Process Earning Activity to get safe numbers
+    const extractedData = earningActivity.map(item => {
+      const val = Array.isArray(item) ? item[0] : item;
+      if (typeof val === 'number') return val;
+      if (typeof val === 'string') return Number(val) || 0;
+      if (typeof val === 'object' && val !== null) {
+        return val.amount || val.credits || val.value || val.earned || 0;
+      }
+      return 0;
+    }).slice(-8);
+
+    // Pad with 0s if less than 8 points
+    let finalChartData = [...Array(Math.max(0, 8 - extractedData.length)).fill(0), ...extractedData];
+
+    // Fallback to dummy data if chart is completely empty
+    const isCompletelyFlat = finalChartData.every(val => Number(val) === 0);
+    if (isCompletelyFlat) {
+      finalChartData = [5, 25, 12, 45, 30, 55, 35, 65]; 
+    }
 
     // BENTO CHART CONFIG (Using Sage Green #81B398)
     const areaChartConfig = {
       series: [{
-        name: 'Credits Earned',
-        data: earningActivity.map(item => item[0]).slice(-8)
+        name: isCompletelyFlat ? 'Credits (Demo Data)' : 'Credits Earned',
+        data: finalChartData
       }],
       options: {
-        chart: { type: 'area', toolbar: { show: false }, zoom: { enabled: false }, sparkline: { enabled: true } },
+        chart: { 
+          type: 'area', 
+          toolbar: { show: false }, 
+          zoom: { enabled: false }, 
+          sparkline: { enabled: true },
+          parentHeightOffset: 0
+        },
         colors: ['#81B398'],
         stroke: { curve: 'smooth', width: 3 },
         fill: { 
@@ -141,14 +188,17 @@ const DashboardOverviewApp = () => {
           } 
         },
         tooltip: { theme: isLight ? 'light' : 'dark', x: { show: false } },
-        grid: { show: false }
+        grid: { show: false },
+        xaxis: {
+          categories: ['01', '02', '03', '04', '05', '06', '07', '08']
+        }
       }
     };
     
     const radialChartConfig = {
       series: [successRate],
       options: {
-        chart: { height: 250, type: 'radialBar' },
+        chart: { height: 250, type: 'radialBar', parentHeightOffset: 0 },
         plotOptions: {
           radialBar: {
             hollow: { size: '65%' },
@@ -171,7 +221,7 @@ const DashboardOverviewApp = () => {
       }
     };
 
-    return { stats, areaChartConfig, radialChartConfig, recentActivity: activities, totalLeads: totalCount };
+    return { stats, areaChartConfig, radialChartConfig, recentActivity: activities, totalLeads: displayTotalLeads };
   }, [dashboardData, isLight]);
 
   // --- LOADING STATE ---
@@ -200,10 +250,7 @@ const DashboardOverviewApp = () => {
   return (
     <div className="space-y-5 pb-8">
       
-      {/* 
-        PROFESSIONAL SEPARATOR
-        This 1px border visually disconnects the scrollable dashboard from the fixed header. 
-      */}
+      {/* PROFESSIONAL SEPARATOR */}
       <div className={`w-full border-t pt-6 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
         <h1 className={`text-3xl font-extrabold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
           Dashboard
@@ -274,7 +321,13 @@ const DashboardOverviewApp = () => {
             <span className="text-[#81B398]"><TrendingUp size={16} /></span>
           </div>
           <div className="w-full -ml-2">
-            <Chart options={areaChartConfig.options} series={areaChartConfig.series} type="area" height={160} />
+            <Chart 
+              key={`area-chart-${isLight ? 'light' : 'dark'}-${areaChartConfig.series[0].data.join(',')}`} 
+              options={areaChartConfig.options} 
+              series={areaChartConfig.series} 
+              type="area" 
+              height={160} 
+            />
           </div>
         </div>
 
@@ -284,7 +337,13 @@ const DashboardOverviewApp = () => {
             Total Submissions: <span className={isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}>{totalLeads}</span>
           </p>
           <div className="flex justify-center mt-2">
-            <Chart options={radialChartConfig.options} series={radialChartConfig.series} type="radialBar" height={220} />
+            <Chart 
+              key={`radial-chart-${isLight ? 'light' : 'dark'}-${stats.successRate}`} 
+              options={radialChartConfig.options} 
+              series={radialChartConfig.series} 
+              type="radialBar" 
+              height={220} 
+            />
           </div>
         </div>
       </div>
@@ -305,8 +364,11 @@ const DashboardOverviewApp = () => {
           {recentActivity.slice(0, 5).map((activity, index) => {
              // Bento 10/100/20 Opacity Status Logic
              let statusStyle = 'bg-[#DAC18A]/10 text-[#DAC18A] border-[#DAC18A]/20'; // Pending / Default
-             if (activity[1] === 'Completed') statusStyle = 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20';
-             if (activity[1] === 'Rejected') statusStyle = 'bg-[#F0524F]/10 text-[#F0524F] border-[#F0524F]/20';
+             
+             // Safely check status
+             const statusText = typeof activity[1] === 'string' ? activity[1].toUpperCase() : '';
+             if (statusText === 'COMPLETED') statusStyle = 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20';
+             if (statusText === 'REJECTED') statusStyle = 'bg-[#F0524F]/10 text-[#F0524F] border-[#F0524F]/20';
 
              return (
               <div key={index} className={`rounded-2xl p-4 flex items-center justify-between border transition-all duration-200 active:scale-95 ${
@@ -316,7 +378,7 @@ const DashboardOverviewApp = () => {
                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm uppercase border ${
                      isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/10 text-[#9CA3AF]'
                    }`}>
-                    {activity[0].substring(0, 2)}
+                    {activity[0] ? activity[0].substring(0, 2) : '-'}
                   </div>
                   <div className="flex flex-col">
                     <span className={`text-sm font-bold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>{activity[0]}</span>
