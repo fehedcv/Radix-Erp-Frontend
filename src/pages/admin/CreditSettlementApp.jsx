@@ -368,6 +368,9 @@ const CreditSettlementApp = () => {
                         <p className={`text-[9px] font-bold uppercase tracking-wider mt-1 flex items-center gap-1.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
                           <Briefcase size={10} className="text-[#81B398]"/> {item.businessUnit}
                         </p>
+                        <p className={`text-[9px] font-bold uppercase tracking-wider mt-1 flex items-center gap-1.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+                          <User size={10} className="text-[#81B398]"/> {item.agentName}
+                        </p>
                       </div>
                       <div className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center font-extrabold text-sm uppercase shrink-0 border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C]' : 'bg-[#222938] border-white/10 text-[#F4F5F7]'}`}>
                         {item.agentAvatar ? (
@@ -588,10 +591,38 @@ const CreditSettlementApp = () => {
                           <p className={`text-[9px] font-bold uppercase tracking-wider mb-2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Total Sale Amount</p>
                           <p className="text-xl font-extrabold">₹{selectedItem.totalAmount?.toLocaleString() ?? 'N/A'}</p>
                         </div>
-                        <div className={`p-4 rounded-2xl border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
-                          <p className={`text-[9px] font-bold uppercase tracking-wider mb-2 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Admin Commission</p>
-                          <p className="text-xl font-extrabold">₹{(selectedItem.commission || (selectedItem.totalAmount * 0.1) || 0).toLocaleString()}</p>
-                        </div>
+                      <div
+  className={`p-4 rounded-2xl border ${
+    isLight
+      ? 'bg-[#FFFFFF] border-[#E2E8F0]'
+      : 'bg-[#222938] border-white/10'
+  }`}
+>
+  <p
+    className={`text-[9px] font-bold uppercase tracking-wider mb-2 ${
+      isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'
+    }`}
+  >
+    Admin Commission
+  </p>
+
+  <p className="text-xl font-extrabold">
+    ₹
+    {(
+      ((selectedItem.totalAmount || 0) *
+        (selectedItem.commission || 10)) /
+      100
+    ).toLocaleString()}
+  </p>
+
+  <p
+    className={`text-xs mt-1 ${
+      isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'
+    }`}
+  >
+    {selectedItem.commission || 10}% Commission
+  </p>
+</div>
                         <div className={`p-4 rounded-2xl border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}>
                           <p className={`text-[9px] font-bold uppercase tracking-wider mb-2 text-[#81B398] dark:text-[#81B398]`}>Agent Credit</p>
                           <p className="text-xl font-extrabold text-[#81B398]">{selectedItem.agentCredit?.toLocaleString() ?? 'N/A'} CR</p>
@@ -910,3 +941,4 @@ const SkeletonLoader = ({ isLight }) => (
 );
 
 export default CreditSettlementApp;
+

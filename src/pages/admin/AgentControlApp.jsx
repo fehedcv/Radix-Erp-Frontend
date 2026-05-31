@@ -31,7 +31,7 @@ const mapLead = (l) => ({
   clientName: l.customer_name || '—',
   status: l.status || 'pending',
   agentId: l.source_user_id,
-  unitName: l.business_unit?.business_name || l.business_unit_name || l.businessUnit || '—',
+  unitName: l.business_name || l.business_units?.business_name || l.service || l.business_unit_services?.service_name || 'Unknown Unit',
 });
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -493,7 +493,7 @@ const InfoItem = ({ label, value, isLight }) => (
 
 // ─── SKELETON LOADER ───
 const SkeletonLoader = ({ isLight }) => (
-  <div className="space-y-4 pt-2 pb-6 px-4 w-full animate-pulse max-w-[1600px] mx-auto">
+  <div className="space-y-4 pt-2 pb-6  w-full animate-pulse max-w-[1600px] mx-auto">
     <div className="mb-4 px-1">
       <div className={`w-40 h-8 rounded-lg mb-2 ${isLight ? 'bg-[#E2E8F0]' : 'bg-[#222938]'}`} />
       <div className={`w-28 h-3 rounded ${isLight ? 'bg-[#E2E8F0]' : 'bg-[#222938]'}`} />

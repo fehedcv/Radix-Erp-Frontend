@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Building2, Trash2, X, MapPin, User, CheckCircle2, AlertTriangle,
   Image as ImageIcon, Search, Phone, MessageSquare, Briefcase, Globe, Loader2, AlertCircle, Activity,
-  Facebook, Instagram, Linkedin
+  Facebook, Instagram, Linkedin, Star, Award
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import { supabase } from '../../supabase/supabaseClient';
@@ -42,6 +42,7 @@ const normalizeBusinessUnit = (doc) => ({
   gallery: Array.isArray(doc.gallery) ? doc.gallery : [],
   created_at: doc.created_at || '',
   date: doc.created_at ? doc.created_at.split('T')[0] : '—',
+  leadCount: doc.lead_count || 0 // Ensures we track the lead count if available from RPC
 });
 
 const CATEGORIES = ['Technology','Real Estate','Finance','Healthcare','Retail','Construction','Other'];
@@ -61,13 +62,9 @@ const BusinessHub = () => {
   const textSecondary = isLight ? 'text-[#718096]' : 'text-[#9CA3AF]';
   const pulseClass = isLight ? 'bg-[#E2E8F0]' : 'bg-[#334155]';
 
-  const [units, setUnits] = useState(
-  businessUnitsCache || []
-);
- const [loading, setLoading] = useState(
-  !businessUnitsCache
-);
-  const [error,         setError]         = useState(null);
+  const [units, setUnits] = useState(businessUnitsCache || []);
+  const [loading, setLoading] = useState(!businessUnitsCache);
+  const [error,        setError]        = useState(null);
   const [showAddModal,  setShowAddModal]  = useState(false);
   const [submitting,    setSubmitting]    = useState(false);
   const [selectedUnit,  setSelectedUnit]  = useState(null);
@@ -98,20 +95,19 @@ const BusinessHub = () => {
     } finally { setLoading(false); }
   }, []);
 
-useEffect(() => {
-  const CACHE_DURATION =
-    5 * 60 * 1000;
+  useEffect(() => {
+    const CACHE_DURATION = 5 * 60 * 1000;
 
-  if (
-    businessUnitsCache &&
-    lastFetchTime &&
-    Date.now() - lastFetchTime < CACHE_DURATION
-  ) {
-    return;
-  }
+    if (
+      businessUnitsCache &&
+      lastFetchTime &&
+      Date.now() - lastFetchTime < CACHE_DURATION
+    ) {
+      return;
+    }
 
-  fetchUnits();
-}, []);
+    fetchUnits();
+  }, [fetchUnits]);
 
   // ── Search & Filter ───────────────────────────────────────────────────────
   const filteredUnits = useMemo(() => {
@@ -216,8 +212,8 @@ useEffect(() => {
     } finally { setSubmitting(false); }
   };
 
-  // ── Charts Data ───────────────────────────────────────────────────────────
-  const chartConfigs = useMemo(() => {
+  // ── Charts & Top Partner Data ─────────────────────────────────────────────
+  const { chartConfigs, topPartner } = useMemo(() => {
     const cats = units.reduce((acc, u) => { acc[u.category] = (acc[u.category] || 0) + 1; return acc; }, {});
     const hasCatSeries = Object.keys(cats).length > 0;
 
@@ -228,36 +224,47 @@ useEffect(() => {
     const sortedDates = Object.keys(dailyCounts).sort().slice(-10);
     const hasTrendSeries = sortedDates.length > 0;
 
+    // Determine Top Partner based on leadCount safely
+    let maxLeadsUnit = null;
+    if (units.length > 0) {
+      maxLeadsUnit = units.reduce((prev, current) => {
+        return ((prev.leadCount || 0) >= (current.leadCount || 0)) ? prev : current;
+      });
+    }
+
     return {
-      distribution: {
-        series:  hasCatSeries ? Object.values(cats) : [1],
-        options: {
-          chart: { type: 'donut', fontFamily: 'Plus Jakarta Sans', background: 'transparent', parentHeightOffset: 0 },
-          labels:  hasCatSeries ? Object.keys(cats) : ['No Data'],
-          colors:  ['#81B398', '#DAC18A', '#48477A', '#718096', '#E2E8F0'], // Earth-Tech Palette
-          legend:  { position: 'bottom', fontSize: '11px', fontWeight: 600, labels: { colors: isLight ? '#718096' : '#9CA3AF' } },
-          plotOptions: { pie: { donut: { size: '75%' } } },
-          dataLabels:  { enabled: false },
-          stroke:  { show: false },
-          tooltip: { theme: isLight ? 'light' : 'dark' }
-        },
-      },
-      trend: {
-        series: [{ name: 'New Registrations', data: hasTrendSeries ? sortedDates.map(d => dailyCounts[d]) : [0] }],
-        options: {
-          chart: { type: 'area', toolbar: { show: false }, fontFamily: 'Plus Jakarta Sans', background: 'transparent', parentHeightOffset: 0 },
-          colors: ['#48477A'],
-          stroke: { curve: 'smooth', width: 2 },
-          fill: { type: 'gradient', gradient: { opacityFrom: isLight ? 0.3 : 0.4, opacityTo: 0 } },
-          xaxis: { 
-            categories: hasTrendSeries ? sortedDates.map(d => d.split('-').slice(1).join('/')) : ['N/A'],
-            labels: { style: { colors: isLight ? '#718096' : '#9CA3AF', fontSize: '11px', fontWeight: 500 } },
-            axisBorder: { show: false }, axisTicks: { show: false }
+      topPartner: maxLeadsUnit,
+      chartConfigs: {
+        distribution: {
+          series:  hasCatSeries ? Object.values(cats) : [1],
+          options: {
+            chart: { type: 'donut', fontFamily: 'Plus Jakarta Sans', background: 'transparent', parentHeightOffset: 0 },
+            labels:  hasCatSeries ? Object.keys(cats) : ['No Data'],
+            colors:  ['#81B398', '#DAC18A', '#48477A', '#718096', '#E2E8F0'], // Earth-Tech Palette
+            legend:  { position: 'bottom', fontSize: '11px', fontWeight: 600, labels: { colors: isLight ? '#718096' : '#9CA3AF' } },
+            plotOptions: { pie: { donut: { size: '75%' } } },
+            dataLabels:  { enabled: false },
+            stroke:  { show: false },
+            tooltip: { theme: isLight ? 'light' : 'dark' }
           },
-          yaxis: { labels: { style: { colors: isLight ? '#718096' : '#9CA3AF', fontSize: '11px', fontWeight: 500 } } },
-          grid: { borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)', strokeDashArray: 4, xaxis: { lines: { show: false } }, padding: {left: 10, right: 0, bottom: 0, top: 0} },
-          dataLabels: { enabled: false },
-          tooltip: { theme: isLight ? 'light' : 'dark' }
+        },
+        trend: {
+          series: [{ name: 'New Registrations', data: hasTrendSeries ? sortedDates.map(d => dailyCounts[d]) : [0] }],
+          options: {
+            chart: { type: 'area', toolbar: { show: false }, fontFamily: 'Plus Jakarta Sans', background: 'transparent', parentHeightOffset: 0 },
+            colors: ['#48477A'],
+            stroke: { curve: 'smooth', width: 2 },
+            fill: { type: 'gradient', gradient: { opacityFrom: isLight ? 0.3 : 0.4, opacityTo: 0 } },
+            xaxis: { 
+              categories: hasTrendSeries ? sortedDates.map(d => d.split('-').slice(1).join('/')) : ['N/A'],
+              labels: { style: { colors: isLight ? '#718096' : '#9CA3AF', fontSize: '11px', fontWeight: 500 } },
+              axisBorder: { show: false }, axisTicks: { show: false }
+            },
+            yaxis: { labels: { style: { colors: isLight ? '#718096' : '#9CA3AF', fontSize: '11px', fontWeight: 500 } } },
+            grid: { borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)', strokeDashArray: 4, xaxis: { lines: { show: false } }, padding: {left: 10, right: 0, bottom: 0, top: 0} },
+            dataLabels: { enabled: false },
+            tooltip: { theme: isLight ? 'light' : 'dark' }
+          }
         }
       }
     };
@@ -308,6 +315,47 @@ useEffect(() => {
           <Plus size={16} /> Add Business Unit
         </button>
       </div>
+
+      {/* ── TOP PARTNER HIGHLIGHT ── */}
+      {topPartner && (
+        <div className={`p-6 md:p-8 rounded-3xl border flex flex-col md:flex-row items-center md:items-start justify-between gap-6 transition-all duration-300 ${
+          isLight ? 'bg-gradient-to-br from-[#81B398]/10 to-[#FFFFFF] border-[#81B398]/20' : 'bg-gradient-to-br from-[#81B398]/10 to-[#222938] border-[#81B398]/20'
+        }`}>
+          <div className="flex flex-col md:flex-row items-center md:items-center gap-5 text-center md:text-left w-full">
+            
+            <div className="relative shrink-0">
+              <div className={`h-20 w-20 md:h-24 md:w-24 rounded-full overflow-hidden flex items-center justify-center border-4 shadow-xl ${isLight ? 'bg-[#FFFFFF] border-[#FFFFFF] text-[#1A202C]' : 'bg-[#131720] border-[#222938] text-[#F4F5F7]'}`}>
+                {topPartner.logo ? (
+                  <img src={resolveUrl(topPartner.logo)} alt={topPartner.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="font-bold text-3xl uppercase">{topPartner.name.charAt(0)}</span>
+                )}
+              </div>
+              <div className="absolute -bottom-2 -right-2 bg-[#DAC18A] text-white p-2 rounded-full shadow-lg border-2 border-white dark:border-[#222938]">
+                <Award size={16} strokeWidth={3} />
+              </div>
+            </div>
+            
+            <div className="flex-1">
+              <p className={`text-xs font-bold uppercase tracking-wider mb-1 flex items-center justify-center md:justify-start gap-1.5 ${isLight ? 'text-[#81B398]' : 'text-[#81B398]'}`}>
+                <Star size={14} className="fill-current" /> Top Performing Partner
+              </p>
+              <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight ${textPrimary}`}>
+                {topPartner.name}
+              </h3>
+              <p className={`text-sm font-medium mt-1 ${textSecondary}`}>
+                Leading the network in client acquisitions and sustained conversions.
+              </p>
+            </div>
+
+            <div className={`px-6 py-4 rounded-2xl flex flex-col items-center border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#1A202C] border-white/5'}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${textSecondary}`}>Total Leads</span>
+              <span className="text-3xl md:text-4xl font-extrabold tracking-tighter text-[#81B398]">{topPartner.leadCount || 0}</span>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* ── ANALYTICS ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
@@ -725,7 +773,7 @@ const AddUnitForm = ({ onSubmit, onCancel, submitting, isLight, textSecondary, t
   return (
     <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <FormInput label="Business Name *"   value={form.name}      onChange={set('name')}      placeholder="e.g. SKYLINE TECH"        required isLight={isLight} />
+        <FormInput label="Business Name *"   value={form.name}      onChange={set('name')}      placeholder="e.g. SKYLINE TECH"      required isLight={isLight} />
         <FormInput label="Market Category *" value={form.category}  onChange={set('category')}  placeholder="Enter Category"           required isLight={isLight} />
         <FormInput label="Commission (%) *"  type="number" value={form.commision} onChange={set('commision')} placeholder="e.g. 10" required isLight={isLight} />
         <FormInput label="Unit Manager *"    value={form.manager}   onChange={set('manager')}   placeholder="e.g. ABHISHEK"       required isLight={isLight} />

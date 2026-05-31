@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Trash2, Save, Loader2, Settings, Briefcase, 
   MapPin, Mail, Phone, Globe, Camera, X, UploadCloud, 
-  Upload, Instagram, Facebook, Linkedin, Share2, AlertTriangle, Activity, Search, XCircle, Building2, User, Trophy, LayoutGrid, CheckCircle2, Package, Image
+  Upload, Instagram, Facebook, Linkedin, Share2, AlertTriangle, Activity, Search, XCircle, Building2, User, Trophy, LayoutGrid, CheckCircle2, Package, Image, MessageSquare
 } from "lucide-react";
 
 import { supabase } from "../../supabase/supabaseClient";

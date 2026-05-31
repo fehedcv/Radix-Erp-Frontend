@@ -2,87 +2,101 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, UserPlus } from 'lucide-react';
 import { AuthInput, ErrorMsg, SubmitBtn } from './SharedElementsApp';
 
-const AppSignupForm = ({ onSubmit, error, loading, form, setForm, isLight, setTab }) => {
+const AppSignupForm = ({ onSubmit, error, loading, form, setForm, setTab }) => {
   const [showPass, setShowPass] = useState(false);
 
-  const setField = (k) => (e) =>
-    setForm((prev) => ({ ...prev, [k]: e.target.value }));
+  const setField = (k) => (e) => setForm((prev) => ({ ...prev, [k]: e.target.value }));
 
   return (
-    <div className="w-full shrink-0">
-      {/* Signup Text */}
-      <div className="mb-10 text-center">
-        <h2 className={`text-2xl font-extrabold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
+    <div className="w-full max-w-[320px] mx-auto py-8 animate-[fadeIn_0.4s_ease-in-out]">
+      
+      {/* Header */}
+      <div className="mb-10 text-center mt-24">
+        <h2 className="text-[2rem] font-bold text-white leading-tight mb-2">
           Create Account
         </h2>
-        <p className={`text-sm font-medium mt-1.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-          Join the partner network for free
+        <p className="text-[#9CA3AF] text-[0.9rem]">
+          Join the partner network
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-7">
-        
-        <div className="relative">
-          <label className={`text-[11px] font-bold uppercase tracking-wider mb-1 block ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-            Full Name
-          </label>
-          <AuthInput isLight={isLight} value={form.full_name} onChange={setField('full_name')} placeholder="John Doe" required />
-        </div>
+      <form onSubmit={onSubmit} className="space-y-5">
+        {[
+          { label: 'Full Name', name: 'full_name', type: 'text', placeholder: 'John Doe' },
+          { label: 'Email Address', name: 'email', type: 'email', placeholder: 'name@company.com' },
+          { label: 'Phone Number', name: 'phone', type: 'tel', placeholder: '+91 98765 43210' },
+        ].map((field) => (
+          <div key={field.name}>
+            <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#6B7280] mb-2 block pl-1">
+              {field.label}
+            </label>
+            <AuthInput 
+              type={field.type} 
+              value={form[field.name]} 
+              onChange={setField(field.name)} 
+              placeholder={field.placeholder} 
+              required 
+            />
+          </div>
+        ))}
 
-        <div className="relative">
-          <label className={`text-[11px] font-bold uppercase tracking-wider mb-1 block ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-            Email Address
-          </label>
-          <AuthInput isLight={isLight} type="email" value={form.email} onChange={setField('email')} placeholder="john@email.com" required />
-        </div>
-
-        <div className="relative">
-          <label className={`text-[11px] font-bold uppercase tracking-wider mb-1 block ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-            Phone Number
-          </label>
-          <AuthInput isLight={isLight} type="tel" value={form.phone} onChange={setField('phone')} placeholder="+91 98765 43210" required />
-        </div>
-
-        <div className="relative">
-          <label className={`text-[11px] font-bold uppercase tracking-wider mb-1 block ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+        {/* Password Fields */}
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#6B7280] mb-2 block pl-1">
             Password
           </label>
           <div className="relative">
-            <AuthInput isLight={isLight} type={showPass ? 'text' : 'password'} value={form.password} onChange={setField('password')} placeholder="Min 8 characters" required />
+            <AuthInput 
+              type={showPass ? 'text' : 'password'} 
+              value={form.password} 
+              onChange={setField('password')} 
+              placeholder="Min 8 characters" 
+              required 
+            />
             <button
               type="button"
-              onClick={() => setShowPass((p) => !p)}
-              className={`absolute right-1 top-1/2 -translate-y-1/2 p-2 transition-colors ${isLight ? 'text-[#718096] hover:text-[#1A202C]' : 'text-[#9CA3AF] hover:text-[#F4F5F7]'}`}
+              onClick={() => setShowPass(!showPass)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-white transition-colors"
             >
-              {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
         </div>
 
-        <div className="relative">
-          <label className={`text-[11px] font-bold uppercase tracking-wider mb-1 block ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#6B7280] mb-2 block pl-1">
             Confirm Password
           </label>
-          <AuthInput isLight={isLight} type="password" value={form.confirm} onChange={setField('confirm')} placeholder="Re-enter password" required />
+          <AuthInput 
+            type="password" 
+            value={form.confirm} 
+            onChange={setField('confirm')} 
+            placeholder="Re-enter password" 
+            required 
+          />
         </div>
 
-        {error && <div className="pt-1"><ErrorMsg isLight={isLight} msg={error} /></div>}
+        {error && <div className="pt-1"><ErrorMsg msg={error} /></div>}
 
-        <div className="pt-6">
-          <SubmitBtn loading={loading} label="Create Account" icon={<UserPlus size={18} strokeWidth={2.5} />} />
+        <div className="pt-2">
+          <SubmitBtn 
+            loading={loading} 
+            label="Create Account" 
+            icon={<UserPlus size={18} strokeWidth={2.5} />} 
+          />
         </div>
       </form>
 
-      {/* Toggle to Login */}
-      <div className={`mt-10 pt-6 border-t flex flex-col items-center ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
-        <p className={`text-[11px] font-bold uppercase tracking-wider mb-4 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+      {/* Footer Toggle */}
+      <div className="mt-10 pt-8 border-t border-white/10 flex flex-col items-center">
+        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#6B7280] mb-4">
           Already have an account?
         </p>
         <button 
           onClick={() => setTab('login')}
-          className="w-full py-3.5 rounded-[1rem] font-bold text-sm transition-all duration-200 active:scale-95 bg-[#81B398]/10 text-[#81B398] hover:bg-[#81B398]/20 border border-[#81B398]/20"
+          className="w-full py-3.5 rounded-[1rem] font-bold text-sm text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/5 transition-all duration-200 active:scale-95"
         >
-          Log In Here
+          Log In
         </button>
       </div>
     </div>

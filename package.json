@@ -16,6 +16,7 @@
     "@capacitor/core": "^8.3.3",
     "@capacitor/device": "^8.0.2",
     "@capacitor/push-notifications": "^8.1.1",
+    "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
     "@supabase/supabase-js": "^2.105.1",
     "@tailwindcss/vite": "^4.1.18",
@@ -35,6 +36,7 @@
     "three": "^0.182.0"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@eslint/js": "^9.39.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",

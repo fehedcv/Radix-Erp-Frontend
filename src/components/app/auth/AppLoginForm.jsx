@@ -2,62 +2,84 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { AuthInput, ErrorMsg, SubmitBtn } from './SharedElementsApp';
 
-const AppLoginForm = ({ onSubmit, error, loading, isLight, setTab }) => {
+const AppLoginForm = ({ onSubmit, error, loading, setTab }) => {
   const [showPass, setShowPass] = useState(false);
 
   return (
-    <div className="w-full shrink-0">
-      {/* Welcome Text */}
-      <div className="mb-8 text-center">
-        <h2 className={`text-2xl font-extrabold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
-          Welcome Back!
+    <div className="w-full max-w-[320px] mx-auto animate-[fadeIn_0.4s_ease-in-out]">
+      
+      {/* Welcome Header */}
+      <div className="mb-10 text-center">
+        <h2 className="text-[2rem] font-bold text-white leading-tight mb-2">
+          Welcome Back
         </h2>
-        <p className={`text-sm font-medium mt-1.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-          Log in to your partner account
+        <p className="text-[#9CA3AF] text-[0.9rem]">
+          Log in to your partner workspace
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-6"> {/* Increased spacing for modern look */}
+      <form onSubmit={onSubmit} className="space-y-6">
+        {/* Email Input */}
         <div>
-          <label className={`text-[11px] font-bold uppercase tracking-wider mb-1 block pl-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+          <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#6B7280] mb-2 block pl-1">
             Email Address
           </label>
-          <AuthInput isLight={isLight} name="email" type="email" placeholder="name@company.com" required />
+          <AuthInput 
+            name="email" 
+            type="email" 
+            placeholder="name@company.com" 
+            required 
+            className="bg-[#18181B] border-white/10 focus:border-[#A475FF] transition-colors"
+          />
         </div>
 
+        {/* Password Input */}
         <div>
-          <label className={`text-[11px] font-bold uppercase tracking-wider mb-1 block pl-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+          <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#6B7280] mb-2 block pl-1">
             Password
           </label>
           <div className="relative">
-            <AuthInput isLight={isLight} name="password" type={showPass ? 'text' : 'password'} placeholder="••••••••" required />
+            <AuthInput 
+              name="password" 
+              type={showPass ? 'text' : 'password'} 
+              placeholder="••••••••" 
+              required 
+              className="bg-[#18181B] border-white/10 focus:border-[#A475FF] transition-colors"
+            />
             <button
               type="button"
               onClick={() => setShowPass((p) => !p)}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 transition-colors ${isLight ? 'text-[#718096] hover:text-[#1A202C]' : 'text-[#9CA3AF] hover:text-[#F4F5F7]'}`}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-white transition-colors"
             >
-              {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
         </div>
 
-        {error && <div className="pt-1"><ErrorMsg isLight={isLight} msg={error} /></div>}
+        {/* Error Message */}
+        {error && <div className="pt-0"><ErrorMsg msg={error} /></div>}
 
-        <div className="pt-4">
-          <SubmitBtn loading={loading} label="Sign In" icon={<LogIn size={18} strokeWidth={2.5} />} />
+        {/* Submit Button (Gradient Style) */}
+        <div className="pt-2">
+          <SubmitBtn 
+            loading={loading} 
+            label="Sign In" 
+            icon={<LogIn size={18} strokeWidth={2.5} />} 
+            className="bg-gradient-to-br from-[#A475FF] to-[#6020FF] hover:opacity-90 active:scale-[0.98] transition-all rounded-[1rem] shadow-[0_8px_20px_rgba(96,32,255,0.3)]"
+          />
         </div>
       </form>
 
       {/* Toggle to Signup */}
-      <div className={`mt-8 pt-6 border-t flex flex-col items-center ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
-        <p className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
+      <div className="mt-10 pt-8 border-t border-white/10 flex flex-col items-center">
+        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#6B7280] mb-4">
           Don't have an account?
         </p>
         <button 
           onClick={() => setTab('signup')}
-          className="w-full py-3.5 rounded-[1rem] font-bold text-sm transition-all duration-200 active:scale-95 bg-[#81B398]/10 text-[#81B398] hover:bg-[#81B398]/20 border border-[#81B398]/20"
+          className="w-full py-3.5 rounded-[1rem] font-bold text-sm text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/5 transition-all duration-200 active:scale-95"
         >
-          Join Now Free
+          Create Account
         </button>
       </div>
     </div>

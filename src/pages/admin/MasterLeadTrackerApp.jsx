@@ -511,7 +511,7 @@ const MasterLeadTrackerApp = () => {
 
 // ---------------- SKELETON LOADER COMPONENT ----------------
 const SkeletonLoader = ({ isLight }) => (
-  <div className="space-y-4 pt-2 pb-6 px-4 w-full animate-pulse max-w-[1600px] mx-auto">
+  <div className="space-y-4 pt-2 pb-6  w-full animate-pulse max-w-[1600px] mx-auto">
     {/* Header */}
     <div className="mb-4 px-1">
       <div className={`w-40 h-8 rounded-lg mb-2 ${isLight ? 'bg-[#E2E8F0]' : 'bg-[#222938]'}`} />

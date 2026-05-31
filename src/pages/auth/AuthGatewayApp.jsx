@@ -1,27 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 import { supabase } from '../../supabase/supabaseClient';
 import { useTheme } from '../../context/ThemeContext'; 
 
-// Modules
-import AuthLogo from '../../components/app/auth/AuthLogo';
+// Modules (AuthLogo removed)
 import AppLoginForm from '../../components/app/auth/AppLoginForm';
 import AppSignupForm from '../../components/app/auth/AppSignupForm';
 import AppSuccessView from '../../components/app/auth/AppSuccessView';
 
 const AuthGatewayApp = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
+  const { setTheme } = useTheme();
   
-  const [tab, setTab] = useState('login');
+  // Force Dark Theme
+  useEffect(() => {
+    setTheme('dark');
+  }, [setTheme]);
 
-  // Login state
+  const [tab, setTab] = useState('login');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
-  // Signup state
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupError, setSignupError] = useState('');
   const [signupForm, setSignupForm] = useState({
@@ -73,11 +73,9 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
       );
 
       onLoginSuccess?.(role);
-
-      if (role === 'agent') navigate('/agent');
-      else if (role === 'business') navigate('/business');
-      else if (role === 'admin') navigate('/admin');
-      else navigate('/unauthorized');
+      
+      const routes = { agent: '/agent', business: '/business', admin: '/admin' };
+      navigate(routes[role] || '/unauthorized');
       
     } catch (err) {
       console.error(err);
@@ -122,7 +120,6 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
       }
 
       setTab('success');
-      
     } catch (err) {
       console.error(err);
       setSignupError('Signup failed. Please try again.');
@@ -137,33 +134,29 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className={`relative min-h-[100dvh] w-full flex flex-col items-center justify-center font-['Plus_Jakarta_Sans',sans-serif] overflow-y-auto overflow-x-hidden ${
-      isLight ? 'bg-[#FFFFFF] text-[#1A202C]' : 'bg-[#131720] text-[#F4F5F7]'
-    }`}>
+    <div className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center font-['Plus_Jakarta_Sans',sans-serif] bg-[#0D0D12] text-[#F4F5F7] overflow-hidden">
       
-      {/* --- SLEEK FLOATING BACK BUTTON --- */}
-      <div className="absolute top-10 left-6 z-50">
-        <Link 
-          to="/"
-          className={`w-10 h-10 rounded-full flex items-center justify-center active:scale-90 ${
-            isLight ? ' text-[#1A202C] hover:bg-[#E2E8F0]' : ' text-[#F4F5F7] hover:bg-white/10'
-          }`}
-        >
-          <span className='text-emerald-500 font-semibold'>Back</span>
+      {/* Premium Ambient Background Glow */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#6020FF]/10 blur-[150px] rounded-full -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+
+      {/* Back Button */}
+      <div className="absolute top-14 left-8 z-50">
+        <Link to="/" className="text-white/60 hover:text-white transition-colors flex items-center gap-1 text-sm font-medium">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          Back
         </Link>
       </div>
 
-      {/* --- MAIN CONTENT CONTAINER --- */}
-      <main className="w-full max-w-sm mx-auto px-6 py-10 flex flex-col items-center justify-center min-h-[100dvh]">
+      {/* Main Content Container */}
+      <main className="w-full max-w-[400px] mx-auto px-6 flex flex-col items-center justify-center z-10">
         
-        <AuthLogo />
-
+        {/* Forms aligned directly to the center */}
         {tab === 'login' && (
           <AppLoginForm 
             onSubmit={handleLogin}
             error={loginError}
             loading={loginLoading}
-            isLight={isLight}
+            isLight={false} 
             setTab={setTab}
           />
         )}
@@ -175,7 +168,7 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
             loading={signupLoading}
             form={signupForm}
             setForm={setSignupForm}
-            isLight={isLight}
+            isLight={false}
             setTab={setTab}
           />
         )}
@@ -183,7 +176,7 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
         {tab === 'success' && (
           <AppSuccessView 
             onReset={handleResetSuccess}
-            isLight={isLight}
+            isLight={false}
           />
         )}
       </main>
@@ -191,4 +184,4 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
   );
 };
 
-export default AuthGatewayApp; 
+export default AuthGatewayApp;
