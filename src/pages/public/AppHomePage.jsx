@@ -8,7 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 const onboardingSteps = [
   {
     id: 0,
-    title: "Have friends or clients\nwho need top-tier\nexperts?",
+    title: "Have clients?\nwho need top-tier experts?",
   },
   {
     id: 1,
