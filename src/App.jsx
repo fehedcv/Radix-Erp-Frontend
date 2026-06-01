@@ -88,10 +88,10 @@ const AppContent = () => {
         if (!Capacitor.isNativePlatform()) return;
         await StatusBar.setOverlaysWebView({ overlay: false });
         if (theme === 'light') {
-          await StatusBar.setBackgroundColor({ color: '#FF0000' });
+          await StatusBar.setBackgroundColor({ color: '#F4F5F7' });
           await StatusBar.setStyle({ style: Style.Light });
         } else {
-          await StatusBar.setBackgroundColor({ color: '#09090B' });
+          await StatusBar.setBackgroundColor({ color: '#131720' });
           await StatusBar.setStyle({ style: Style.Dark });
         }
       } catch (error) {
