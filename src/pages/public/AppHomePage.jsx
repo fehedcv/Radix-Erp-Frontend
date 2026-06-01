@@ -8,18 +8,17 @@ import { useTheme } from '../../context/ThemeContext';
 const onboardingSteps = [
   {
     id: 0,
-    title: "The best way\nto manage your\nmoney",
+    title: "Have friends or clients\nwho need top-tier\nexperts?",
   },
   {
     id: 1,
-    title: "Track all your\nexpenses in\none place", 
+    title: "Drop their details\nhere in your\nfree time", 
   },
   {
     id: 2,
-    title: "Achieve your\nfinancial goals\nfaster", 
+    title: "Sit back and enjoy\nyour share of\nthe profits", 
   }
 ];
-
 // =========================================================
 // 2. UI COMPONENTS
 // =========================================================

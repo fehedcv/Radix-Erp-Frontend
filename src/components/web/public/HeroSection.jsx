@@ -5,17 +5,17 @@ const HeroSection = ({ onEnterPortal }) => {
   return (
     <section className="relative pt-8 md:pt-24 pb-20 md:pb-32 px-4 sm:px-6 max-w-[1200px] mx-auto min-h-[85vh] flex flex-col">
       
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-12 z-20 relative w-full">
+     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-12 z-20 relative w-full">
         <div className="reveal-up lg:w-[60%] mt-8 lg:mt-0">
           <h1 className="font-['Syne',sans-serif] text-6xl sm:text-7xl lg:text-[5.5rem] font-medium tracking-tighter leading-[1.05] text-white">
-            Share Deals. <br />
-            Earn Cash.
+            Your network. <br />
+            Real rewards.
           </h1>
         </div>
         
         <div className="reveal-up lg:w-[40%] flex flex-col items-start lg:pl-10 text-left relative">
           <p className="text-white/60 text-sm md:text-base leading-relaxed font-light mb-8 max-w-sm">
-            Join our new partner program. Send us high-quality business leads, track them easily, and get paid fast when deals close.
+            Know someone who needs trusted business services? Point them our way, track everything effortlessly, and enjoy your share of the profits as a valued partner.
           </p>
 
           <button 
@@ -25,7 +25,7 @@ const HeroSection = ({ onEnterPortal }) => {
             <span className="absolute inset-0 border border-white/20 rounded-full transition-colors duration-300 group-hover:border-transparent"></span>
             <span className="absolute inset-x-0 bottom-0 h-0 bg-gradient-to-t from-[#B282FE] to-[#7038FF] transition-all duration-500 ease-out group-hover:h-full rounded-full"></span>
             <span className="relative flex items-center justify-center gap-3 z-10">
-               Start Earning Today <ArrowRight size={16} />
+               Start Connecting <ArrowRight size={16} />
             </span>
           </button>
         </div>
