@@ -11,19 +11,29 @@ import {
   Settings,
   Loader2,
   Target,
-  Trash2
+  Trash2,
+  Bell,
+  BellOff,
+  BellRing,
 } from 'lucide-react';
 
 import { supabase } from '../../supabase/supabaseClient';
 import { useTheme } from '../../context/ThemeContext';
+import { useNotification } from '../../context/NotificationContext';
+import { requestWebPushPermission } from '../../services/webPush';
 
 const ProfilePage = () => {
   const { theme } = useTheme();
+  const { showToast } = useNotification();
 
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [notifPermission, setNotifPermission] = useState(
+    'Notification' in window ? Notification.permission : 'unsupported'
+  );
+  const [notifLoading, setNotifLoading] = useState(false);
 
   const [user, setUser] = useState(null);
 
@@ -267,6 +277,18 @@ const ProfilePage = () => {
     }
   };
 
+  // Must be wired to a button onClick — Notification.requestPermission() is
+  // only allowed inside a short-lived user gesture, not useEffect or timers.
+  const handleEnableNotifications = async () => {
+    setNotifLoading(true);
+    try {
+      const result = await requestWebPushPermission(showToast);
+      setNotifPermission(result === 'unsupported' ? 'denied' : result);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+
   // SKELETON LOADING
   if (loading) {
     return (
@@ -487,6 +509,52 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
+
+      {/* NOTIFICATIONS CARD */}
+      {'Notification' in window && (
+        <div className={`mt-8 rounded-2xl border p-8 transition-all ${surfaceClass}`}>
+          <div className={`flex items-center gap-2 mb-6 border-b pb-4 ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>
+            <Bell size={18} className="text-[#81B398]" />
+            <h3 className="font-bold uppercase tracking-wider text-sm">Notifications</h3>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className={`font-semibold ${textPrimary}`}>Push Notifications</p>
+              <p className={`text-sm mt-1 ${textSecondary}`}>
+                {notifPermission === 'granted' && 'You will receive alerts for new leads and payments.'}
+                {notifPermission === 'denied' && 'Blocked in browser settings. Click the lock icon in your address bar to re-enable.'}
+                {notifPermission === 'default' && 'Get instant alerts for new leads and payment updates.'}
+              </p>
+            </div>
+
+            {notifPermission === 'granted' && (
+              <div className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20">
+                <BellRing size={16} />
+                <span className="text-xs font-semibold uppercase tracking-wider">Enabled</span>
+              </div>
+            )}
+
+            {notifPermission === 'denied' && (
+              <div className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20">
+                <BellOff size={16} />
+                <span className="text-xs font-semibold uppercase tracking-wider">Blocked</span>
+              </div>
+            )}
+
+            {notifPermission === 'default' && (
+              <button
+                onClick={handleEnableNotifications}
+                disabled={notifLoading}
+                className="shrink-0 flex items-center gap-2 px-6 py-3 rounded-xl bg-[#81B398] text-white font-semibold disabled:opacity-60 hover:bg-[#6FA085] transition-colors shadow-sm"
+              >
+                {notifLoading ? <Loader2 size={16} className="animate-spin" /> : <Bell size={16} />}
+                Enable Notifications
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* SUCCESS POPUP MODAL */}
       <AnimatePresence>

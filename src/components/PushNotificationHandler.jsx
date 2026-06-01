@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useNotification } from '../context/NotificationContext';
 import { initializePushNotifications } from '../services/pushNotifications';
-import { initializeWebPush } from '../services/webPush';
+import { initWebPushIfGranted } from '../services/webPush';
 
 /**
  * Mounts inside <BrowserRouter> so it has access to useNavigate.
@@ -26,7 +26,9 @@ const PushNotificationHandler = ({ userId }) => {
     if (Capacitor.isNativePlatform()) {
       initializePushNotifications(navigate, showToast);
     } else {
-      initializeWebPush(showToast);
+      // Safe to call here — only inits if permission was already granted.
+      // Actual permission request must come from a user click (see Profile page).
+      initWebPushIfGranted(showToast);
     }
   }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
