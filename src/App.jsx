@@ -83,21 +83,22 @@ const AppContent = () => {
 
   // Update Status Bar based on Theme
   useEffect(() => {
-    const configureStatusBar = async () => {
-      try {
-        if (!Capacitor.isNativePlatform()) return;
-        await StatusBar.setOverlaysWebView({ overlay: false });
-        if (theme === 'light') {
-          await StatusBar.setBackgroundColor({ color: '#F4F5F7' });
-          await StatusBar.setStyle({ style: Style.Light });
-        } else {
-          await StatusBar.setBackgroundColor({ color: '#131720' });
-          await StatusBar.setStyle({ style: Style.Dark });
-        }
-      } catch (error) {
-        console.warn('StatusBar is not available on this platform', error);
-      }
-    };
+   const configureStatusBar = async () => {
+  try {
+    if (!Capacitor.isNativePlatform()) return;
+
+    // Status bar content app-ന്റെ മുകളിൽ overlay ചെയ്യും
+    await StatusBar.setOverlaysWebView({ overlay: true });
+
+    if (theme === 'light') {
+      await StatusBar.setStyle({ style: Style.Dark }); // dark icons
+    } else {
+      await StatusBar.setStyle({ style: Style.Light }); // white icons
+    }
+  } catch (error) {
+    console.warn('StatusBar is not available on this platform', error);
+  }
+};
     configureStatusBar();
   }, [theme]);
 
