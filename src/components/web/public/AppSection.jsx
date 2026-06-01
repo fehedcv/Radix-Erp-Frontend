@@ -28,18 +28,18 @@ const AppSection = () => {
           <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
             
             {/* Side Phone - Left */}
-            <div className="hidden md:block w-64 h-[500px] rounded-[2.5rem] border-[6px] border-[#1A1A24] bg-white shadow-2xl overflow-hidden transform -rotate-6 translate-y-12">
-               <img src="https://res.cloudinary.com/dmtzmgbkj/image/upload/v1775842532/WhatsApp_Image_2026-04-10_at_11.04.58_PM_qzmp3u.jpg" className="w-full h-full object-cover" alt="App UI 1" />
+            <div className="hidden md:block w-64 h-[500px] rounded-[2.5rem] border-[6px] border-[#1A1A24] bg-[#07070A] shadow-2xl overflow-hidden transform -rotate-6 translate-y-12">
+               <img src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1780377749/WhatsApp_Image_2026-06-02_at_1.19.41_PM_2_rf4brg.jpg" className="w-full h-full object-cover object-top" alt="App UI 1" />
             </div>
 
             {/* Main Phone - Center */}
-            <div className="w-72 h-[580px] rounded-[3rem] border-[8px] border-[#1A1A24] bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden z-30">
-               <img src="https://res.cloudinary.com/dmtzmgbkj/image/upload/v1775842532/WhatsApp_Image_2026-04-10_at_11.04.58_PM_qzmp3u.jpg" className="w-full h-full object-cover" alt="App UI Main" />
+            <div className="w-72 h-[580px] rounded-[3rem] border-[8px] border-[#1A1A24] bg-[#07070A] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] overflow-hidden z-30">
+               <img src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1780377749/WhatsApp_Image_2026-06-02_at_1.19.41_PM_tdhstp.jpg" className="w-full h-full object-cover object-top" alt="App UI Main" />
             </div>
 
             {/* Side Phone - Right */}
-            <div className="hidden md:block w-64 h-[500px] rounded-[2.5rem] border-[6px] border-[#1A1A24] bg-white shadow-2xl overflow-hidden transform rotate-6 translate-y-12">
-               <img src="https://res.cloudinary.com/dmtzmgbkj/image/upload/v1775842532/WhatsApp_Image_2026-04-10_at_11.04.58_PM_qzmp3u.jpg" className="w-full h-full object-cover" alt="App UI 2" />
+            <div className="hidden md:block w-64 h-[500px] rounded-[2.5rem] border-[6px] border-[#1A1A24] bg-[#07070A] shadow-2xl overflow-hidden transform rotate-6 translate-y-12">
+               <img src="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1780377776/WhatsApp_Image_2026-06-02_at_1.19.41_PM_1_ffnzi1.jpg" className="w-full h-full object-cover object-top" alt="App UI 2" />
             </div>
           </div>
         </div>
@@ -58,14 +58,19 @@ const AppSection = () => {
             <span className="relative flex items-center gap-4 z-10">
               <Smartphone size={24} className="text-[#B282FE] group-hover:text-white transition-colors duration-300" />
               
-              <div className="text-left">
-                <p className="text-[9px] uppercase font-bold tracking-[0.2em] opacity-60 group-hover:opacity-100 transition-opacity leading-none mb-1">
-                  Available for
-                </p>
-                <p className="text-sm font-black uppercase tracking-widest leading-none">
-                  Android APK
-                </p>
-              </div>
+           <a
+  href="https://hnfgivfqprqpeiwfwdcw.supabase.co/storage/v1/object/public/app/radix.apk"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="text-left"
+>
+  <p className="text-[9px] uppercase font-bold tracking-[0.2em] opacity-60 group-hover:opacity-100 transition-opacity leading-none mb-1">
+    Available for
+  </p>
+  <p className="text-sm font-black uppercase tracking-widest leading-none">
+    Android APK
+  </p>
+</a>
 
               <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
             </span>

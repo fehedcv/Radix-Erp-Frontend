@@ -90,11 +90,16 @@ const AppContent = () => {
     // Status bar content app-ന്റെ മുകളിൽ overlay ചെയ്യും
     await StatusBar.setOverlaysWebView({ overlay: true });
 
+    // if (theme === 'light') {
+    //   await StatusBar.setStyle({ style: Style.Dark }); // dark icons
+    // } else {
+    //   await StatusBar.setStyle({ style: Style.Light }); // white icons
+    // }
     if (theme === 'light') {
-      await StatusBar.setStyle({ style: Style.Dark }); // dark icons
-    } else {
-      await StatusBar.setStyle({ style: Style.Light }); // white icons
-    }
+  await StatusBar.setStyle({ style: Style.Light });
+} else {
+  await StatusBar.setStyle({ style: Style.Dark });
+}
   } catch (error) {
     console.warn('StatusBar is not available on this platform', error);
   }
