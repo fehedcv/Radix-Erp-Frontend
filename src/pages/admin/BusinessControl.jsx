@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Building2, Trash2, X, MapPin, User, CheckCircle2, AlertTriangle,
   Image as ImageIcon, Search, Phone, MessageSquare, Briefcase, Globe, Loader2, AlertCircle, Activity,
-  Facebook, Instagram, Linkedin
+  Facebook, Instagram, Linkedin, Edit3, Save
 } from 'lucide-react';
 import Chart from 'react-apexcharts';
 import { supabase } from '../../supabase/supabaseClient';
@@ -68,12 +68,15 @@ const BusinessHub = () => {
   !businessUnitsCache
 );
   const [error,         setError]         = useState(null);
-  const [showAddModal,  setShowAddModal]  = useState(false);
-  const [submitting,    setSubmitting]    = useState(false);
-  const [selectedUnit,  setSelectedUnit]  = useState(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  const [deleteTarget,  setDeleteTarget]  = useState(null);
-  const [deleting,      setDeleting]      = useState(false);
+  const [showAddModal,       setShowAddModal]       = useState(false);
+  const [submitting,         setSubmitting]         = useState(false);
+  const [selectedUnit,       setSelectedUnit]       = useState(null);
+  const [loadingDetail,      setLoadingDetail]      = useState(false);
+  const [deleteTarget,       setDeleteTarget]       = useState(null);
+  const [deleting,           setDeleting]           = useState(false);
+  const [editingCommission,  setEditingCommission]  = useState(false);
+  const [commissionValue,    setCommissionValue]    = useState('');
+  const [savingCommission,   setSavingCommission]   = useState(false);
   
   const [searchQuery,   setSearchQuery]   = useState("");
 
@@ -177,6 +180,27 @@ useEffect(() => {
       console.error('Delete error:', err);
       alert('Failed to delete business unit. Please try again.');
     } finally { setDeleting(false); }
+  };
+
+  // ── Save commission only ──────────────────────────────────────────────────
+  const handleSaveCommission = async () => {
+    if (!selectedUnit) return;
+    setSavingCommission(true);
+    try {
+      const { error } = await supabase
+        .from('business_units')
+        .update({ commission: Number(commissionValue) || 0 })
+        .eq('id', selectedUnit.id);
+      if (error) throw error;
+      const updated = { ...selectedUnit, commission: Number(commissionValue) || 0 };
+      setSelectedUnit(updated);
+      setUnits(prev => prev.map(u => u.id === selectedUnit.id ? { ...u, commission: updated.commission } : u));
+      if (businessUnitsCache) businessUnitsCache = businessUnitsCache.map(u => u.id === selectedUnit.id ? { ...u, commission: updated.commission } : u);
+      setEditingCommission(false);
+    } catch (err) {
+      console.error('Failed to save commission:', err);
+      alert('Failed to save commission.');
+    } finally { setSavingCommission(false); }
   };
 
   // ── Create ────────────────────────────────────────────────────────────────
@@ -495,9 +519,35 @@ useEffect(() => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
                     <div className="space-y-8">
                       <DossierSection title="Unit Identity" icon={<User size={16}/>} isLight={isLight} textPrimary={textPrimary} textSecondary={textSecondary}>
-                        <InfoItem label="Manager"      value={selectedUnit.managerName} textPrimary={textPrimary} textSecondary={textSecondary} />
-                        <InfoItem label="Commission"   value={`${selectedUnit.commission}%`} textPrimary={textPrimary} textSecondary={textSecondary} />
-                        <InfoItem label="Onboarded"    value={selectedUnit.date} textPrimary={textPrimary} textSecondary={textSecondary} />
+                        <InfoItem label="Manager"   value={selectedUnit.managerName} textPrimary={textPrimary} textSecondary={textSecondary} />
+                        <div className="flex justify-between items-center border-b pb-2" style={{ borderColor: 'rgba(156, 163, 175, 0.1)' }}>
+                          <span className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>Commission</span>
+                          {editingCommission ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number" min="0" max="100" autoFocus
+                                value={commissionValue}
+                                onChange={e => setCommissionValue(e.target.value)}
+                                className={`w-20 px-2 py-1 text-sm font-bold text-right rounded-lg border outline-none focus:border-[#81B398] ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-white/5'}`}
+                              />
+                              <span className={`text-sm font-bold ${textPrimary}`}>%</span>
+                              <button onClick={handleSaveCommission} disabled={savingCommission} className="p-1.5 rounded-lg bg-[#81B398] text-white hover:bg-[#6FA085] disabled:opacity-50 transition-colors">
+                                {savingCommission ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                              </button>
+                              <button onClick={() => setEditingCommission(false)} className={`p-1.5 rounded-lg transition-colors ${isLight ? 'hover:bg-[#E2E8F0] text-[#718096]' : 'hover:bg-[#131720] text-[#9CA3AF]'}`}>
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm font-bold ${textPrimary}`}>{selectedUnit.commission}%</span>
+                              <button onClick={() => { setCommissionValue(selectedUnit.commission); setEditingCommission(true); }} className={`p-1.5 rounded-lg transition-colors ${isLight ? 'hover:bg-[#F4F5F7] text-[#718096]' : 'hover:bg-[#131720] text-[#9CA3AF]'}`}>
+                                <Edit3 size={12} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <InfoItem label="Onboarded" value={selectedUnit.date} textPrimary={textPrimary} textSecondary={textSecondary} />
                         <InfoItem label="Status"       value={selectedUnit.status} textPrimary={textPrimary} textSecondary={textSecondary} />
                         
                         {selectedUnit.phone && (

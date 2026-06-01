@@ -1,3 +1,4 @@
+// v2
 /**
  * Firebase Cloud Messaging Service Worker
  *
