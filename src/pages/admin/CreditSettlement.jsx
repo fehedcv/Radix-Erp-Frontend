@@ -411,7 +411,7 @@ creditSettlementCacheTime = 0;
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {pendingRewards.map(item => (
-                <div key={item.ledgerId} className={`rounded-2xl border p-6 flex flex-col h-full transition-all duration-300 ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:border-[#81B398]' : 'bg-[#222938] border-white/5 hover:border-[#81B398]'}`}>
+                <div key={item.ledgerId ?? item.id} className={`rounded-2xl border p-6 flex flex-col h-full transition-all duration-300 ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] hover:border-[#81B398]' : 'bg-[#222938] border-white/5 hover:border-[#81B398]'}`}>
                   <div className="flex justify-between items-start gap-4 mb-5">
                     <div className="flex-1 min-w-0">
                       <h4 className="text-base font-bold tracking-tight truncate">{item.clientName}</h4>
@@ -504,7 +504,7 @@ creditSettlementCacheTime = 0;
                   </thead>
                   <tbody className={`divide-y ${isLight ? 'divide-[#E2E8F0]' : 'divide-white/5'}`}>
                     {historyRewards.map(item => (
-                      <tr key={item.ledgerId} className={`${isLight ? 'bg-[#FFFFFF]' : 'bg-[#222938]'}`}>
+                      <tr key={item.ledgerId ?? item.id} className={`${isLight ? 'bg-[#FFFFFF]' : 'bg-[#222938]'}`}>
                         <td className="px-6 py-4 text-xs font-medium">{item.date}</td>
                         <td className="px-6 py-4 text-sm font-bold">{item.clientName}</td>
                         <td className="px-6 py-4 flex items-center gap-3">

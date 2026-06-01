@@ -8,13 +8,6 @@ let _isInitialized = false;
 let _currentToken = null;
 let _unsubscribe = null;
 
-const isBrave = async () => {
-  try {
-    return !!(navigator.brave && await navigator.brave.isBrave());
-  } catch {
-    return false;
-  }
-};
 
 /**
  * Core FCM setup: registers the service worker, fetches the FCM token,
@@ -39,6 +32,27 @@ const _initWebPushMessaging = async (showToast) => {
       { scope: '/' }
     );
     console.log('[WebPush] Service worker registered');
+
+    // Wait for the SW to become active before requesting a push subscription.
+    // register() resolves as soon as the SW is parsed — it may still be in
+    // 'installing' or 'waiting' state. getToken() calls PushManager.subscribe()
+    // which fails with AbortError if there's no active SW yet.
+    if (!swRegistration.active) {
+      await new Promise((resolve, reject) => {
+        const sw = swRegistration.installing ?? swRegistration.waiting;
+        if (!sw) return resolve(); // already active by the time we check
+        sw.addEventListener('statechange', function handler() {
+          if (this.state === 'activated') {
+            sw.removeEventListener('statechange', handler);
+            resolve();
+          } else if (this.state === 'redundant') {
+            sw.removeEventListener('statechange', handler);
+            reject(new Error('Service worker became redundant during activation'));
+          }
+        });
+      });
+    }
+    console.log('[WebPush] Service worker active');
   } catch (err) {
     console.error('[WebPush] Service worker registration failed:', err);
     return;
@@ -109,11 +123,6 @@ export const initWebPushIfGranted = async (showToast) => {
   if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
   if (Notification.permission !== 'granted') return;
 
-  if (await isBrave()) {
-    console.info('[WebPush] Skipping — Brave browser blocks FCM');
-    return;
-  }
-
   try {
     await _initWebPushMessaging(showToast);
   } catch (err) {
@@ -136,11 +145,6 @@ export const initWebPushIfGranted = async (showToast) => {
  */
 export const requestWebPushPermission = async (showToast) => {
   if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-    return 'unsupported';
-  }
-
-  if (await isBrave()) {
-    console.info('[WebPush] Skipping — Brave browser blocks FCM');
     return 'unsupported';
   }
 
