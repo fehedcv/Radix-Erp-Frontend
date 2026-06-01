@@ -8,118 +8,182 @@ let _isInitialized = false;
 let _currentToken = null;
 let _unsubscribe = null;
 
-const isBrave = async () => {
+
+/**
+ * Core FCM setup: registers the service worker, fetches the FCM token,
+ * saves it to the DB, and wires up the foreground message listener.
+ *
+ * Private — never call this directly. Use initWebPushIfGranted() for
+ * auto-init on mount, or requestWebPushPermission() from a user click.
+ */
+const _initWebPushMessaging = async (showToast) => {
+  if (_isInitialized) return;
+
+  const messaging = await getFirebaseMessaging();
+  if (!messaging) {
+    console.warn('[WebPush] Firebase Messaging not supported in this environment');
+    return;
+  }
+
+  let swRegistration;
   try {
-    return !!(navigator.brave && await navigator.brave.isBrave());
-  } catch {
-    return false;
+    swRegistration = await navigator.serviceWorker.register(
+      '/firebase-messaging-sw.js',
+      { scope: '/' }
+    );
+    console.log('[WebPush] Service worker registered');
+
+    // Wait for the SW to become active before requesting a push subscription.
+    // register() resolves as soon as the SW is parsed — it may still be in
+    // 'installing' or 'waiting' state. getToken() calls PushManager.subscribe()
+    // which fails with AbortError if there's no active SW yet.
+    if (!swRegistration.active) {
+      await new Promise((resolve, reject) => {
+        const sw = swRegistration.installing ?? swRegistration.waiting;
+        if (!sw) return resolve(); // already active by the time we check
+        sw.addEventListener('statechange', function handler() {
+          if (this.state === 'activated') {
+            sw.removeEventListener('statechange', handler);
+            resolve();
+          } else if (this.state === 'redundant') {
+            sw.removeEventListener('statechange', handler);
+            reject(new Error('Service worker became redundant during activation'));
+          }
+        });
+      });
+    }
+    console.log('[WebPush] Service worker active');
+  } catch (err) {
+    console.error('[WebPush] Service worker registration failed:', err);
+    return;
+  }
+
+  let token;
+  try {
+    token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: swRegistration,
+    });
+  } catch (err) {
+    console.error('[WebPush] Failed to get FCM token:', err);
+    return;
+  }
+
+  if (!token) {
+    console.warn('[WebPush] No registration token available');
+    return;
+  }
+
+  _currentToken = token;
+  console.log('[WebPush] FCM token received');
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    console.error('[WebPush] No authenticated user when saving token:', userError?.message);
+    return;
+  }
+
+  const { error } = await supabase
+    .from('push_tokens')
+    .upsert(
+      { user_id: user.id, token, platform: 'web' },
+      { onConflict: 'token' }
+    );
+
+  if (error) {
+    console.error('[WebPush] Failed to save token:', error.message);
+  } else {
+    console.log('[WebPush] Token saved successfully');
+  }
+
+  _unsubscribe = onMessage(messaging, (payload) => {
+    console.log('[WebPush] Foreground message received');
+    if (showToast) {
+      showToast({
+        title: payload.notification?.title,
+        body: payload.notification?.body,
+        data: payload.data,
+      });
+    }
+  });
+
+  _isInitialized = true;
+  console.log('[WebPush] Web push initialized');
+};
+
+/**
+ * Safe to call from useEffect / component mount.
+ * Silently initializes FCM only if the user has already granted permission
+ * in a previous session. Never shows a permission prompt.
+ *
+ * @param {function} showToast - toast callback for foreground messages
+ */
+export const initWebPushIfGranted = async (showToast) => {
+  if (_isInitialized) return;
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+  if (Notification.permission !== 'granted') return;
+
+  try {
+    await _initWebPushMessaging(showToast);
+  } catch (err) {
+    console.error('[WebPush] Auto-init failed:', err);
   }
 };
 
 /**
- * Initializes Firebase Cloud Messaging for web browsers.
- * Skipped on Brave — Brave Shields block Google's FCM CDN causing the
- * service worker to hang on install, which freezes the app.
+ * Request notification permission and initialize FCM.
  *
- * @param {function} showToast - toast callback({ title, body, data }) for foreground display
+ * ⚠️  MUST be called directly from a synchronous user-generated event handler
+ * (e.g. a button's onClick). Browsers enforce that Notification.requestPermission()
+ * is only callable inside a short-lived user gesture. Calling it from useEffect,
+ * setTimeout, a Promise chain, or any async startup code will throw:
+ * "The Notification permission may only be requested from inside a short running
+ * user-generated event handler."
+ *
+ * @param {function} showToast - toast callback for foreground messages
+ * @returns {'granted' | 'denied' | 'default' | 'unsupported'}
  */
-export const initializeWebPush = async (showToast) => {
-  if (_isInitialized) return;
+export const requestWebPushPermission = async (showToast) => {
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+    return 'unsupported';
+  }
+
+  // Already fully initialized
+  if (_isInitialized) return 'granted';
+
+  // User previously blocked — browser won't show prompt; they must change browser settings
+  if (Notification.permission === 'denied') return 'denied';
+
+  // Already granted from a previous session — just run init, no prompt needed
+  if (Notification.permission === 'granted') {
+    try {
+      await _initWebPushMessaging(showToast);
+    } catch (err) {
+      console.error('[WebPush] Init after granted permission failed:', err);
+    }
+    return 'granted';
+  }
+
+  // 'default' — ask the user. This line is only valid inside a user gesture.
+  let permission;
+  try {
+    permission = await Notification.requestPermission();
+  } catch (err) {
+    console.error('[WebPush] Permission request failed:', err);
+    return 'default';
+  }
+
+  if (permission !== 'granted') {
+    console.warn('[WebPush] Permission not granted:', permission);
+    return permission;
+  }
 
   try {
-    if (await isBrave()) {
-      console.info('[WebPush] Skipping — Brave browser blocks FCM');
-      return;
-    }
-
-    if (!('Notification' in window)) {
-      console.warn('[WebPush] Browser does not support notifications');
-      return;
-    }
-
-    if (!('serviceWorker' in navigator)) {
-      console.warn('[WebPush] Service workers not supported');
-      return;
-    }
-
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      console.warn('[WebPush] Permission denied by user');
-      return;
-    }
-
-    const messaging = await getFirebaseMessaging();
-    if (!messaging) {
-      console.warn('[WebPush] Firebase Messaging not supported in this environment');
-      return;
-    }
-
-    let swRegistration;
-    try {
-      swRegistration = await navigator.serviceWorker.register(
-        '/firebase-messaging-sw.js',
-        { scope: '/' }
-      );
-      console.log('[WebPush] Service worker registered');
-    } catch (err) {
-      console.error('[WebPush] Service worker registration failed:', err);
-      return;
-    }
-
-    let token;
-    try {
-      token = await getToken(messaging, {
-        vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: swRegistration,
-      });
-    } catch (err) {
-      console.error('[WebPush] Failed to get FCM token:', err);
-      return;
-    }
-
-    if (!token) {
-      console.warn('[WebPush] No registration token available');
-      return;
-    }
-
-    _currentToken = token;
-    console.log('[WebPush] FCM token received');
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      console.error('[WebPush] No authenticated user when saving token:', userError?.message);
-      return;
-    }
-
-    const { error } = await supabase
-      .from('push_tokens')
-      .upsert(
-        { user_id: user.id, token, platform: 'web' },
-        { onConflict: 'token' }
-      );
-
-    if (error) {
-      console.error('[WebPush] Failed to save token:', error.message);
-    } else {
-      console.log('[WebPush] Token saved successfully');
-    }
-
-    _unsubscribe = onMessage(messaging, (payload) => {
-      console.log('[WebPush] Foreground message received');
-      if (showToast) {
-        showToast({
-          title: payload.notification?.title,
-          body: payload.notification?.body,
-          data: payload.data,
-        });
-      }
-    });
-
-    _isInitialized = true;
-    console.log('[WebPush] Web push initialized');
+    await _initWebPushMessaging(showToast);
   } catch (err) {
-    console.error('[WebPush] Initialization failed:', err);
+    console.error('[WebPush] Init after permission grant failed:', err);
   }
+  return 'granted';
 };
 
 /**
