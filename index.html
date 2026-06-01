@@ -2,8 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://res.cloudinary.com/dmtzmgbkj/image/upload/f_webp/v1775799844/Stylised__X__logo_on_black_background-removebg-preview_nnmney.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />  
+
+    <!-- Standard favicon -->
+    <link rel="icon" type="image/png" href="/pwa-192x192.png" />
+
+    <!-- Viewport — viewport-fit=cover lets content extend under iOS notch/status bar -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- PWA theme color (Android Chrome toolbar + task switcher) -->
+    <meta name="theme-color" content="#09090B" />
+
+    <!-- ============================================================
+         iOS PWA (Safari "Add to Home Screen")
+         Safari ignores the Web App Manifest for most of these,
+         so they must be set explicitly as meta tags.
+         ============================================================ -->
+
+    <!-- Makes the app launch full-screen with no Safari browser chrome -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <!-- "black-translucent" = transparent status bar, content renders underneath.
+         Requires viewport-fit=cover (already set above). -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- App name shown under the icon on the iOS home screen -->
+    <meta name="apple-mobile-web-app-title" content="Radix Networks" />
+
+    <!-- iOS home screen icon — 180×180 PNG, no alpha, no rounded corners
+         (iOS applies its own mask shape automatically) -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
     <title>Radix Networks</title>
     <link rel="stylesheet" href="./src/index.css" />
   </head>
