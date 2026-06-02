@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Bell } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useNotification } from '../context/NotificationContext';
 
 const Toast = ({ id, title, body, onDismiss }) => (
@@ -12,9 +12,7 @@ const Toast = ({ id, title, body, onDismiss }) => (
     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
     className="flex items-start gap-3 w-full max-w-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-xl p-4 pointer-events-auto"
   >
-    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mt-0.5">
-      <Bell className="w-4 h-4 text-red-600 dark:text-red-400" />
-    </span>
+    <img src="/pwa-192x192.png" alt="" className="flex-shrink-0 w-8 h-8 rounded-full object-cover mt-0.5" />
 
     <div className="flex-1 min-w-0">
       {title && (

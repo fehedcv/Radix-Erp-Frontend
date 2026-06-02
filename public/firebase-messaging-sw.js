@@ -1,3 +1,4 @@
+// v2
 /**
  * Firebase Cloud Messaging Service Worker
  *
@@ -47,8 +48,8 @@ messaging.onBackgroundMessage((payload) => {
 
   const options = {
     body,
-    icon: '/vite.svg',
-    badge: '/vite.svg',
+    icon: '/pwa-192x192.png',
+    badge: '/pwa-192x192.png',
     data: { route },
     requireInteraction: false,
   };

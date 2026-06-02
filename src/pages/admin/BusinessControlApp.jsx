@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, Trash2, Save, Loader2, Settings, Briefcase, 
-  MapPin, Mail, Phone, Globe, Camera, X, UploadCloud, 
-  Upload, Instagram, Facebook, Linkedin, Share2, AlertTriangle, Activity, Search, XCircle, Building2, User, Trophy, LayoutGrid, CheckCircle2, Package, Image
+  Plus, Trash2, Save, Loader2, Settings, Briefcase,
+  MapPin, Mail, Phone, Globe, Camera, X, UploadCloud,
+  Upload, Instagram, Facebook, Linkedin, Share2, AlertTriangle, Activity, Search, XCircle, Building2, User, Trophy, LayoutGrid, CheckCircle2, Package, Image, Edit3
 } from "lucide-react";
 
 import { supabase } from "../../supabase/supabaseClient";
@@ -59,10 +59,12 @@ const BusinessControlApp = () => {
   const [editMode,      setEditMode]      = useState(false);
   const [editForm,      setEditForm]      = useState({});
   const [saving,        setSaving]        = useState(false);
-  const [deleteTarget,  setDeleteTarget]  = useState(null);
-  const [deleting,      setDeleting]      = useState(false);
-  
-  // New UI States
+  const [deleteTarget,       setDeleteTarget]       = useState(null);
+  const [deleting,           setDeleting]           = useState(false);
+  const [editingCommission,  setEditingCommission]  = useState(false);
+  const [commissionValue,    setCommissionValue]    = useState('');
+  const [savingCommission,   setSavingCommission]   = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
 
   // --- THEME INTEGRATION ---
@@ -229,6 +231,26 @@ const BusinessControlApp = () => {
       console.error('Delete error:', err);
       alert('Failed to delete business unit. Please try again.');
     } finally { setDeleting(false); }
+  };
+
+  // ── Save commission only ──────────────────────────────────────────────────
+  const handleSaveCommission = async () => {
+    if (!selectedUnit) return;
+    setSavingCommission(true);
+    try {
+      const { error } = await supabase
+        .from('business_units')
+        .update({ commission: Number(commissionValue) || 0 })
+        .eq('id', selectedUnit.id);
+      if (error) throw error;
+      const updated = { ...selectedUnit, commission: Number(commissionValue) || 0 };
+      setSelectedUnit(updated);
+      setUnits(prev => prev.map(u => u.id === selectedUnit.id ? { ...u, commission: updated.commission } : u));
+      setEditingCommission(false);
+    } catch (err) {
+      console.error('Failed to save commission:', err);
+      alert('Failed to save commission.');
+    } finally { setSavingCommission(false); }
   };
 
   // ── Create ────────────────────────────────────────────────────────────────
@@ -539,7 +561,33 @@ const BusinessControlApp = () => {
                         </h5>
                         <div className="space-y-4">
                           <InfoItem label="Manager" value={selectedUnit.managerName} isLight={isLight} />
-                          <InfoItem label="Commission" value={`${selectedUnit.commission}%`} isLight={isLight} />
+                          <div className={`flex justify-between items-center border-b pb-3 ${isLight ? 'border-[#E2E8F0]' : 'border-white/10'}`}>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Commission</span>
+                            {editingCommission ? (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number" min="0" max="100" autoFocus
+                                  value={commissionValue}
+                                  onChange={e => setCommissionValue(e.target.value)}
+                                  className={`w-20 px-2 py-1 text-xs font-extrabold text-right rounded-xl border outline-none focus:border-[#81B398] ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'}`}
+                                />
+                                <span className="text-xs font-extrabold">%</span>
+                                <button onClick={handleSaveCommission} disabled={savingCommission} className="p-1.5 rounded-lg bg-[#81B398] text-white hover:bg-[#6FA085] disabled:opacity-50 active:scale-95 transition-all">
+                                  {savingCommission ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                                </button>
+                                <button onClick={() => setEditingCommission(false)} className={`p-1.5 rounded-lg transition-colors ${isLight ? 'hover:bg-[#F4F5F7] text-[#718096]' : 'hover:bg-[#131720] text-[#9CA3AF]'}`}>
+                                  <X size={11} />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-extrabold uppercase">{selectedUnit.commission}%</span>
+                                <button onClick={() => { setCommissionValue(selectedUnit.commission); setEditingCommission(true); }} className={`p-1.5 rounded-lg transition-colors ${isLight ? 'hover:bg-[#F4F5F7] text-[#718096]' : 'hover:bg-[#131720] text-[#9CA3AF]'}`}>
+                                  <Edit3 size={11} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                           <InfoItem label="Onboarded" value={selectedUnit.created_at ? new Date(selectedUnit.created_at).toLocaleDateString() : '—'} isLight={isLight} />
                         </div>
                       </div>
