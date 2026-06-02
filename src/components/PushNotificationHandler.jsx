@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, X, Share, PlusSquare, Download } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import { useNotification } from '../context/NotificationContext';
 import { initializePushNotifications } from '../services/pushNotifications';
 import { initWebPushIfGranted, requestWebPushPermission } from '../services/webPush';
+import { supabase } from '../supabase/supabaseClient';
 
 const NOTIF_DISMISSED_KEY = 'notif_prompt_dismissed';
 const INSTALL_DISMISSED_KEY = 'install_prompt_dismissed';
@@ -107,6 +109,32 @@ const PushNotificationHandler = ({ userId }) => {
 
     navigator.serviceWorker.addEventListener('message', handleSwMessage);
     return () => navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+  }, [navigate]);
+
+  // Handle deep links on Android (com.radix.app://reset-password#access_token=...)
+  // Supabase sends password reset emails with this custom scheme on native builds.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let listener;
+    CapApp.addListener('appUrlOpen', async ({ url }) => {
+      if (!url.includes('reset-password')) return;
+
+      // Tokens are in the URL hash or query string
+      const hashPart = url.split('#')[1] ?? url.split('?')[1] ?? '';
+      const params = new URLSearchParams(hashPart);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+
+      if (accessToken && refreshToken) {
+        // Restore the recovery session so updateUser() works on the reset page
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      }
+
+      navigate('/reset-password', { replace: true });
+    }).then(l => { listener = l; });
+
+    return () => { listener?.remove(); };
   }, [navigate]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────

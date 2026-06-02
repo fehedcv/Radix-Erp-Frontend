@@ -33,16 +33,17 @@ const _initWebPushMessaging = async (showToast) => {
     );
     console.log('[WebPush] Service worker registered');
 
-    // Wait for the SW to become active before requesting a push subscription.
-    // register() resolves as soon as the SW is parsed — it may still be in
-    // 'installing' or 'waiting' state. getToken() calls PushManager.subscribe()
-    // which fails with AbortError if there's no active SW yet.
+    // In production the PWA service worker (sw.js) is already the active
+    // controller at scope '/'. The FCM SW therefore gets stuck in 'waiting'
+    // and never reaches 'activated'. Firebase only needs the registration
+    // to exist (installed/waiting is enough) to create a push subscription,
+    // so we resolve as soon as the SW is at least installed, not fully active.
     if (!swRegistration.active) {
       await new Promise((resolve, reject) => {
         const sw = swRegistration.installing ?? swRegistration.waiting;
-        if (!sw) return resolve(); // already active by the time we check
+        if (!sw) return resolve();
         sw.addEventListener('statechange', function handler() {
-          if (this.state === 'activated') {
+          if (this.state === 'activated' || this.state === 'installed') {
             sw.removeEventListener('statechange', handler);
             resolve();
           } else if (this.state === 'redundant') {
@@ -52,7 +53,7 @@ const _initWebPushMessaging = async (showToast) => {
         });
       });
     }
-    console.log('[WebPush] Service worker active');
+    console.log('[WebPush] Service worker ready');
   } catch (err) {
     console.error('[WebPush] Service worker registration failed:', err);
     return;

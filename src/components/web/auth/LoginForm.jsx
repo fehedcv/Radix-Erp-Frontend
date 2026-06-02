@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import { AuthInput, ErrorMsg, SubmitBtn } from '../../web/auth/SharedElements';
 
-const LoginForm = ({ onSubmit, error, loading, formVariants }) => {
+const LoginForm = ({ onSubmit, error, loading, formVariants, onForgotPassword }) => {
   const [showPass, setShowPass] = useState(false);
 
   return (
@@ -28,10 +28,20 @@ const LoginForm = ({ onSubmit, error, loading, formVariants }) => {
           </div>
         </div>
         
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={onForgotPassword}
+            className="text-[10px] text-white/30 hover:text-[#B282FE] uppercase tracking-widest transition-colors"
+          >
+            Forgot Password?
+          </button>
+        </div>
+
         <div className="pt-1">
           {error && <ErrorMsg msg={error} />}
         </div>
-        
+
         <div className="pt-2">
           <SubmitBtn loading={loading} label="Login" icon={<Lock size={16}/>} />
         </div>

@@ -10,10 +10,11 @@ import LeftWelcomePanel from '../../components/web/auth/LeftWelcomePanel';
 import TabSwitcher from '../../components/web/auth/TabSwitcher';
 import LoginForm from '../../components/web/auth/LoginForm';
 import SignupForm from '../../components/web/auth/SignupForm';
+import ForgotPasswordForm from '../../components/web/auth/ForgotPasswordForm';
 
 const AuthGateway = ({ onLoginSuccess }) => {
   const infoSideRef = useRef(null);
-  const [tab, setTab] = useState('login');
+  const [tab, setTab] = useState('login'); // 'login' | 'signup' | 'forgot'
 
   // Login state
   const [loginLoading, setLoginLoading] = useState(false);
@@ -136,25 +137,33 @@ const AuthGateway = ({ onLoginSuccess }) => {
             <div className="relative z-10">
               <AnimatePresence mode="wait">
                 {tab === 'login' && (
-                  <LoginForm 
-                    onSubmit={handleLogin} 
-                    error={loginError} 
-                    loading={loginLoading} 
-                    formVariants={formVariants} 
+                  <LoginForm
+                    onSubmit={handleLogin}
+                    error={loginError}
+                    loading={loginLoading}
+                    formVariants={formVariants}
+                    onForgotPassword={() => { setLoginError(''); setTab('forgot'); }}
                   />
                 )}
 
                 {tab === 'signup' && (
-                  <SignupForm 
-                    onSubmit={handleSignup} 
-                    error={signupError} 
-                    loading={signupLoading} 
-                    success={signupSuccess} 
-                    form={signupForm} 
-                    setForm={setSignupForm} 
-                    setTab={setTab} 
-                    setSuccess={setSignupSuccess} 
-                    formVariants={formVariants} 
+                  <SignupForm
+                    onSubmit={handleSignup}
+                    error={signupError}
+                    loading={signupLoading}
+                    success={signupSuccess}
+                    form={signupForm}
+                    setForm={setSignupForm}
+                    setTab={setTab}
+                    setSuccess={setSignupSuccess}
+                    formVariants={formVariants}
+                  />
+                )}
+
+                {tab === 'forgot' && (
+                  <ForgotPasswordForm
+                    formVariants={formVariants}
+                    onBack={() => setTab('login')}
                   />
                 )}
               </AnimatePresence>
