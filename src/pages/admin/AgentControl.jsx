@@ -150,14 +150,14 @@ const AgentControl = () => {
 
   // ── Export CSV ────────────────────────────────────────────────────────────
   const handleExport = () => {
-    const headers = ['ID', 'Name', 'Email', 'Phone', 'Joined', 'Status', 'Wallet Balance'];
+    const headers = ['ID', 'Name', 'Email', 'Phone', 'Joined', 'Status', 'Ledger Balance'];
     const rows = agents.map(a =>
       [a.id, a.name, a.email, a.phone, a.joined, a.status, a.balance].join(',')
     );
     const blob = new Blob([[headers.join(','), ...rows].join('\n')], { type: 'text/csv' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `Radix_Agent_Report_${new Date().toLocaleDateString()}.csv`;
+    link.download = `Radix_IBP_Manifest_${new Date().toLocaleDateString()}.csv`;
     link.click();
   };
 
@@ -204,7 +204,7 @@ const AgentControl = () => {
         },
       },
       performance: {
-        series:  [{ name: 'Total Leads', data: leadCountByAgent.length ? leadCountByAgent.map(d => d.y) : [0] }],
+        series:  [{ name: 'Total Projects', data: leadCountByAgent.length ? leadCountByAgent.map(d => d.y) : [0] }],
         options: {
           chart:        { type: 'bar', toolbar: { show: false }, fontFamily: 'Plus Jakarta Sans', background: 'transparent', parentHeightOffset: 0 },
           colors:       ['#48477A'], // Muted Indigo
@@ -242,7 +242,7 @@ const AgentControl = () => {
       </div>
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <Loader2 size={32} className={`animate-spin ${isLight ? 'text-[#81B398]' : 'text-[#81B398]'}`} />
-        <p className={`text-xs font-bold uppercase tracking-widest ${textSecondary}`}>Loading Team Data...</p>
+        <p className={`text-xs font-bold uppercase tracking-widest ${textSecondary}`}>Loading Partner Network Data...</p>
       </div>
     </div>
   );
@@ -262,10 +262,10 @@ const AgentControl = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 pt-2">
         <div className="space-y-1.5">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-none">
-            Team Directory
+            Global Partner Network
           </h1>
           <p className={`text-sm font-medium ${textSecondary}`}>
-            Manage partner access, performance, and settlements.
+            Manage IBP access, portfolio performance, and capital distributions.
           </p>
         </div>
         <button 
@@ -274,7 +274,7 @@ const AgentControl = () => {
             isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C] hover:bg-[#F4F5F7]' : 'bg-[#222938] border-white/5 text-[#F4F5F7] hover:bg-[#131720]'
           }`}
         >
-          <Download size={16} /> Export Roster
+          <Download size={16} /> Export Partner Ledger
         </button>
       </div>
 
@@ -282,7 +282,7 @@ const AgentControl = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
         <div className={`p-6 rounded-2xl border flex flex-col justify-between h-[120px] transition-all duration-300 min-w-0 ${surfaceClass}`}>
           <div className="flex items-center justify-between">
-            <p className={`text-xs font-semibold uppercase tracking-wider truncate mr-2 ${textSecondary}`}>Total Agents</p>
+            <p className={`text-xs font-semibold uppercase tracking-wider truncate mr-2 ${textSecondary}`}>Active IBPs</p>
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isLight ? 'text-[#48477A] bg-[#48477A]/10' : 'text-[#81B398] bg-[#131720]'}`}>
               <Users size={18}/>
             </div>
@@ -293,9 +293,9 @@ const AgentControl = () => {
         {topAgent && (
           <div className={`p-6 rounded-2xl border flex items-center justify-between h-[120px] transition-all duration-300 min-w-0 ${surfaceClass}`}>
              <div className="min-w-0 flex-1 pr-4">
-                <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${textSecondary}`}>Top Leading Agent</p>
+                <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${textSecondary}`}>Top Performing Partner</p>
                 <h3 className="text-xl lg:text-2xl font-bold tracking-tight truncate w-full">{topAgent.name}</h3>
-                <p className={`text-sm font-semibold mt-1 ${isLight ? 'text-[#81B398]' : 'text-[#81B398]'}`}>{topAgent.totalLeads} Leads Generated</p>
+                <p className={`text-sm font-semibold mt-1 ${isLight ? 'text-[#81B398]' : 'text-[#81B398]'}`}>{topAgent.totalLeads} Projects Initiated</p>
              </div>
              <div className={`w-16 h-16 rounded-full flex items-center justify-center shrink-0 overflow-hidden border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C]' : 'bg-[#131720] border-white/5 text-[#F4F5F7]'}`}>
                 {topAgent.avatar ? (
@@ -310,11 +310,11 @@ const AgentControl = () => {
 
       {/* ── ANALYTICS ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-        <ChartCard title="Lead Performance" subtitle="Leads generated by each member" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-8">
+        <ChartCard title="Partner Project Volume" subtitle="Client projects initiated by each partner." isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-8">
           <Chart options={chartConfigs.performance.options} series={chartConfigs.performance.series} type="bar" height="100%" width="100%" />
         </ChartCard>
         
-        <ChartCard title="Security Status" subtitle="Active vs Restricted accounts" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-4">
+        <ChartCard title="Account Clearance" subtitle="Active vs Restricted accounts" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-4">
           <Chart options={chartConfigs.status.options} series={chartConfigs.status.series} type="donut" height="100%" width="100%" />
         </ChartCard>
       </div>
@@ -324,7 +324,7 @@ const AgentControl = () => {
         <Search size={18} className={textSecondary} />
         <input
           type="text"
-          placeholder="Search staff by name or ID..."
+          placeholder="Search partner by name or IBP ID..."
           className={`w-full bg-transparent text-sm font-medium outline-none ${textPrimary} placeholder:${textSecondary}`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -364,12 +364,12 @@ const AgentControl = () => {
 
               <div className="grid grid-cols-2 gap-3 mb-5">
                 <div className={`p-3 rounded-xl border text-center ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-transparent'}`}>
-                  <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${textSecondary}`}>Leads</p>
+                  <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${textSecondary}`}>Projects</p>
                   <p className="text-sm font-bold">{agent.totalLeads}</p>
                 </div>
                 <div className={`p-3 rounded-xl border text-center ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-transparent'}`}>
-                  <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${textSecondary}`}>Wallet</p>
-                  <p className="text-sm font-bold text-[#81B398]">{agent.balance} CR</p>
+                  <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${textSecondary}`}>Ledger</p>
+                  <p className="text-sm font-bold text-[#81B398]">₹{agent.balance}</p>
                 </div>
               </div>
 
@@ -379,7 +379,7 @@ const AgentControl = () => {
                   isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C] hover:bg-[#F4F5F7] hover:border-[#81B398] hover:text-[#81B398]' : 'bg-[#222938] border-white/5 text-[#F4F5F7] hover:bg-[#131720] hover:border-[#81B398] hover:text-[#81B398]'
                 }`}
               >
-                Profile Details <ArrowRight size={14} />
+                View Partner Portfolio <ArrowRight size={14} />
               </button>
             </motion.div>
           ))}
@@ -488,9 +488,9 @@ const AgentControl = () => {
                     
                     <section className={`p-6 rounded-2xl relative overflow-hidden flex flex-col justify-center items-center text-center border ${isLight ? 'bg-[#48477A] border-[#48477A] text-[#FFFFFF]' : 'bg-[#48477A]/20 border-[#48477A]/30 text-[#FFFFFF]'}`}>
                       <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12"><Wallet size={120} /></div>
-                      <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isLight ? 'text-[#E2E8F0]' : 'text-[#9CA3AF]'}`}>Wallet Balance</p>
+                      <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isLight ? 'text-[#E2E8F0]' : 'text-[#9CA3AF]'}`}>Ledger Balance</p>
                       <h4 className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-6 z-10">
-                        {selectedAgent.balance?.toLocaleString()} <span className="text-xl">CR</span>
+                        ₹{selectedAgent.balance?.toLocaleString()}
                       </h4>
                       <button
                         onClick={() => navigate('/admin/credits')}
@@ -500,7 +500,7 @@ const AgentControl = () => {
                       </button>
                     </section>
 
-                    <DossierSection title={`Assigned Leads (${agentLeads.length})`} icon={<Briefcase size={16}/>} isLight={isLight} textPrimary={textPrimary} textSecondary={textSecondary}>
+                    <DossierSection title={`Assigned Projects (${agentLeads.length})`} icon={<Briefcase size={16}/>} isLight={isLight} textPrimary={textPrimary} textSecondary={textSecondary}>
                       <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                         {agentLeads.length > 0 ? agentLeads.map((l) => (
                           <div key={l.id} className={`p-4 rounded-xl border flex flex-col gap-2 ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-transparent'}`}>
@@ -514,7 +514,7 @@ const AgentControl = () => {
                           </div>
                         )) : (
                           <div className={`flex items-center justify-center py-6 border-2 border-dashed rounded-xl ${isLight ? 'border-[#E2E8F0] bg-[#F4F5F7]/50' : 'border-white/5 bg-[#131720]/50'}`}>
-                            <p className={`text-xs font-medium ${textSecondary}`}>No leads assigned yet.</p>
+                            <p className={`text-xs font-medium ${textSecondary}`}>No projects assigned yet.</p>
                           </div>
                         )}
                       </div>

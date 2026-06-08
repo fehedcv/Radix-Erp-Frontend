@@ -167,7 +167,7 @@ const ManageLeadsApp = () => {
               show: true,
               name: { color: isLight ? '#718096' : '#9CA3AF', fontWeight: 600 },
               value: { color: isLight ? '#1A202C' : '#F4F5F7', fontSize: '24px', fontWeight: 'bold' },
-              total: { show: true, label: 'Total Leads', color: isLight ? '#718096' : '#9CA3AF', formatter: () => summary.total }
+              total: { show: true, label: 'Total Projects', color: isLight ? '#718096' : '#9CA3AF', formatter: () => summary.total }
             }
           }
         }
@@ -180,7 +180,7 @@ const ManageLeadsApp = () => {
   }), [summary, isLight]);
 
   const barConfig = useMemo(() => ({
-    series: [{ name: 'Leads', data: [summary.pending || 0, summary.in_progress || 0, summary.completed || 0] }],
+    series: [{ name: 'Projects', data: [summary.pending || 0, summary.in_progress || 0, summary.completed || 0] }],
     options: {
       chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'Plus Jakarta Sans', background: 'transparent', parentHeightOffset: 0 },
       plotOptions: {
@@ -268,7 +268,7 @@ const ManageLeadsApp = () => {
       {/* 1. HEADER (Free/Borderless) */}
       <div className="pt-2">
         <h1 className={`text-[32px] lg:text-[40px] font-extrabold tracking-tight leading-none mb-2 ${textPrimary}`}>
-          Leads Overview
+          Project Portfolio
         </h1>
         <p className={`text-sm font-medium ${textSecondary}`}>
           Management Console
@@ -282,7 +282,7 @@ const ManageLeadsApp = () => {
           isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
         }`}>
           <p className={`text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-            Total Settled Amount
+            Total Executed Revenue
           </p>
           <h3 className="text-4xl md:text-5xl font-extrabold tracking-tighter text-[#81B398]">
             ₹{summary.settledAmount?.toLocaleString() || 0}
@@ -291,7 +291,7 @@ const ManageLeadsApp = () => {
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
-           <QuickStat label="Total Leads" count={summary.total || 0} isLight={isLight} color="bg-[#48477A]/10 text-[#48477A] border-[#48477A]/20" />
+           <QuickStat label="Assigned Projects" count={summary.total || 0} isLight={isLight} color="bg-[#48477A]/10 text-[#48477A] border-[#48477A]/20" />
            <QuickStat label="Pending" count={summary.pending || 0} isLight={isLight} color="bg-[#DAC18A]/10 text-[#DAC18A] border-[#DAC18A]/20" />
            <QuickStat label="In Progress" count={summary.in_progress || 0} isLight={isLight} color="bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/20" />
            <QuickStat label="Completed" count={summary.completed || 0} isLight={isLight} color="bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20" />
@@ -303,7 +303,7 @@ const ManageLeadsApp = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           <div className={`min-w-0 p-6 lg:p-8 rounded-2xl border transition-all duration-300 flex flex-col ${surfaceClass}`}>
             <h3 className={`text-sm font-bold uppercase tracking-wider mb-6 ${textPrimary}`}>
-              Lead Distribution
+              Project Allocation
             </h3>
             <div className="w-full h-[260px] overflow-hidden flex items-center justify-center">
               <Chart options={donutConfig.options} series={donutConfig.series} type="donut" height="100%" width="100%" />
@@ -335,7 +335,7 @@ const ManageLeadsApp = () => {
               type="text" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by Client, ID, or Agent..." 
+              placeholder="Search by Client, Contract ID, or Partner..." 
               className={`w-full pl-11 pr-10 py-3.5 rounded-xl outline-none text-sm font-bold transition-all duration-300 border ${
                 isLight 
                   ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#1A202C] placeholder:text-[#718096] focus:bg-[#FFFFFF] focus:border-[#81B398]' 
@@ -413,7 +413,7 @@ const ManageLeadsApp = () => {
           {!loading && visibleLeads.length === 0 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`col-span-full flex flex-col items-center justify-center py-24 rounded-2xl border ${surfaceClass}`}>
               <FilterX size={40} className={`mb-4 opacity-30 ${textSecondary}`} />
-              <h3 className={`text-base font-semibold ${textPrimary}`}>No Leads Found</h3>
+              <h3 className={`text-base font-semibold ${textPrimary}`}>No Projects Found</h3>
               <p className={`text-sm mt-1 ${textSecondary}`}>Try adjusting your search or filters.</p>
             </motion.div>
           )}
@@ -452,7 +452,7 @@ const ManageLeadsApp = () => {
                   <span className={`font-medium text-right truncate ${textPrimary}`}>{lead.service}</span>
                 </div>
                 <div className="flex justify-between items-center gap-2">
-                  <span className={`font-semibold ${textSecondary}`}>Agent</span>
+                  <span className={`font-semibold ${textSecondary}`}>Sourced By</span>
                   <span className={`font-medium text-right truncate ${textPrimary}`}>{lead.agentId || "Unassigned"}</span>
                 </div>
 
@@ -460,7 +460,7 @@ const ManageLeadsApp = () => {
 
                 {/* Settlement Status */}
                 <div className="flex justify-between items-center gap-2">
-                  <span className={`font-semibold ${textSecondary}`}>Settlement</span>
+                  <span className={`font-semibold ${textSecondary}`}>Profit Clearance</span>
                   <div className="flex items-center gap-1.5">
                     {String(lead.paymentStatus).toLowerCase() === "settled" ? (
                       <span className={`flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider ${isLight ? 'text-[#81B398]' : 'text-[#81B398]'}`}>

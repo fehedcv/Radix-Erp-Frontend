@@ -7,10 +7,10 @@ const DashboardScreenshots = () => {
           
           <div className="text-center mb-16 md:mb-24 reveal-up">
             <h3 className="font-['Syne',sans-serif] text-4xl md:text-6xl font-light tracking-tight text-white mb-6 leading-tight">
-              A powerful dashboard <br className="hidden md:block" />built for your workflow.
+              Total Visibility. <br className="hidden md:block" />Absolute Control. 
             </h3>
             <p className="text-white/50 text-lg leading-relaxed font-light max-w-2xl mx-auto">
-              Track your submitted leads, monitor their real-time verification status, and explore comprehensive analytics through our immersive, high-performance desktop experience.
+              Oversee your active client portfolio, track project execution milestones in real time, and analyze your revenue generation through a secure, high-performance enterprise interface.
             </p>
           </div>
 

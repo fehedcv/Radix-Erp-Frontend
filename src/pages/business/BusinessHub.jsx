@@ -64,7 +64,7 @@ const BusinessHub = ({ onLogout }) => {
 
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard, path: '/business/dashboard' },
-    { id: 'leads', label: 'Leads', icon: Users, path: '/business/leads' },
+    { id: 'leads', label: 'Active Contracts', icon: Users, path: '/business/leads' },
     { id: 'portfolio', label: 'Profile', icon: FolderEdit, path: '/business/portfolio' },
   ];
 
@@ -125,7 +125,7 @@ const BusinessHub = ({ onLogout }) => {
             {businessName}
           </h2>
           <span className="text-[10px] font-medium mt-1 text-slate-300 opacity-80">
-            Business Partner
+            Division Head
           </span>
         </div>
 

@@ -9,10 +9,10 @@ const ApprovalsSection = ({ flowLineRef }) => {
              <img src="" alt="" /><Clock className="text-[#B282FE]" size={20} />
           </div>
           <h2 className="font-['Syne',sans-serif] text-4xl md:text-6xl font-light tracking-tight text-white mb-6 leading-tight">
-             Approvals at the speed of light.
+             Accelerated Deal Processing. OR Rapid Verification. Zero Delays.
           </h2>
           <p className="text-white/50 text-lg max-w-2xl mx-auto font-light leading-relaxed">
-             We hate waiting just as much as you do. Our automated pipeline ensures your leads are processed smoothly and transparently.
+             In high-tier business, time is capital. Our proprietary pipeline ensures every project you initiate is evaluated, assigned, and approved with absolute corporate transparency.
           </p>
        </div>
 
@@ -46,8 +46,8 @@ const ApprovalsSection = ({ flowLineRef }) => {
                    <span className="text-2xl font-light text-white">01</span>
                 </div>
                 <div>
-                   <h4 className="font-['Syne',sans-serif] text-lg font-medium text-white mb-2">System Check</h4>
-                   <p className="text-sm text-white/40 font-light">Instant automated scan for lead validity.</p>
+                   <h4 className="font-['Syne',sans-serif] text-lg font-medium text-white mb-2">Initial Qualification</h4>
+                   <p className="text-sm text-white/40 font-light">Instant verification of the client profile, business requirement, and project scope.</p>
                 </div>
              </div>
 
@@ -58,8 +58,8 @@ const ApprovalsSection = ({ flowLineRef }) => {
                    <span className="text-2xl font-light text-white">02</span>
                 </div>
                 <div>
-                   <h4 className="font-['Syne',sans-serif] text-lg font-medium text-white mb-2">Manager Review</h4>
-                   <p className="text-sm text-white/40 font-light">Fast-tracked approval by operational teams.</p>
+                   <h4 className="font-['Syne',sans-serif] text-lg font-medium text-white mb-2">Executive Allocation</h4>
+                   <p className="text-sm text-white/40 font-light">Our specialized Project Managers assess the requirements and lock in the execution strategy.</p>
                 </div>
              </div>
 
@@ -70,8 +70,8 @@ const ApprovalsSection = ({ flowLineRef }) => {
                    <span className="text-2xl font-light text-white">03</span>
                 </div>
                 <div>
-                   <h4 className="font-['Syne',sans-serif] text-lg font-medium text-white mb-2">Instant Credit</h4>
-                   <p className="text-sm text-white/40 font-light">Wallet funded immediately upon clearance.</p>
+                   <h4 className="font-['Syne',sans-serif] text-lg font-medium text-white mb-2">Profit Allocation</h4>
+                   <p className="text-sm text-white/40 font-light">Your profit share is automatically calculated and secured in your partner ledger upon milestone clearance.</p>
                 </div>
              </div>
 

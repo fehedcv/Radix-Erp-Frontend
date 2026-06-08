@@ -69,7 +69,7 @@ const [loading, setLoading] = useState(!cachedData);
 
   // Chart Configurations mapped to Earth-Tech Palette
   const areaChartConfig = useMemo(() => ({
-    series: [{ name: 'Leads Received', data: trendData }],
+    series: [{ name: 'Projects Assigned', data: trendData }],
     options: {
       chart: { 
         type: 'area', 
@@ -175,24 +175,24 @@ const [loading, setLoading] = useState(!cachedData);
       {/* HEADER (Free/Borderless) */}
       <div className="pt-2">
         <h1 className={`text-[32px] lg:text-[40px] font-extrabold tracking-tight leading-none mb-2 ${textPrimary}`}>
-          Dashboard
+          Division Dashboard
         </h1>
         <p className={`text-sm font-medium ${textSecondary}`}>
-          Monitor your business lead performance and analytics.
+          Monitor your division's project execution and performance analytics.
         </p>
       </div>
 
       {/* TOP ROW: Core Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:gap-8">
         <MetricCard 
-          label="Total Leads" 
+          label="Assigned Projects" 
           value={total} 
           icon={<Users size={18} />} 
           isLight={isLight} 
           colorClass={isLight ? 'bg-[#F4F5F7] text-[#48477A]' : 'bg-[#131720] text-[#81B398]'}
         />
         <MetricCard 
-          label="Verified" 
+          label="Ready for Execution" 
           value={verified} 
           icon={<ShieldCheck size={18} />} 
           isLight={isLight} 
@@ -217,7 +217,7 @@ const [loading, setLoading] = useState(!cachedData);
     <div className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors border ${
       isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/5 text-[#9CA3AF]'
     }`}>
-      <TrendingUp size={14} /> Earning Trends
+      <TrendingUp size={14} /> Project Flow
     </div>
   </div>
   
@@ -253,8 +253,8 @@ const [loading, setLoading] = useState(!cachedData);
         <div className={`lg:col-span-1 min-w-0 p-6 lg:p-8 rounded-2xl border flex flex-col transition-all duration-300 ${surfaceClass}`}>
           <div className="w-full flex justify-between items-start mb-2 shrink-0">
             <div>
-              <h3 className={`text-xl font-bold tracking-tight ${textPrimary}`}>Success Score</h3>
-              <p className={`text-xs font-medium mt-1 ${textSecondary}`}>Based on completed leads</p>
+              <h3 className={`text-xl font-bold tracking-tight ${textPrimary}`}>Execution Rate</h3>
+              <p className={`text-xs font-medium mt-1 ${textSecondary}`}>Based on successfully fulfilled projects.</p>
             </div>
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
               <Activity size={18} className="text-[#81B398]" />
@@ -278,7 +278,7 @@ const [loading, setLoading] = useState(!cachedData);
               {completion_rate}% Now
             </span>
           </div>
-        </div>
+          </div>
 
       </div>
 

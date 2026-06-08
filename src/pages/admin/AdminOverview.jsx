@@ -192,27 +192,27 @@ const AdminOverview = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 pt-2">
         <div className="space-y-1.5">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-none">
-            System Analytics
+            Network Operations
           </h1>
           <p className={`text-sm font-medium ${textSecondary}`}>
-            Platform performance and partner tracking overview.
+            Ecosystem performance and IBP portfolio overview.
           </p>
         </div>
         <button 
           onClick={() => navigate('/admin/leads')}
           className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-[#81B398] text-[#FFFFFF] rounded-lg text-sm font-semibold transition-all hover:bg-[#6FA085]"
         >
-          View Lead History <ArrowRight size={16} />
+          View Contract History <ArrowRight size={16} />
         </button>
       </div>
 
       {/* 2. METRIC NODES */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {[
-          { label: 'Total Inquiries', val: stats.totalLeads, icon: <Activity size={18}/>, color: isLight ? 'text-[#48477A] bg-[#48477A]/10' : 'text-[#81B398] bg-[#131720]' },
-          { label: 'Business Partners', val: stats.totalUnits, icon: <Building2 size={18}/>, color: isLight ? 'text-[#81B398] bg-[#F4F5F7]' : 'text-[#81B398] bg-[#81B398]/10' },
-          { label: 'Total Agents', val: dashboard.totalAgents, icon: <Users size={18}/>, color: isLight ? 'text-[#48477A] bg-[#F4F5F7]' : 'text-[#48477A] bg-[#48477A]/10' },
-          { label: 'Pending Requests', val: dashboard.inquiryPending, icon: <Clock size={18}/>, color: isLight ? 'text-[#DAC18A] bg-[#F4F5F7]' : 'text-[#DAC18A] bg-[#DAC18A]/10' }
+          { label: 'ACTIVE PORTFOLIOS', val: stats.totalLeads, icon: <Activity size={18}/>, color: isLight ? 'text-[#48477A] bg-[#48477A]/10' : 'text-[#81B398] bg-[#131720]' },
+          { label: 'ACTIVE DIVISIONS', val: stats.totalUnits, icon: <Building2 size={18}/>, color: isLight ? 'text-[#81B398] bg-[#F4F5F7]' : 'text-[#81B398] bg-[#81B398]/10' },
+          { label: 'ACTIVE IBPss', val: dashboard.totalAgents, icon: <Users size={18}/>, color: isLight ? 'text-[#48477A] bg-[#F4F5F7]' : 'text-[#48477A] bg-[#48477A]/10' },
+          { label: 'PENDING APPROVALS', val: dashboard.inquiryPending, icon: <Clock size={18}/>, color: isLight ? 'text-[#DAC18A] bg-[#F4F5F7]' : 'text-[#DAC18A] bg-[#DAC18A]/10' }
         ].map((m, i) => (
           <div 
             key={i}
@@ -232,7 +232,7 @@ const AdminOverview = () => {
 
       {/* 3. ANALYTICS SUITE (CHARTS) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 bg-">
-        <ChartCard title="Daily Activity" subtitle="Real-time inquiry flow" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-1">
+        <ChartCard title="Real-time project influx" subtitle="Real-time inquiry flow" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-1">
           <Chart options={activityTrendConfig.options} series={activityTrendConfig.series} type="area" height="100%" width="100%" />
         </ChartCard>
         
@@ -245,7 +245,7 @@ const AdminOverview = () => {
             width="100%" />
         </ChartCard>
 
-        <ChartCard title="Partner Ranking" subtitle="Top performing business units" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-1">
+        <ChartCard title="Division Performance." subtitle="Top performing business units" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-1">
           <Chart options={performanceConfig.options} series={performanceConfig.series} type="bar" height="100%" width="100%" />
         </ChartCard>
       </div>
@@ -257,7 +257,7 @@ const AdminOverview = () => {
         <div className={`lg:col-span-8 rounded-2xl border flex flex-col overflow-hidden transition-all duration-300 ${surfaceClass}`}>
           <div className={`px-6 py-5 border-b flex items-center justify-between ${isLight ? 'bg-[#F4F5F7]/40 border-[#E2E8F0]' : 'bg-[#131720]/30 border-white/5'}`}>
             <h4 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-              <UserPlus size={18} className="text-[#81B398]" /> Team Onboarding
+              <UserPlus size={18} className="text-[#81B398]" /> IBP Network Expansion
             </h4>
             <button onClick={() => navigate('/admin/agents')} className={`text-xs font-semibold hover:text-[#81B398] transition-colors ${textSecondary}`}>
               Directory →
@@ -290,7 +290,7 @@ const AdminOverview = () => {
         <div className={`lg:col-span-4 rounded-2xl border flex flex-col overflow-hidden transition-all duration-300 ${surfaceClass}`}>
           <div className={`px-6 py-5 border-b ${isLight ? 'bg-[#F4F5F7]/40 border-[#E2E8F0]' : 'bg-[#131720]/30 border-white/5'}`}>
             <h4 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-              <Building2Icon size={18} className="text-[#81B398]" /> Partners
+              <Building2Icon size={18} className="text-[#81B398]" /> Execution Teams
             </h4>
           </div>
           <div className="p-4 space-y-2 flex-1">

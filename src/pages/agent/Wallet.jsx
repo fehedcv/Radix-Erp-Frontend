@@ -36,7 +36,7 @@ const WalletPage = () => {
   // Earth-Tech Semantic Status Styles
   const getStatusStyles = (status) => {
     const s = status?.toLowerCase();
-    if (s === 'approved' || s === 'credited' || s === 'completed') {
+    if (s === 'approved' || s === 'credited' || s === 'completed' || s === 'allocated' || s === 'cleared') {
       return 'bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20';
     }
     if (s === 'rejected') {
@@ -46,6 +46,30 @@ const WalletPage = () => {
       return 'bg-[#DAC18A]/10 text-[#DAC18A] border border-[#DAC18A]/20';
     }
     return isLight ? 'bg-[#F4F5F7] text-[#718096] border-[#E2E8F0]' : 'bg-[#131720] text-[#9CA3AF] border-white/5';
+  };
+
+  // Terminology Formatters
+  const formatTransactionType = (type) => {
+    if (!type) return 'Transaction';
+    const t = type.toLowerCase();
+    if (t === 'lead reward') return 'Profit Allocation';
+    if (t === 'withdrawal') return 'Capital Distribution';
+    return type;
+  };
+
+  const formatTransactionStatus = (status) => {
+    if (!status) return 'Cleared';
+    const s = status.toLowerCase();
+    if (s === 'credited' || s === 'approved') return 'Allocated';
+    return status;
+  };
+
+  const formatRemarks = (remarks) => {
+    if (!remarks) return '';
+    let r = remarks;
+    r = r.replace(/lead reward for/i, 'Profit share allocated for project:');
+    r = r.replace(/withdrawal/i, 'Distribution');
+    return r;
   };
 
   useEffect(() => {
@@ -191,7 +215,7 @@ const WalletPage = () => {
 
       const availableCash = wallet.summary.available_cash;
       if (!availableCash || availableCash <= 0) {
-        alert('No balance available for withdrawal.');
+        alert('No capital available for distribution.');
         return;
       }
 
@@ -217,12 +241,12 @@ const WalletPage = () => {
 
       if (pendingError) {
         console.error('Failed to check pending withdrawal requests:', pendingError);
-        alert('Unable to submit withdrawal request. Please try again.');
+        alert('Unable to submit distribution request. Please try again.');
         return;
       }
 
       if (pendingRequests?.length > 0) {
-        alert('A pending withdrawal request already exists.');
+        alert('A pending distribution request already exists.');
         return;
       }
 
@@ -232,7 +256,7 @@ const WalletPage = () => {
 
       if (insertError) {
         console.error('Failed to create withdrawal request:', insertError);
-        alert('Unable to submit withdrawal request. Please try again.');
+        alert('Unable to submit distribution request. Please try again.');
         return;
       }
 
@@ -240,7 +264,7 @@ const WalletPage = () => {
       setShowConfirm(false);
     } catch (err) {
       console.error('Error submitting withdrawal request:', err);
-      alert('Unable to submit withdrawal request. Please try again.');
+      alert('Unable to submit distribution request. Please try again.');
     } finally {
       setProcessing(false);
     }
@@ -301,10 +325,10 @@ const WalletPage = () => {
       {/* HEADER */}
       <div className="space-y-1.5 ">
         <h1 className={`text-3xl md:text-4xl font-extrabold tracking-tight ${textPrimary}`}>
-          Wallet
+          Partner Ledger
         </h1>
         <p className={`text-sm font-medium ${textSecondary}`}>
-          Manage your earnings, track transactions, and request payouts.
+          Manage your profit shares, track financial allocations, and request capital distributions.
         </p>
       </div>
 
@@ -319,21 +343,15 @@ const WalletPage = () => {
             }`}>
               <Wallet size={24} />
             </div>
-            <div className={`px-3 py-1.5 rounded-lg border text-xs font-semibold ${
-              isLight ? 'bg-[#F4F5F7] border-[#E2E8F0] text-[#718096]' : 'bg-[#131720] border-white/5 text-[#9CA3AF]'
-            }`}>
-              1 Credit = ₹1 INR
-            </div>
           </div>
 
           <div>
             <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${textSecondary}`}>
-              Available Balance
+              Available Capital
             </p>
             <div className="flex items-baseline gap-2">
-              <span className={`text-2xl font-bold ${textSecondary}`}>CR</span>
               <h2 className="text-5xl lg:text-6xl font-extrabold tracking-tight">
-                {summary.available_cash.toLocaleString()}
+                ₹{summary.available_cash.toLocaleString()}
               </h2>
             </div>
           </div>
@@ -343,7 +361,7 @@ const WalletPage = () => {
             onClick={() => setShowConfirm(true)}
             className="mt-8 lg:mt-10 w-full sm:w-fit px-8 py-3.5 rounded-xl font-semibold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 bg-[#81B398] text-[#FFFFFF] hover:bg-[#6FA085] active:scale-95 shadow-sm"
           >
-            Request Payout <HandCoins size={18} />
+            Withdraw Capital <HandCoins size={18} />
           </button>
         </div>
 
@@ -354,10 +372,10 @@ const WalletPage = () => {
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isLight ? 'bg-[#81B398]/10 text-[#81B398]' : 'bg-[#81B398]/20 text-[#81B398]'}`}>
                 <ArrowUpRight size={16} />
               </div>
-              <p className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>Total Earned</p>
+              <p className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>Total Profit Share</p>
             </div>
             <h3 className="text-3xl font-bold tracking-tight">
-              {summary.earned_credits.toLocaleString()} <span className={`text-lg font-medium ${textSecondary}`}>CR</span>
+              ₹{summary.earned_credits.toLocaleString()}
             </h3>
           </div>
 
@@ -367,7 +385,7 @@ const WalletPage = () => {
       <ArrowDownLeft size={16} />
     </div>
     <p className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>
-      Total Withdrawn
+      Total Distributed
     </p>
   </div>
 
@@ -379,21 +397,21 @@ const WalletPage = () => {
         </div>
       </div>
 
-      {/* ================= WITHDRAWAL REQUESTS ================= */}
+      {/* ================= PENDING CLEARANCES ================= */}
       <div className={`rounded-2xl border overflow-hidden transition-all ${surfaceClass}`}>
         
         {/* HEADER & FILTERS */}
         <div className={`p-6 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-5 ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>
           <div className="flex items-center gap-3 shrink-0">
             <ClockArrowDown size={20} className={isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'} />
-            <h3 className="font-bold text-lg tracking-tight">Withdrawal Requests</h3>
+            <h3 className="font-bold text-lg tracking-tight">Pending Clearances</h3>
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
             {[
               { value: 'all', label: 'All' },
               { value: 'pending', label: 'Pending' },
-              { value: 'approved', label: 'Approved' },
+              { value: 'approved', label: 'Cleared' },
             
             ].map((status) => (
               <button
@@ -425,7 +443,7 @@ const WalletPage = () => {
                 <div className="py-16 text-center">
                   <ClockArrowDown size={32} className={`mx-auto mb-3 opacity-30 ${textSecondary}`} />
                   <span className={`text-sm font-medium ${textSecondary}`}>
-                    No {filterStatus === 'all' ? 'withdrawal' : `${filterStatus.charAt(0).toUpperCase()}${filterStatus.slice(1)}`} requests found.
+                    No {filterStatus === 'all' ? 'pending' : `${filterStatus.charAt(0).toUpperCase()}${filterStatus.slice(1)}`} clearances found.
                   </span>
                 </div>
               );
@@ -439,12 +457,12 @@ const WalletPage = () => {
                   <div className="flex items-center gap-3">
                     <p className="font-bold text-lg tracking-tight">₹{Number(req.requested_credits).toLocaleString()}</p>
                     <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-md tracking-wider border ${getStatusStyles(req.status)}`}>
-                      {req.status}
+                      {formatTransactionStatus(req.status)}
                     </span>
                   </div>
                   {req.remarks && (
                     <p className={`text-sm font-medium line-clamp-1 ${textSecondary}`}>
-                      {req.remarks}
+                      {formatRemarks(req.remarks)}
                     </p>
                   )}
                 </div>
@@ -468,14 +486,14 @@ const WalletPage = () => {
         <div className={`p-6 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-5 ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>
           <div className="flex items-center gap-3 shrink-0">
             <History size={20} className={isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'} />
-            <h3 className="font-bold text-lg tracking-tight">Transaction History</h3>
+            <h3 className="font-bold text-lg tracking-tight">Ledger History</h3>
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
             {[
               { value: 'all', label: 'All' },
-              { value: 'credited', label: 'Credited' },
-              { value: 'withdrawal', label: 'Withdrawal' }
+              { value: 'credited', label: 'Allocated' },
+              { value: 'withdrawal', label: 'Distributed' }
             ].map((filterOption) => (
               <button
                 key={filterOption.value}
@@ -507,7 +525,7 @@ const WalletPage = () => {
                 <div className="py-16 text-center">
                   <History size={32} className={`mx-auto mb-3 opacity-30 ${textSecondary}`} />
                   <span className={`text-sm font-medium ${textSecondary}`}>
-                    No {ledgerFilter === 'all' ? 'transaction' : `${ledgerFilter.charAt(0).toUpperCase()}${ledgerFilter.slice(1)}`} activity found.
+                    No {ledgerFilter === 'all' ? 'ledger' : `${ledgerFilter.charAt(0).toUpperCase()}${ledgerFilter.slice(1)}`} activity found.
                   </span>
                 </div>
               );
@@ -519,24 +537,24 @@ const WalletPage = () => {
               }`}>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-3">
-                    <p className="font-bold text-base tracking-tight capitalize">{entry.type}</p>
+                    <p className="font-bold text-base tracking-tight capitalize">{formatTransactionType(entry.type)}</p>
                     <span className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-md tracking-wider border ${
                       entry.status === 'Credited' || entry.status === 'Approved' || !entry.status 
                       ? 'bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20' 
                       : getStatusStyles(entry.status)
                     }`}>
-                      {entry.status || 'Completed'}
+                      {formatTransactionStatus(entry.status)}
                     </span>
                   </div>
                   {entry.remarks && (
                     <p className={`text-sm font-medium line-clamp-1 ${textSecondary}`}>
-                      {entry.remarks}
+                      {formatRemarks(entry.remarks)}
                     </p>
                   )}
                 </div>
                 <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
                   <p className={`font-bold text-xl tracking-tight ${entry.credits > 0 ? 'text-[#81B398]' : textPrimary}`}>
-                    {entry.credits > 0 ? '+' : ''}{entry.credits} <span className="text-xs font-semibold opacity-70">CR</span>
+                    {entry.credits > 0 ? '+' : ''}₹{Math.abs(entry.credits).toLocaleString()}
                   </p>
                   <p className={`text-xs font-medium ${textSecondary}`}>
                     {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -558,9 +576,9 @@ const WalletPage = () => {
               <div className="w-16 h-16 rounded-xl mx-auto flex items-center justify-center mb-5 bg-[#81B398]/10 text-[#81B398]">
                  <CreditCard size={32} />
               </div>
-              <h3 className={`font-bold text-xl tracking-tight mb-2 ${textPrimary}`}>Confirm Payout</h3>
+              <h3 className={`font-bold text-xl tracking-tight mb-2 ${textPrimary}`}>Confirm Distribution</h3>
               <p className={`text-sm font-medium leading-relaxed mb-8 ${textSecondary}`}>
-                Withdraw <span className="font-bold text-[#81B398]">₹{summary.available_cash.toLocaleString()}</span> to your settled account?
+                Distribute <span className="font-bold text-[#81B398]">₹{summary.available_cash.toLocaleString()}</span> to your linked account?
               </p>
               
               <div className="grid grid-cols-2 gap-3">

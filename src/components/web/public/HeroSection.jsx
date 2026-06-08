@@ -8,14 +8,14 @@ const HeroSection = ({ onEnterPortal }) => {
      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-12 z-20 relative w-full">
         <div className="reveal-up lg:w-[60%] mt-8 lg:mt-0">
           <h1 className="font-['Syne',sans-serif] text-6xl sm:text-7xl lg:text-[5.5rem] font-medium tracking-tighter leading-[1.05] text-white">
-            Your network. <br />
-            Real rewards.
+             Turn Your Network  <br />
+            Into Net Worth.
           </h1>
         </div>
         
         <div className="reveal-up lg:w-[40%] flex flex-col items-start lg:pl-10 text-left relative">
           <p className="text-white/60 text-sm md:text-base leading-relaxed font-light mb-8 max-w-sm">
-            Know someone who needs trusted business services? Point them our way, track everything effortlessly, and enjoy your share of the profits as a valued partner.
+            Step away from traditional referral programs. Become an Independent Business Partner (IBP) with a growing corporate empire. Connect high-value clients with our premium business divisions—from heavy construction to tech infrastructure—and earn a direct profit share on every successfully closed contract.
           </p>
 
           <button 
@@ -25,7 +25,7 @@ const HeroSection = ({ onEnterPortal }) => {
             <span className="absolute inset-0 border border-white/20 rounded-full transition-colors duration-300 group-hover:border-transparent"></span>
             <span className="absolute inset-x-0 bottom-0 h-0 bg-gradient-to-t from-[#B282FE] to-[#7038FF] transition-all duration-500 ease-out group-hover:h-full rounded-full"></span>
             <span className="relative flex items-center justify-center gap-3 z-10">
-               Start Connecting <ArrowRight size={16} />
+               BECOME AN IBP <ArrowRight size={16} />
             </span>
           </button>
         </div>
@@ -46,9 +46,9 @@ const HeroSection = ({ onEnterPortal }) => {
             </div>
             
             <h2 className="font-['Syne',sans-serif] text-white/40 text-[10px] font-medium tracking-[0.2em] uppercase mb-4 flex items-center gap-2">
-              <Wallet size={14} className="text-[#B282FE]" /> Registered Businesses
+              <Wallet size={14} className="text-[#B282FE]" /> ACTIVE DIVISIONS
             </h2>
-            <p className="text-6xl md:text-7xl font-light tracking-tighter text-white mb-2">Seven</p>
+            <p className="text-6xl md:text-7xl font-light tracking-tighter text-white mb-2">SEVEN</p>
             <p className="text-white/40 text-xs font-light tracking-wide">Verified Business Units.</p>
          </div>
 
@@ -57,10 +57,10 @@ const HeroSection = ({ onEnterPortal }) => {
             <div className="absolute left-0 top-[40%] -translate-x-full w-12 h-[1px] bg-white/20 hidden md:block group-hover:bg-[#B282FE]/50 transition-colors"></div>
 
             <h2 className="font-['Syne',sans-serif] text-white/40 text-[10px] font-medium tracking-[0.2em] uppercase mb-4 text-left flex items-center gap-2">
-              <Lock size={14} className="text-[#B282FE]" /> Platform Access
+              <Lock size={14} className="text-[#B282FE]" /> PARTNERSHIP INITIATION
             </h2>
-            <p className="text-5xl md:text-6xl font-light tracking-tighter text-white text-left mb-2">Free</p>
-            <p className="text-white/40 text-xs font-light tracking-wide mb-6">Zero hidden fees. Start submitting instantly.</p>
+            <p className="text-5xl md:text-6xl font-light tracking-tighter text-white text-left mb-2">FREE</p>
+            <p className="text-white/40 text-xs font-light tracking-wide mb-6">No hidden costs. 100% transparent profit sharing.</p>
             
             <div className="absolute -bottom-4 right-10 flex items-center">
                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7038FF] to-[#B282FE] flex items-center justify-center text-[10px] font-bold border-4 border-[#07070A] shadow-lg z-30">HQ</div>

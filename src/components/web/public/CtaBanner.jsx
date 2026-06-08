@@ -12,10 +12,10 @@ const CtaBanner = ({ onEnterPortal }) => {
 
            <div className="md:w-3/5 relative z-10 text-center md:text-left">
               <h2 className="font-['Syne',sans-serif] text-4xl md:text-5xl lg:text-6xl font-light tracking-tight text-white mb-6 leading-tight">
-                 Ready to start earning?
+                 Ready to capitalize on your network?
               </h2>
               <p className="text-white/50 text-lg font-light max-w-md mx-auto md:mx-0">
-                 Create your free account today and turn your professional network into a revenue stream in minutes.
+                 Apply to become an Independent Business Partner (IBP) today. Leverage Zypher’s corporate infrastructure to execute high-value contracts and build a serious, scalable portfolio.
               </p>
            </div>
 
@@ -24,11 +24,11 @@ const CtaBanner = ({ onEnterPortal }) => {
                 onClick={onEnterPortal} 
                 className="w-full sm:w-auto group relative px-10 py-5 rounded-full overflow-hidden text-xs font-bold uppercase tracking-[0.2em] text-black bg-white shadow-2xl transition-transform hover:scale-105"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2">Create Free Account <ArrowUpRight size={16}/></span>
+                <span className="relative z-10 flex items-center justify-center gap-2">APPLY FOR PARTNERSHIP<ArrowUpRight size={16}/></span>
               </button>
               
-              <a href="https://wa.me/919400987747" target='_blank' rel="noopener noreferrer" className="w-full sm:w-auto px-10 py-4 rounded-full border border-white/10 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2">
-                 <MessageCircle size={16}/> Ask a Question
+              <a href="https://wa.me/919567543636" target='_blank' rel="noopener noreferrer" className="w-full sm:w-auto px-10 py-4 rounded-full border border-white/10 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2">
+                 <MessageCircle size={16}/> SPEAK TO AN EXECUTIVE
               </a>
            </div>
 
