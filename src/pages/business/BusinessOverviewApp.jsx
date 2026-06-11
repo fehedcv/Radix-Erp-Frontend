@@ -110,8 +110,8 @@ const BusinessOverviewApp = () => {
 
       {/* METRICS GRID - 2 Cards per row on mobile, tight padding */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-        <MetricCard label="Total Leads" value={total} isLight={isLight} />
-        <MetricCard label="Verified" value={verified} isLight={isLight} />
+        <MetricCard label="Assigned Projects" value={total} isLight={isLight} />
+        <MetricCard label="Ready For Execution" value={verified} isLight={isLight} />
         <MetricCard label="In Progress" value={in_progress} isLight={isLight} />
         <MetricCard label="Success Rate" value={`${completion_rate}%`} isLight={isLight} />
       </div>
@@ -121,7 +121,7 @@ const BusinessOverviewApp = () => {
         <div className={`lg:col-span-2 rounded-3xl p-5 border transition-all duration-200 ${
           isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
         }`}>
-          <Chart options={areaChartConfig.options} series={areaChartConfig.series} type="area" height={280} />
+          <Chart  options={areaChartConfig.options} series={areaChartConfig.series} type="area" height={280} />
         </div>
 
         <div className={`rounded-3xl p-5 border transition-all duration-200 ${

@@ -15,6 +15,9 @@ const AuthGateway = ({ onLoginSuccess }) => {
   const infoSideRef = useRef(null);
   const [tab, setTab] = useState('login');
 
+  // Terms state
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
   // Login state
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
@@ -32,6 +35,13 @@ const AuthGateway = ({ onLoginSuccess }) => {
     e.preventDefault();
     setLoginLoading(true);
     setLoginError('');
+
+    if (!agreedToTerms) {
+      setLoginError('You must agree to the Terms & Conditions');
+      setLoginLoading(false);
+      return;
+    }
+
     const formData = new FormData(e.target);
     const email = formData.get('email');
     const password = formData.get('password');
@@ -51,7 +61,7 @@ const AuthGateway = ({ onLoginSuccess }) => {
       }
     } catch (err) {
       setLoginError('Login failed. Please try again.');
-    } {
+    } finally {
       setLoginLoading(false);
     }
   };
@@ -60,6 +70,11 @@ const AuthGateway = ({ onLoginSuccess }) => {
   const handleSignup = async (e) => {
     e.preventDefault();
     setSignupError('');
+
+    if (!agreedToTerms) {
+      setSignupError('You must agree to the Terms & Conditions');
+      return;
+    }
 
     if (signupForm.password !== signupForm.confirm) {
       setSignupError('Passwords do not match.');
@@ -159,6 +174,21 @@ const AuthGateway = ({ onLoginSuccess }) => {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Terms & Conditions Checkbox */}
+            <div className="mt-5 pt-4 border-t border-white/[0.05] flex items-center gap-2 relative z-10">
+              <input 
+                type="checkbox" 
+                id="terms" 
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="w-4 h-4 cursor-pointer accent-white"
+              />
+              <label htmlFor="terms" className="text-xs text-white/60 cursor-pointer select-none">
+                I agree to the <Link to="/terms" target="_blank" className="text-white hover:underline">Terms & Conditions</Link>
+              </label>
+            </div>
+
           </div>
 
           <p className="text-center text-[10px] text-white/20 uppercase tracking-widest mt-6 font-medium">

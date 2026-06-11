@@ -125,14 +125,14 @@ const fetchLeads = async () => {
       
       {/* 1. HEADER & STATS */}
       <div className="mb-4 px-1">
-        <h2 className="text-2xl font-extrabold tracking-tight mb-4">Manage Leads</h2>
+        <h2 className="text-2xl font-extrabold tracking-tight mb-4">Project Details</h2>
         
         {/* Full Width Settled Amount Card */}
         <div className={`mb-3 rounded-3xl p-6 md:p-8 border transition-all duration-200 flex flex-col justify-center ${
           isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/10'
         }`}>
           <p className={`text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-            Total Settled Amount
+            Total Revenue
           </p>
           <h3 className="text-4xl md:text-5xl font-extrabold tracking-tighter text-[#81B398]">
             ₹{summary.settledAmount?.toLocaleString() || 0}
@@ -141,7 +141,7 @@ const fetchLeads = async () => {
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
-           <QuickStat label="Total Leads" count={summary.total || 0} isLight={isLight} />
+           <QuickStat label="Total Projects" count={summary.total || 0} isLight={isLight} />
            <QuickStat label="Pending" count={summary.pending || 0} isLight={isLight} />
            <QuickStat label="In Progress" count={summary.in_progress || 0} isLight={isLight} />
            <QuickStat label="Completed" count={summary.completed || 0} isLight={isLight} />

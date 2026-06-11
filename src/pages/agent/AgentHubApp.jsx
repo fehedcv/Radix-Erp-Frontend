@@ -134,15 +134,15 @@ const AgentHubApp = ({ onLogout }) => {
   };
 
   const navItems = [
-    { id: 'dashboard', label: 'Home', icon: LayoutDashboard, path: '/agent/dashboard' },
-    { id: 'units', label: 'Units', icon: Building2, path: '/agent/units' },
+    { id: 'dashboard', label: 'Overview', icon: LayoutDashboard, path: '/agent/dashboard' },
+    { id: 'units', label: 'Businesses', icon: Building2, path: '/agent/units' },
     { id: 'wallet', label: 'Wallet', icon: Wallet, path: '/agent/wallet' },
     { id: 'history', label: 'Leads', icon: History, path: '/agent/history' },
     { id: 'profile', label: 'Profile', icon: User, path: '/agent/profile' },
   ];
 
   const currentTab = navItems.find(item => location.pathname.startsWith(item.path));
-  const currentTabName = currentTab?.label || "Home";
+  const currentTabName = currentTab?.label || "Overview";
 
   const myLeads = leads.filter(
     (l) => l.agent_id === currentUser.id || l.user_id === currentUser.id
@@ -189,7 +189,7 @@ const AgentHubApp = ({ onLogout }) => {
                   Welcome Back
                 </span>
                 <span className="text-base font-extrabold tracking-tight leading-none">
-                  {currentUser.name?.split(' ')[0] || 'Agent'}
+                  {currentUser.name?.split(' ')[0] || 'Partner'}
                 </span>
               </div>
             </button>
@@ -311,7 +311,7 @@ const AgentHubApp = ({ onLogout }) => {
                    <>
                     <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                     <span className={`text-[10px] font-bold mt-1 tracking-wide transition-opacity ${isActive ? 'opacity-100' : 'opacity-70 font-semibold'}`}>
-                      {item.label}
+                      {item.label.split(' ')[0]}
                     </span>
                    </>
                 )}
@@ -353,7 +353,7 @@ const AgentHubApp = ({ onLogout }) => {
                     onClick={onLogout} 
                     className="w-full py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 bg-[#F0524F] text-white hover:bg-[#D44846]"
                   >
-                    Confirm Exit
+                    Confirm
                   </button>
                   {/* Neutral Action */}
                   <button 
@@ -364,7 +364,7 @@ const AgentHubApp = ({ onLogout }) => {
                         : 'bg-[#131720] text-[#F4F5F7] border-white/10 hover:bg-[#222938]'
                     }`}
                   >
-                    Cancel
+                    Stay
                   </button>
                 </div>
               </motion.div>

@@ -298,7 +298,7 @@ const PortfolioManagerApp = () => {
 
       {/* HEADER SECTION */}
       <div className="mb-4 px-1">
-        <h2 className="text-2xl font-extrabold tracking-tight mb-4">Profile</h2>
+        <h2 className="text-2xl font-extrabold tracking-tight mb-4">Business Profile</h2>
         
         {/* Warning Card */}
         <div className={`rounded p-5 border border-red-500 flex items-center gap-3 transition-colors duration-200 ${
@@ -491,7 +491,7 @@ const PortfolioManagerApp = () => {
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all rounded-2xl" />
                       <button
                         onClick={() => removeGalleryImage(i)}
-                        className="absolute top-2 right-2 bg-white/90 p-2 rounded-xl text-[#F0524F] opacity-0 group-hover:opacity-100 transition-all hover:bg-white hover:scale-105 border border-transparent hover:border-[#F0524F]/20"
+                        className="absolute top-2 right-2 bg-white/90 p-2 rounded-xl text-[#F0524F] opacity-100 transition-all hover:bg-white hover:scale-105 border border-transparent hover:border-[#F0524F]/20"
                       >
                         <X size={14} strokeWidth={2.5} />
                       </button>

@@ -17,10 +17,10 @@ const AdminHubApp = ({ onLogout }) => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard, path: '/admin/dashboard' },
-    { id: 'leads', label: 'Inquiries', icon: PieChart, path: '/admin/leads' },
+    { id: 'leads', label: 'Projects', icon: PieChart, path: '/admin/leads' },
     { id: 'units', label: 'Businesses', icon: Building2, path: '/admin/units' },
-    { id: 'agents', label: 'Agents', icon: Users, path: '/admin/agents' },
-    { id: 'credits', label: 'Payments', icon: CreditCard, path: '/admin/credits' },
+    { id: 'agents', label: 'IBP Network', icon: Users, path: '/admin/agents' },
+    { id: 'credits', label: 'Ledger', icon: CreditCard, path: '/admin/credits' },
   ];
 
   const currentTab = menuItems.find(item => location.pathname.startsWith(item.path));

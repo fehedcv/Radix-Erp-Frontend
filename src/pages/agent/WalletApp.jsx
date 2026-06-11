@@ -321,7 +321,7 @@ const WalletApp = () => {
           <div className="flex justify-between items-end px-2 mb-6">
             <div>
               <h1 className={`text-3xl font-extrabold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
-                Wallet
+                Ledger
               </h1>
               <p className={`text-[11px] font-bold uppercase tracking-wider mt-0.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
                 Financial Overview

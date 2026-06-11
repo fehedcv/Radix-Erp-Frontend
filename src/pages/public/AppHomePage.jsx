@@ -6,17 +6,17 @@ import { useTheme } from '../../context/ThemeContext';
 // =========================================================
 
 const onboardingSteps = [
-  {
+ {
     id: 0,
-    title: "Have clients?\nwho need top-tier experts?",
+    title: "Hold a network?\nConnect to our corporate infrastructure."
   },
   {
     id: 1,
-    title: "Drop their details\nhere in your\nfree time", 
+    title: "Register details?\nSchedule and assign execution."
   },
   {
     id: 2,
-    title: "Sit back and enjoy\nyour share of\nthe profits", 
+    title: "Track fulfillment?\nMonitor progress and withdraw profits."
   }
 ];
 // =========================================================
