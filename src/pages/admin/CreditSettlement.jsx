@@ -168,7 +168,7 @@ creditSettlementCacheTime = 0;
       await fetchAll();
     } catch (err) {
       console.error('Error verifying credits:', err);
-      alert('Failed to verify credits: ' + (err?.message || 'Unknown error'));
+      alert('Failed to verify allocation: ' + (err?.message || 'Unknown error'));
     } finally {
       setIsProcessing(false);
     }
@@ -185,7 +185,7 @@ creditSettlementCacheTime = 0;
 
       if (error) {
         console.error('Failed to approve withdrawal:', error);
-        alert(error.message || 'Failed to approve withdrawal. Check permissions.');
+        alert(error.message || 'Failed to approve distribution. Check permissions.');
         return;
       }
       creditSettlementCache = null;
@@ -196,7 +196,7 @@ creditSettlementCacheTime = 0;
       return data;
     } catch (err) {
       console.error('Error approving withdrawal:', err);
-      alert(err.message || 'Failed to approve withdrawal. Check permissions.');
+      alert(err.message || 'Failed to approve distribution. Check permissions.');
     } finally {
       setIsProcessing(false);
     }
@@ -292,7 +292,7 @@ creditSettlementCacheTime = 0;
             leads.length,
             withdrawals.filter(w => w.status === 'pending').length,
             withdrawals.filter(w => w.status === 'approved' || w.status === 'credited').length,
-          ].some(v => v > 0) ? ['Total Rewards', 'Pending Withdrawals', 'Settled'] : ['No Data'],
+          ].some(v => v > 0) ? ['Total Allocated', 'Pending Transfers', 'Settled'] : ['No Data'],
           colors: ['#48477A', '#DAC18A', '#81B398'],
           legend: { position: 'bottom', fontSize: '11px', fontWeight: 600, labels: { colors: isLight ? '#718096' : '#9CA3AF' } },
           plotOptions: { pie: { donut: { size: '75%' } } },
@@ -333,26 +333,25 @@ creditSettlementCacheTime = 0;
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 pt-2">
         <div className="space-y-1.5 w-full">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-none">
-            Credit & Settlements
+            Capital Distributions
           </h1>
           <p className={`text-sm font-medium ${textSecondary}`}>
-            Active Management of Credits and Agent Payouts
+            Active management of IBP profit shares and capital distributions.
           </p>
         </div>
       </div>
 
       {/* ── STATUS CARDS (Directly Below Header) ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
-         <QuickStat label="Unpaid Rewards" count={leads.filter(l => l.creditStatus !== 'verified').length} isLight={isLight} color="bg-[#48477A]/10 text-[#48477A] border-[#48477A]/20" />
-         <QuickStat label="Pending Payouts" count={pendingPayouts.length} isLight={isLight} color="bg-[#DAC18A]/10 text-[#DAC18A] border-[#DAC18A]/20" />
-         <QuickStat label="Settled Payouts" count={historyPayouts.length} isLight={isLight} color="bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20" />
-         {/* Replaced Total Processed with Total Amount Paid */}
-         <QuickStat label="Total Paid Amount" count={`₹${totalPaidAmount.toLocaleString()}`} isLight={isLight} color="bg-[#718096]/10 text-[#718096] border-[#718096]/20" />
+         <QuickStat label="Pending Allocations" count={leads.filter(l => l.creditStatus !== 'verified').length} isLight={isLight} color="bg-[#48477A]/10 text-[#48477A] border-[#48477A]/20" />
+         <QuickStat label="Pending Distributions" count={pendingPayouts.length} isLight={isLight} color="bg-[#DAC18A]/10 text-[#DAC18A] border-[#DAC18A]/20" />
+         <QuickStat label="Settled Distributions" count={historyPayouts.length} isLight={isLight} color="bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20" />
+         <QuickStat label="Total Capital Distributed" count={`₹${totalPaidAmount.toLocaleString()}`} isLight={isLight} color="bg-[#718096]/10 text-[#718096] border-[#718096]/20" />
       </div>
 
       {/* ── ANALYTICS ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-        <ChartCard title="Daily Settlement Flow" subtitle="System inquiry volume analytics" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-8">
+        <ChartCard title="Daily Settlement Flow" subtitle="Daily capital distribution analytics." isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-8">
           <Chart options={chartConfigs.payouts.options} series={chartConfigs.payouts.series} type="line" height="100%" width="100%" />
         </ChartCard>
         <ChartCard title="Fund Status" subtitle="Breakdown of pending vs paid" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-4">
@@ -362,14 +361,14 @@ creditSettlementCacheTime = 0;
 
       {/* ── REWARD QUEUE (VERIFY CREDITS) ── */}
       <section className="space-y-6 pt-4 border-t" style={{ borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' }}>
-        <h3 className="text-xl font-extrabold tracking-tight">Verify Credits</h3>
+        <h3 className="text-xl font-extrabold tracking-tight">Authorize Distributions</h3>
 
         {/* Filters */}
         <div className={`p-5 lg:p-6 rounded-2xl border flex flex-col md:flex-row gap-4 transition-all duration-300 ${surfaceClass}`}>
           <div className={`flex flex-1 items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors focus-within:border-[#81B398] ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-transparent'}`}>
             <Search size={16} className={textSecondary} />
             <input
-              type="text" placeholder="Search Client or Lead ID..."
+              type="text" placeholder="Search Client or Project ID..."
               className={`w-full bg-transparent outline-none text-sm font-medium ${textPrimary} placeholder:${textSecondary}`}
               value={rewardSearch} onChange={e => setRewardSearch(e.target.value)}
             />
@@ -380,7 +379,7 @@ creditSettlementCacheTime = 0;
               className={`w-full bg-transparent outline-none text-sm font-semibold cursor-pointer ${textPrimary}`}
               value={rewardFilterBU} onChange={e => setRewardFilterBU(e.target.value)}
             >
-              <option value="">All Branches</option>
+              <option value="">All Divisions</option>
               {uniqueBUs.map(bu => <option key={bu} value={bu}>{bu}</option>)}
             </select>
           </div>
@@ -390,7 +389,7 @@ creditSettlementCacheTime = 0;
               className={`w-full bg-transparent outline-none text-sm font-semibold cursor-pointer ${textPrimary}`}
               value={rewardFilterAgent} onChange={e => setRewardFilterAgent(e.target.value)}
             >
-              <option value="">All Agents</option>
+              <option value="">All Partners</option>
               {uniqueRewardAgents.map(agent => <option key={agent} value={agent}>{agent}</option>)}
             </select>
           </div>
@@ -406,7 +405,7 @@ creditSettlementCacheTime = 0;
           ) : pendingRewards.length === 0 ? (
             <div className={`flex flex-col items-center justify-center py-20 gap-3 ${textSecondary}`}>
               <SearchX size={32} className="opacity-50" />
-              <p className="text-xs font-bold uppercase tracking-widest">No pending credits found</p>
+              <p className="text-xs font-bold uppercase tracking-widest">No pending distributions found</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -432,7 +431,7 @@ creditSettlementCacheTime = 0;
                       <span className={`truncate max-w-[120px] ${textPrimary}`}>{item.service}</span>
                     </div>
                     <div className="flex justify-between items-center text-xs font-semibold">
-                      <span className={textSecondary}>Handling Agent</span>
+                      <span className={textSecondary}>Handling Partner</span>
                       <span className={`truncate max-w-[120px] ${textPrimary}`}>{item.agentName}</span>
                     </div>
                   </div>
@@ -457,10 +456,10 @@ creditSettlementCacheTime = 0;
 </div>
                     <div className="flex justify-between items-center pt-3 border-t" style={{ borderColor: isLight ? 'rgba(129, 179, 152, 0.3)' : 'rgba(129, 179, 152, 0.1)' }}>
                       <span className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
-                        <Wallet size={12} className="text-[#81B398]" /> Agent Credit
+                        <Wallet size={12} className="text-[#81B398]" /> Partner Allocation
                       </span>
                       <span className="text-sm font-extrabold text-[#81B398]">
-                        {item.agentCredit?.toLocaleString() ?? 'N/A'} CR
+                        ₹{item.agentCredit?.toLocaleString() ?? '0'}
                       </span>
                     </div>
                   </div>
@@ -480,7 +479,7 @@ creditSettlementCacheTime = 0;
                       }}
                       className="flex-[1.2] py-2.5 bg-[#48477A] hover:bg-[#3d3c67] text-[#FFFFFF] text-xs font-semibold rounded-lg transition-all flex justify-center items-center gap-2"
                     >
-                      Verify CR
+                      Authorize
                     </button>
                   </div>
                 </div>
@@ -492,12 +491,12 @@ creditSettlementCacheTime = 0;
         {/* History List (Rewards) */}
         {historyRewards.length > 0 && (
           <div className="mt-8">
-             <h4 className="text-sm font-bold uppercase tracking-wider mb-4">Verified Credits History</h4>
+             <h4 className="text-sm font-bold uppercase tracking-wider mb-4">Verified Allocations History</h4>
              <div className="overflow-x-auto rounded-xl border" style={{ borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' }}>
                 <table className="w-full text-left border-collapse min-w-[800px]">
                   <thead>
                     <tr className={`${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
-                      {['Date', 'Customer', 'Agent', 'Credits', 'Status'].map(h => (
+                      {['Date', 'Client', 'Partner', 'Allocation', 'Status'].map(h => (
                         <th key={h} className={`px-6 py-4 text-xs font-bold uppercase tracking-wider border-b ${textSecondary} ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>{h}</th>
                       ))}
                     </tr>
@@ -513,7 +512,7 @@ creditSettlementCacheTime = 0;
                            </div>
                            <span className="text-sm font-medium">{item.agentName}</span>
                         </td>
-                        <td className="px-6 py-4 text-sm font-bold text-[#81B398]">{item.agentCredit} CR</td>
+                        <td className="px-6 py-4 text-sm font-bold text-[#81B398]">₹{item.agentCredit}</td>
                         <td className="px-6 py-4">
                            <span className={`inline-flex px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border ${getStatusBadgeStyles(item.creditStatus)}`}>
                              {item.creditStatus}
@@ -531,11 +530,11 @@ creditSettlementCacheTime = 0;
       {/* ── AGENT PAYOUTS ── */}
       <section className="space-y-6 pt-8 border-t" style={{ borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' }}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h3 className="text-xl font-extrabold tracking-tight">Agent Payouts</h3>
+          <h3 className="text-xl font-extrabold tracking-tight">Partner Distributions</h3>
           <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors focus-within:border-[#81B398] w-full sm:w-80 ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5'}`}>
             <Search size={16} className={textSecondary} />
             <input
-              type="text" placeholder="Search Agent..."
+              type="text" placeholder="Search Partner..."
               className={`w-full bg-transparent outline-none text-sm font-medium ${textPrimary} placeholder:${textSecondary}`}
               value={payoutSearch} onChange={e => setPayoutSearch(e.target.value)}
             />
@@ -552,7 +551,7 @@ creditSettlementCacheTime = 0;
           ) : pendingPayouts.length === 0 ? (
              <div className={`flex flex-col items-center justify-center py-20 gap-3 ${textSecondary}`}>
                <Wallet size={32} className="opacity-50" />
-               <p className="text-xs font-bold uppercase tracking-widest">No pending payouts</p>
+               <p className="text-xs font-bold uppercase tracking-widest">No pending distributions</p>
              </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -584,14 +583,10 @@ creditSettlementCacheTime = 0;
 
                     <div className={`p-4 rounded-xl border flex justify-between items-center mb-6 flex-1 ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-transparent'}`}>
                       <div>
-                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5 ${textSecondary}`}>Claim Amount</p>
-                        <p className="text-2xl font-extrabold tracking-tight">
-                          {item.amount?.toLocaleString()} <span className={`text-xs ${textSecondary}`}>CR</span>
+                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5 ${textSecondary}`}>Requested Amount</p>
+                        <p className="text-2xl font-extrabold text-[#81B398] tracking-tight">
+                          ₹{item.amount?.toLocaleString()}
                         </p>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${textSecondary}`}>Equivalent</p>
-                        <p className="text-sm font-bold text-[#81B398]">₹{item.amount?.toLocaleString()}</p>
                       </div>
                     </div>
 
@@ -619,12 +614,12 @@ creditSettlementCacheTime = 0;
         {/* History List (Payouts) */}
         {historyPayouts.length > 0 && (
           <div className="mt-8">
-             <h4 className="text-sm font-bold uppercase tracking-wider mb-4">Settled Payouts History</h4>
+             <h4 className="text-sm font-bold uppercase tracking-wider mb-4">Settled Distributions History</h4>
              <div className="overflow-x-auto rounded-xl border" style={{ borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' }}>
                 <table className="w-full text-left border-collapse min-w-[800px]">
                   <thead>
                     <tr className={`${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
-                      {['Date', 'Agent', 'Amount', 'Equivalent', 'Status'].map(h => (
+                      {['Date', 'Partner', 'Requested', 'Distributed', 'Status'].map(h => (
                         <th key={h} className={`px-6 py-4 text-xs font-bold uppercase tracking-wider border-b ${textSecondary} ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>{h}</th>
                       ))}
                     </tr>
@@ -642,7 +637,7 @@ creditSettlementCacheTime = 0;
                              </div>
                              <span className="text-sm font-bold">{item.agentName}</span>
                           </td>
-                          <td className="px-6 py-4 text-sm font-bold">{item.amount} CR</td>
+                          <td className="px-6 py-4 text-sm font-bold">₹{item.amount}</td>
                           <td className="px-6 py-4 text-sm font-bold text-[#81B398]">₹{item.amount}</td>
                           <td className="px-6 py-4">
                              <span className={`inline-flex px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border ${getStatusBadgeStyles(item.status)}`}>
@@ -677,7 +672,7 @@ creditSettlementCacheTime = 0;
                 <div className={`p-5 md:p-6 border-b flex justify-between items-center shrink-0 ${isLight ? 'bg-[#F4F5F7]/40 border-[#E2E8F0]' : 'bg-[#131720]/30 border-white/5'}`}>
                   <h3 className={`text-sm font-bold uppercase tracking-wider flex items-center gap-2 ${textPrimary}`}>
                     <Info size={16} className="text-[#81B398]" />
-                    {activeModal === 'payout'  ? 'Process Manual Payout' : ''}
+                    {activeModal === 'payout'  ? 'Process Manual Distribution' : ''}
                   </h3>
                   <button onClick={closeAllModals} className={`p-2 rounded-lg transition-colors ${isLight ? 'text-[#718096] hover:bg-[#E2E8F0]' : 'text-[#9CA3AF] hover:bg-[#131720]'}`}>
                     <X size={18} />
@@ -766,7 +761,7 @@ creditSettlementCacheTime = 0;
                       <div className="space-y-6">
                         <section className={`p-6 rounded-2xl border ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-transparent'}`}>
                           <h5 className={`text-sm font-bold uppercase tracking-wider flex items-center gap-2 border-b pb-4 mb-5 ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'} ${textPrimary}`}>
-                             Handling Agent
+                             Handling Partner
                           </h5>
                           <div className="flex items-center gap-4 mb-4">
                              <div className={`h-12 w-12 rounded-full overflow-hidden flex items-center justify-center shrink-0 border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#1A202C]' : 'bg-[#222938] border-white/5 text-[#F4F5F7]'}`}>
@@ -825,11 +820,11 @@ creditSettlementCacheTime = 0;
     <span
       className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}
     >
-      Agent Credit
+      Partner Allocation
     </span>
 
     <span className="text-xl font-extrabold text-[#81B398]">
-      {selectedItem.agentCredit?.toLocaleString() ?? '0'} CR
+      ₹{selectedItem.agentCredit?.toLocaleString() ?? '0'}
     </span>
   </div>
 </div>
@@ -851,7 +846,7 @@ creditSettlementCacheTime = 0;
                             <span className="font-bold text-3xl uppercase">{selectedItem.agentName?.charAt(0) || '?'}</span>
                          )}
                        </div>
-                       <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${textSecondary}`}>Verifying credits for</p>
+                       <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${textSecondary}`}>Authorizing distribution for</p>
                        <p className="text-xl font-extrabold tracking-tight mb-1 leading-tight">{selectedItem.clientName}</p>
                        <p className={`text-sm font-semibold mt-1 ${isLight ? 'text-[#81B398]' : 'text-[#81B398]'}`}>via {selectedItem.agentName}</p>
                     </div>
@@ -863,17 +858,17 @@ creditSettlementCacheTime = 0;
                        </button>
 
                        <div>
-                         <p className={`text-xs font-semibold uppercase tracking-wider mb-4 ${textSecondary}`}>Verify & Adjust Credit Points</p>
+                         <p className={`text-xs font-semibold uppercase tracking-wider mb-4 ${textSecondary}`}>Verify & Adjust Profit Share</p>
                          <div className={`p-6 rounded-2xl flex flex-col items-center justify-center border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5'}`}>
                             <div className="flex items-center justify-center gap-3">
+                              <span className="text-3xl font-extrabold text-[#81B398]">₹</span>
                               <input
                                 type="number" autoFocus placeholder="000"
                                 className={`bg-transparent text-5xl font-extrabold outline-none w-32 text-center border-b-2 border-transparent focus:border-[#81B398] transition-colors ${textPrimary} placeholder:${textSecondary}`}
                                 value={settleAmount} onChange={e => setSettleAmount(e.target.value)}
                               />
-                              <span className="text-3xl font-extrabold text-[#81B398]">CR</span>
                             </div>
-                            <p className={`text-[10px] font-semibold uppercase tracking-wider mt-4 ${textSecondary}`}>One Credit = 1 INR</p>
+                            <p className={`text-[10px] font-semibold uppercase tracking-wider mt-4 ${textSecondary}`}>Values are in INR (₹)</p>
                          </div>
                        </div>
 
@@ -892,7 +887,7 @@ creditSettlementCacheTime = 0;
                          className="w-full py-3.5 bg-[#48477A] hover:bg-[#3d3c67] text-[#FFFFFF] rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                        >
                          {isProcessing ? <Loader2 size={16} className="animate-spin" /> : null}
-                         {isProcessing ? 'Processing...' : 'Transfer to Wallet'}
+                         {isProcessing ? 'Processing...' : 'Allocate to Ledger'}
                        </button>
                     </div>
                   </div>
@@ -943,7 +938,7 @@ creditSettlementCacheTime = 0;
                             <p className="text-2xl font-extrabold text-[#81B398]">₹{selectedItem.amount?.toLocaleString()}</p>
                           </div>
                           <div className={`p-5 border rounded-2xl text-center flex flex-col justify-center ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5'}`}>
-                            <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${textSecondary}`}>Lifetime Leads</p>
+                            <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${textSecondary}`}>Lifetime Projects</p>
                             <p className="text-2xl font-extrabold">{getAgentTotalLeads(selectedItem.userId)}</p>
                           </div>
                         </div>
@@ -982,14 +977,14 @@ creditSettlementCacheTime = 0;
                       <Wallet size={32} />
                     </div>
                     <div>
-                      <h3 className="text-xl font-extrabold tracking-tight">Process Manual Payout</h3>
+                      <h3 className="text-xl font-extrabold tracking-tight">Process Manual Distribution</h3>
                       <p className={`text-sm font-medium mt-2 leading-relaxed ${textSecondary}`}>
                         Please transfer <b className={textPrimary}>₹{selectedItem.amount?.toLocaleString()}</b> manually to <b className={textPrimary}>{selectedItem.agentName}</b> via GPay, WhatsApp, or Bank Transfer.
                       </p>
                     </div>
 
                     <div className={`rounded-xl border p-4 text-left ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-transparent'}`}>
-                      <p className={`text-xs font-semibold uppercase tracking-wider mb-3 text-center ${textSecondary}`}>Agent Contact</p>
+                      <p className={`text-xs font-semibold uppercase tracking-wider mb-3 text-center ${textSecondary}`}>Partner Contact</p>
                       <div className="flex items-center justify-center mb-4">
                         <span className="text-sm font-bold flex items-center gap-2"><Phone size={14} className={textSecondary}/> {selectedItem.agentPhone || 'No Phone Available'}</span>
                       </div>
@@ -1008,7 +1003,7 @@ creditSettlementCacheTime = 0;
                         <AlertCircle size={14} /> Admin Action Required
                       </p>
                       <p className={`text-xs font-medium leading-relaxed ${textSecondary}`}>
-                        Ensure the payment is successfully completed before confirming. This action will permanently update the withdrawal status in the system.
+                        Ensure the payment is successfully completed before confirming. This action will permanently update the distribution status in the system.
                       </p>
                     </div>
 

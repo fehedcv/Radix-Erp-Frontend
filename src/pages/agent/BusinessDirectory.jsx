@@ -118,10 +118,10 @@ const BusinessDirectory = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 ">
         <div className="space-y-1.5">
           <h1 className={`text-3xl md:text-4xl font-extrabold tracking-tight ${textPrimary}`}>
-            Businesses
+            Corporate Divisions
           </h1>
           <p className={`text-sm font-medium max-w-xl ${textSecondary}`}>
-            Explore registered businesses and submit client referrals.
+            Explore active execution divisions and route your client projects for fulfillment.
           </p>
         </div>
 
@@ -130,7 +130,7 @@ const BusinessDirectory = () => {
         }`}>
           <Briefcase size={16} className={textSecondary} />
           <span className={`text-xs font-semibold ${textPrimary}`}>
-            {businessUnits.length} Active Units
+            {businessUnits.length} Active Divisions
           </span>
         </div>
       </div>
@@ -177,7 +177,7 @@ const BusinessDirectory = () => {
                     )}
 
                     <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#81B398] bg-[#81B398]/10 px-2.5 py-1 rounded-md border border-[#81B398]/20">
-                      <ShieldCheck size={12} /> Verified
+                      <ShieldCheck size={12} /> Active
                     </span>
                   </div>
 
@@ -192,7 +192,7 @@ const BusinessDirectory = () => {
                     </div>
                     
                     <p className={`text-sm mt-4 line-clamp-2 leading-relaxed ${textSecondary}`}>
-                      {unit.description || 'No description provided for this business unit.'}
+                      {unit.description || 'No description provided for this execution division.'}
                     </p>
                   </div>
                 </div>
@@ -215,7 +215,7 @@ const BusinessDirectory = () => {
                       onClick={() => navigate(`/agent/units/${unit.id}`)}
                       className="flex-[1.5] py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 bg-[#81B398] text-[#FFFFFF] hover:bg-[#6FA085] transition-all duration-200 shadow-sm active:scale-95"
                     >
-                      Refer Client <ArrowRight size={16} />
+                      Route Project <ArrowRight size={16} />
                     </button>
                   </div>
                 </div>
@@ -228,8 +228,8 @@ const BusinessDirectory = () => {
         {businessUnits.length === 0 && !loading && (
            <div className={`col-span-full py-20 flex flex-col items-center justify-center rounded-2xl border ${surfaceClass}`}>
               <Briefcase size={40} className={`mb-4 opacity-30 ${textSecondary}`} />
-              <p className={`text-base font-semibold ${textPrimary}`}>No Businesses Found</p>
-              <p className={`text-sm mt-1 ${textSecondary}`}>There are currently no active business units available.</p>
+              <p className={`text-base font-semibold ${textPrimary}`}>No Divisions Found</p>
+              <p className={`text-sm mt-1 ${textSecondary}`}>There are currently no active execution divisions available.</p>
            </div>
         )}
       </div>

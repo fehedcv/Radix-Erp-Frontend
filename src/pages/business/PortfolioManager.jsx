@@ -317,10 +317,10 @@ const PortfolioManager = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5">
         <div className="space-y-1.5">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-none">
-            Business Profile
+            Division Configuration
           </h1>
           <p className={`text-sm font-medium ${textSecondary}`}>
-            Manage your brand details, services, and portfolio gallery.
+            Configure your division's market identity, service verticals, and execution portfolio.
           </p>
         </div>
         <button
@@ -341,7 +341,7 @@ const PortfolioManager = () => {
         <div>
           <h4 className={`text-sm font-bold mb-1 ${textPrimary}`}>Important Notice</h4>
           <p className={`text-xs font-medium leading-relaxed ${textSecondary}`}>
-            Remember to save your changes. High-resolution images are recommended for the gallery, keeping each file under 5MB for optimal load times.
+            Remember to save your changes. High-resolution images are recommended for the portfolio, keeping each file under 5MB for optimal load times.
           </p>
         </div>
       </div>
@@ -355,7 +355,7 @@ const PortfolioManager = () => {
           {/* BUSINESS INFO CARD */}
           <div className={`p-6 lg:p-8 rounded-2xl border transition-all duration-300 ${surfaceClass}`}>
             <h4 className={`text-sm font-bold uppercase tracking-wider mb-6 flex items-center gap-2 border-b pb-4 ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>
-              <Settings size={18} className="text-[#81B398]" /> Business Information
+              <Settings size={18} className="text-[#81B398]" /> Division Overview
             </h4>
             
             <div className="flex flex-col md:flex-row gap-6 lg:gap-8">
@@ -388,10 +388,10 @@ const PortfolioManager = () => {
               {/* Inputs */}
               <div className="flex-1 space-y-4">
                 <Input
-                  label="Business Name"
+                  label="Division Name"
                   value={unit.name}
                   onChange={v => setUnit({ ...unit, name: v })}
-                  placeholder="e.g. Acme Corp"
+                  placeholder="e.g. Vynx"
                   disabled
                   isLight={isLight}
                 />
@@ -408,10 +408,10 @@ const PortfolioManager = () => {
 
             <div className="mt-4">
                <Textarea
-                 label="About the Business"
+                 label="Executive Summary"
                  value={unit.description}
                  onChange={v => setUnit({ ...unit, description: v })}
-                 placeholder="Tell us what makes your business unique..."
+                 placeholder="e.g. Vynx delivers enterprise-grade software architecture and comprehensive digital solutions for high-tier commercial infrastructure."
                  isLight={isLight}
                  rows={4}
                />
@@ -495,7 +495,7 @@ const PortfolioManager = () => {
           <div className={`p-6 lg:p-8 rounded-2xl border transition-all duration-300 ${surfaceClass}`}>
             <div className="flex justify-between items-center mb-6 border-b pb-4" style={{ borderColor: isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)' }}>
               <h4 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                <Camera size={18} className="text-[#81B398]" /> Photo Gallery 
+                <Camera size={18} className="text-[#81B398]" /> Execution Portfolio
               </h4>
               <button
                 onClick={() => fileInputRef.current.click()}
@@ -513,7 +513,7 @@ const PortfolioManager = () => {
             {unit.gallery.length === 0 ? (
               <div className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center ${isLight ? 'border-[#E2E8F0] bg-[#F4F5F7]/50' : 'border-white/5 bg-[#131720]/50'}`}>
                 <Image size={32} className={`mb-3 opacity-30 ${textSecondary}`} />
-                <p className={`text-sm font-medium ${textSecondary}`}>No images uploaded yet.</p>
+                <p className={`text-sm font-medium ${textSecondary}`}>No portfolio assets uploaded yet.</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -545,7 +545,7 @@ const PortfolioManager = () => {
         <div className="lg:col-span-4 space-y-6">
           <div className={`p-6 lg:p-8 rounded-2xl border sticky top-6 transition-all duration-300 ${surfaceClass}`}>
             <h4 className={`text-sm font-bold uppercase tracking-wider mb-6 flex items-center gap-2 border-b pb-4 ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>
-              <Briefcase size={18} className="text-[#81B398]" /> Services Offered
+              <Briefcase size={18} className="text-[#81B398]" /> Core Service Verticals
             </h4>
 
             <div className="space-y-4 mb-6">
@@ -560,17 +560,17 @@ const PortfolioManager = () => {
                   >
                     <div className="flex flex-col gap-3">
                       <Input
-                        label="Service Name"
+                        label="Vertical Name"
                         value={s.name}
                         onChange={v => updateService(i, "name", v)}
-                        placeholder="e.g. Structural Design"
+                        placeholder="e.g. Enterprise Web Platforms"
                         isLight={isLight}
                       />
                       <Textarea
                         label="Short Description"
                         value={s.description}
                         onChange={v => updateService(i, "description", v)}
-                        placeholder="Briefly describe the service..."
+                        placeholder="e.g. Development of high-performance, immersive digital architecture..."
                         isLight={isLight}
                         rows={2}
                       />
@@ -594,7 +594,7 @@ const PortfolioManager = () => {
                   isLight ? 'border-[#81B398] text-[#81B398] hover:bg-[#81B398]/5' : 'border-[#81B398] text-[#81B398] hover:bg-[#81B398]/10'
               }`}
             >
-              <Plus size={16} /> Add New Service
+              <Plus size={16} /> Add New Vertical
             </button>
           </div>
         </div>
@@ -630,7 +630,7 @@ const Input = ({ label, value, onChange, icon, isLight, disabled, ...props }) =>
           {...props}
         />
       </div>
-    </div>
+      </div>
   );
 };
 

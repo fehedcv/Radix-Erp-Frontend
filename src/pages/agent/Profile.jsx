@@ -339,7 +339,7 @@ const ProfilePage = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight">
-            My Profile
+            Partner Profile
           </h1>
 
           <p className={`text-sm mt-1 font-medium ${textSecondary}`}>
@@ -433,7 +433,7 @@ const ProfilePage = () => {
             <div className="absolute top-0 -right-2 bg-[#81B398] text-white px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
               <Target size={12} />
               <span className="text-xs font-bold tracking-wide">
-                {profile.totalLeads} Leads
+                {profile.totalLeads} Projects
               </span>
             </div>
           </div>
@@ -458,7 +458,7 @@ const ProfilePage = () => {
           <div className={`flex items-center gap-2 mb-8 border-b pb-4 ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'}`}>
             <Settings size={18} className="text-[#81B398]" />
             <h3 className="font-bold uppercase tracking-wider text-sm">
-              Partner Data
+              Executive Details
             </h3>
           </div>
 
@@ -522,9 +522,9 @@ const ProfilePage = () => {
             <div>
               <p className={`font-semibold ${textPrimary}`}>Push Notifications</p>
               <p className={`text-sm mt-1 ${textSecondary}`}>
-                {notifPermission === 'granted' && 'You will receive alerts for new leads and payments.'}
+                {notifPermission === 'granted' && 'You will receive alerts for project milestones and capital distributions.'}
                 {notifPermission === 'denied' && 'Blocked in browser settings. Click the lock icon in your address bar to re-enable.'}
-                {notifPermission === 'default' && 'Get instant alerts for new leads and payment updates.'}
+                {notifPermission === 'default' && 'Get instant alerts for project milestones and capital distributions.'}
               </p>
             </div>
 

@@ -107,7 +107,7 @@ const AdminOverviewApp = () => {
 
   // --- CHART CONFIGURATIONS (Updated to Match Theme & Sage Green Accents) ---
   const activityTrendConfig = useMemo(() => ({
-    series: [{ name: 'Inquiries', data: trendChartData.data }],
+    series: [{ name: 'Projects', data: trendChartData.data }],
     options: {
       chart: { type: 'area', toolbar: { show: false }, sparkline: { enabled: false }, animations: { enabled: false }, fontFamily: 'Plus Jakarta Sans', background: 'transparent' },
       colors: ['#81B398'],
@@ -135,7 +135,7 @@ const AdminOverviewApp = () => {
   }), [stats, isLight]);
 
   const performanceConfig = useMemo(() => ({
-    series: [{ name: 'Leads Received', data: partnerPerformanceData.data }],
+    series: [{ name: 'Projects Received', data: partnerPerformanceData.data }],
     options: {
       chart: { type: 'bar', toolbar: { show: false }, animations: { enabled: false }, fontFamily: 'Plus Jakarta Sans', background: 'transparent' },
       colors: ['#81B398'],
@@ -160,24 +160,24 @@ const AdminOverviewApp = () => {
       {/* 1. FREE HEADING */}
       <div className="mb-4 px-1 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-extrabold tracking-tight mb-1">System Analytics</h2>
-          <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Overview & Performance</p>
+          <h2 className="text-2xl font-extrabold tracking-tight mb-1">Network Operations</h2>
+          <p className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>Ecosystem performance and IBP portfolio overview.</p>
         </div>
         <button 
           onClick={() => navigate('/admin/leads')}
           className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all active:scale-95 bg-[#81B398] text-white hover:bg-[#6FA085]"
         >
-          View Lead History <ArrowRight size={14} strokeWidth={2.5} />
+          View Contract History <ArrowRight size={14} strokeWidth={2.5} />
         </button>
       </div>
 
       {/* 2. METRIC NODES (MOVED TO TOP) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         {[
-          { label: 'Total Inquiries', val: stats.totalLeads, icon: <Activity size={16} strokeWidth={2.5}/>, color: 'text-[#81B398]', bg: isLight ? 'bg-[#81B398]/10' : 'bg-[#81B398]/10' },
-          { label: 'Business Partners', val: stats.totalUnits, icon: <Building2 size={16} strokeWidth={2.5}/>, color: 'text-[#48477A]', bg: isLight ? 'bg-[#48477A]/10' : 'bg-[#48477A]/10' },
-          { label: 'Total Agents', val: dashboard.totalAgents, icon: <Users size={16} strokeWidth={2.5}/>, color: 'text-[#81B398]', bg: isLight ? 'bg-[#81B398]/10' : 'bg-[#81B398]/10' },
-          { label: 'Pending Requests', val: dashboard.inquiryPending, icon: <Clock size={16} strokeWidth={2.5}/>, color: 'text-amber-500', bg: isLight ? 'bg-amber-500/10' : 'bg-amber-500/10' }
+          { label: 'ACTIVE PORTFOLIOS', val: stats.totalLeads, icon: <Activity size={16} strokeWidth={2.5}/>, color: 'text-[#81B398]', bg: isLight ? 'bg-[#81B398]/10' : 'bg-[#81B398]/10' },
+          { label: 'ACTIVE DIVISIONS', val: stats.totalUnits, icon: <Building2 size={16} strokeWidth={2.5}/>, color: 'text-[#48477A]', bg: isLight ? 'bg-[#48477A]/10' : 'bg-[#48477A]/10' },
+          { label: 'ACTIVE IBPs', val: dashboard.totalAgents, icon: <Users size={16} strokeWidth={2.5}/>, color: 'text-[#81B398]', bg: isLight ? 'bg-[#81B398]/10' : 'bg-[#81B398]/10' },
+          { label: 'PENDING APPROVALS', val: dashboard.inquiryPending, icon: <Clock size={16} strokeWidth={2.5}/>, color: 'text-amber-500', bg: isLight ? 'bg-amber-500/10' : 'bg-amber-500/10' }
         ].map((m, i) => (
           <div 
             key={i}
@@ -198,7 +198,7 @@ const AdminOverviewApp = () => {
 
       {/* 3. ANALYTICS SUITE (MOVED BELOW METRICS) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
-        <ChartCard title="Daily Activity" subtitle="Real-time inquiry flow" isLight={isLight}>
+        <ChartCard title="Real-time project influx" subtitle="Real-time inquiry flow" isLight={isLight}>
           <Chart options={activityTrendConfig.options} series={activityTrendConfig.series} type="area" height={240} />
         </ChartCard>
         
@@ -206,7 +206,7 @@ const AdminOverviewApp = () => {
           <Chart options={statusDistributionConfig.options} series={statusDistributionConfig.series} type="donut" height={240} />
         </ChartCard>
 
-        <ChartCard title="Partner Ranking" subtitle="Top performing business units" isLight={isLight}>
+        <ChartCard title="Division Performance." subtitle="Top performing business units" isLight={isLight}>
           <Chart options={performanceConfig.options} series={performanceConfig.series} type="bar" height={240} />
         </ChartCard>
       </div>
@@ -219,9 +219,9 @@ const AdminOverviewApp = () => {
         }`}>
           <div className={`px-5 md:px-6 py-5 border-b flex items-center justify-between ${isLight ? 'border-[#E2E8F0] bg-[#F4F5F7]/50' : 'border-white/10 bg-[#1A1A24]/50'}`}>
             <h4 className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
-              <UserPlus size={14} strokeWidth={2.5} className="text-[#81B398]" /> Team Onboarding
+              <UserPlus size={14} strokeWidth={2.5} className="text-[#81B398]" /> IBP Network Expansion
             </h4>
-            <button onClick={() => navigate('/admin/agents')} className={`text-[9px] font-bold uppercase tracking-wider transition-colors ${isLight ? 'text-[#81B398] hover:text-[#6FA085]' : 'text-[#81B398] hover:text-white'}`}>Directory</button>
+            <button onClick={() => navigate('/admin/agents')} className={`text-[9px] font-bold uppercase tracking-wider transition-colors ${isLight ? 'text-[#81B398] hover:text-[#6FA085]' : 'text-[#81B398] hover:text-white'}`}>Directory →</button>
           </div>
           <div className="p-5 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
             {dashboardAgents.map((agent, i) => {
@@ -255,7 +255,7 @@ const AdminOverviewApp = () => {
         }`}>
           <div className={`px-5 md:px-6 py-5 border-b ${isLight ? 'border-[#E2E8F0] bg-[#F4F5F7]/50' : 'border-white/10 bg-[#1A1A24]/50'}`}>
             <h4 className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
-              <Building2Icon size={14} strokeWidth={2.5} className="text-[#81B398]" /> Partners
+              <Building2Icon size={14} strokeWidth={2.5} className="text-[#81B398]" /> Execution Teams
             </h4>
           </div>
           <div className="p-4 space-y-2 flex-1">

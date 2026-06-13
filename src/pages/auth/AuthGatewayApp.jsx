@@ -20,9 +20,15 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
   }, [setTheme]);
 
   const [tab, setTab] = useState('login');
+  
+  // Terms & Conditions State
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  // Login State
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
+  // Signup State
   const [signupLoading, setSignupLoading] = useState(false);
   const [signupError, setSignupError] = useState('');
   const [signupForm, setSignupForm] = useState({
@@ -34,6 +40,12 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
     e.preventDefault();
     setLoginLoading(true);
     setLoginError('');
+
+    if (!agreedToTerms) {
+      setLoginError('You must agree to the Terms & Conditions');
+      setLoginLoading(false);
+      return;
+    }
 
     const formData = new FormData(e.target);
     const email = formData.get('email');
@@ -90,6 +102,11 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
   const handleSignup = async (e) => {
     e.preventDefault();
     setSignupError('');
+
+    if (!agreedToTerms) {
+      setSignupError('You must agree to the Terms & Conditions');
+      return;
+    }
 
     if (signupForm.password !== signupForm.confirm) {
       setSignupError('Passwords do not match.');
@@ -184,6 +201,22 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
             onReset={handleResetSuccess}
             isLight={false}
           />
+        )}
+
+        {/* Terms & Conditions Checkbox (Hidden on Success Screen) */}
+        {tab !== 'success' && (
+          <div className="mt-5 pt-4 border-t border-white/[0.05] flex items-center justify-center gap-2 w-full">
+            <input 
+              type="checkbox" 
+              id="terms" 
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              className="w-4 h-4 cursor-pointer accent-white bg-transparent border-white/20 rounded"
+            />
+            <label htmlFor="terms" className="text-xs text-white/60 cursor-pointer select-none">
+              I agree to the <a href="https://radixnetworks.in/terms" target="_blank" rel="noopener noreferrer" className="text-white hover:underline font-medium">Terms & Conditions</a>
+            </label>
+          </div>
         )}
       </main>
     </div>

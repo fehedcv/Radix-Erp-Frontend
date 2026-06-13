@@ -65,7 +65,7 @@ const BusinessHubApp = ({ onLogout }) => {
 
   const navItems = [
     { id: 'dashboard', label: 'OVERVIEW', icon: LayoutDashboard, path: '/business/dashboard' },
-    { id: 'leads', label: 'LEADS', icon: Users, path: '/business/leads' },
+    { id: 'leads', label: 'Projects', icon: Users, path: '/business/leads' },
     { id: 'portfolio', label: 'PROFILE', icon: FolderEdit, path: '/business/portfolio' },
   ];
 

@@ -366,18 +366,18 @@ const BusinessHub = () => {
             
             <div className="flex-1">
               <p className={`text-xs font-bold uppercase tracking-wider mb-1 flex items-center justify-center md:justify-start gap-1.5 ${isLight ? 'text-[#81B398]' : 'text-[#81B398]'}`}>
-                <Star size={14} className="fill-current" /> Top Performing Partner
+                <Star size={14} className="fill-current" /> Top Performing Division
               </p>
               <h3 className={`text-2xl md:text-3xl font-extrabold tracking-tight ${textPrimary}`}>
                 {topPartner.name}
               </h3>
               <p className={`text-sm font-medium mt-1 ${textSecondary}`}>
-                Leading the network in client acquisitions and sustained conversions.
+                Leading the holding group in project execution and contract fulfillment.
               </p>
             </div>
 
             <div className={`px-6 py-4 rounded-2xl flex flex-col items-center border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#1A202C] border-white/5'}`}>
-              <span className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${textSecondary}`}>Total Leads</span>
+              <span className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${textSecondary}`}>Assigned Projects</span>
               <span className="text-3xl md:text-4xl font-extrabold tracking-tighter text-[#81B398]">{topPartner.leadCount || 0}</span>
             </div>
 
@@ -389,7 +389,7 @@ const BusinessHub = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
         <div className={`p-5 lg:p-6 rounded-2xl border flex flex-col justify-between h-[120px] lg:h-[140px] transition-all duration-300 min-w-0 ${surfaceClass}`}>
           <div className="flex items-center justify-between">
-            <p className={`text-xs font-semibold uppercase tracking-wider truncate mr-2 ${textSecondary}`}>Total Units</p>
+            <p className={`text-xs font-semibold uppercase tracking-wider truncate mr-2 ${textSecondary}`}>Active Divisions</p>
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isLight ? 'text-[#48477A] bg-[#48477A]/10' : 'text-[#81B398] bg-[#131720]'}`}>
               <Building2 size={18}/>
             </div>
@@ -399,7 +399,7 @@ const BusinessHub = () => {
         
         <div className={`p-5 lg:p-6 rounded-2xl border flex flex-col justify-between h-[120px] lg:h-[140px] transition-all duration-300 min-w-0 ${surfaceClass}`}>
           <div className="flex items-center justify-between">
-            <p className={`text-xs font-semibold uppercase tracking-wider truncate mr-2 ${textSecondary}`}>Active Sectors</p>
+            <p className={`text-xs font-semibold uppercase tracking-wider truncate mr-2 ${textSecondary}`}>Service Verticals</p>
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isLight ? 'text-[#81B398] bg-[#F4F5F7]' : 'text-[#81B398] bg-[#81B398]/10'}`}>
               <Activity size={18}/>
             </div>
@@ -412,7 +412,7 @@ const BusinessHub = () => {
         <div className={`min-w-0 p-6 lg:p-8 rounded-2xl border flex flex-col transition-all duration-300 ${surfaceClass}`}>
           <div className="mb-6 shrink-0">
             <h4 className={`text-sm font-bold uppercase tracking-wider ${textPrimary}`}>Sectors Representation</h4>
-            <p className={`text-xs font-medium mt-1 ${textSecondary}`}>Distribution of units across industries</p>
+            <p className={`text-xs font-medium mt-1 ${textSecondary}`}>Distribution of active divisions across industries.</p>
           </div>
           <div className="w-full flex-1 relative h-[250px] overflow-hidden">
             <Chart options={chartConfigs.distribution.options} series={chartConfigs.distribution.series} type="donut" height="100%" width="100%" />
@@ -421,8 +421,8 @@ const BusinessHub = () => {
 
         <div className={`min-w-0 p-6 lg:p-8 rounded-2xl border flex flex-col transition-all duration-300 ${surfaceClass}`}>
           <div className="mb-6 shrink-0">
-            <h4 className={`text-sm font-bold uppercase tracking-wider ${textPrimary}`}>Onboarding Trend</h4>
-            <p className={`text-xs font-medium mt-1 ${textSecondary}`}>New business unit registrations</p>
+            <h4 className={`text-sm font-bold uppercase tracking-wider ${textPrimary}`}>Division Rollout</h4>
+            <p className={`text-xs font-medium mt-1 ${textSecondary}`}>Activation timeline of new Zypher divisions.</p>
           </div>
           <div className="w-full flex-1 relative h-[250px] overflow-hidden">
             <Chart options={chartConfigs.trend.options} series={chartConfigs.trend.series} type="area" height="100%" width="100%" />
@@ -435,7 +435,7 @@ const BusinessHub = () => {
         <Search size={18} className={textSecondary} />
         <input 
           type="text"
-          placeholder="Search by business name, manager, or category..."
+          placeholder="Search by division name, director, or sector..."
           className={`w-full bg-transparent text-sm font-medium outline-none ${textPrimary} placeholder:${textSecondary}`}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -485,7 +485,7 @@ const BusinessHub = () => {
 
                 <div className={`space-y-3 mb-6 p-4 rounded-xl border flex-1 ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-transparent'}`}>
                   <div className="flex justify-between items-center text-xs font-semibold">
-                    <span className={textSecondary}>Manager</span>
+                    <span className={textSecondary}>Division Head</span>
                     <span className={`truncate max-w-[120px] ${textPrimary}`}>{unit.managerName}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs font-semibold">
@@ -571,7 +571,7 @@ const BusinessHub = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
                     <div className="space-y-8">
                       <DossierSection title="Unit Identity" icon={<User size={16}/>} isLight={isLight} textPrimary={textPrimary} textSecondary={textSecondary}>
-                        <InfoItem label="Manager"   value={selectedUnit.managerName} textPrimary={textPrimary} textSecondary={textSecondary} />
+                        <InfoItem label="Division Head"   value={selectedUnit.managerName} textPrimary={textPrimary} textSecondary={textSecondary} />
                         <div className="flex justify-between items-center border-b pb-2" style={{ borderColor: 'rgba(156, 163, 175, 0.1)' }}>
                           <span className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>Commission</span>
                           {editingCommission ? (
@@ -830,7 +830,7 @@ const AddUnitForm = ({ onSubmit, onCancel, submitting, isLight, textSecondary, t
         <FormInput label="Business Name *"   value={form.name}      onChange={set('name')}      placeholder="e.g. SKYLINE TECH"      required isLight={isLight} />
         <FormInput label="Market Category *" value={form.category}  onChange={set('category')}  placeholder="Enter Category"           required isLight={isLight} />
         <FormInput label="Commission (%) *"  type="number" value={form.commision} onChange={set('commision')} placeholder="e.g. 10" required isLight={isLight} />
-        <FormInput label="Unit Manager *"    value={form.manager}   onChange={set('manager')}   placeholder="e.g. ABHISHEK"       required isLight={isLight} />
+        <FormInput label="Division Head *"    value={form.manager}   onChange={set('manager')}   placeholder="e.g. ABHISHEK"       required isLight={isLight} />
         <FormInput label="Primary Phone *"   value={form.phone}     onChange={set('phone')}     placeholder="98475 12025"          required isLight={isLight} />
         <FormInput label="WhatsApp Number *" value={form.whatsapp}  onChange={set('whatsapp')}  placeholder="98475 12025"          required isLight={isLight} />
         <FormInput label="Email *"           value={form.email}     onChange={set('email')}     placeholder="unit@example.com"          required type="email" isLight={isLight} />

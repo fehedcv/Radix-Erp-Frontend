@@ -125,10 +125,10 @@ const BusinessDirectoryApp = () => {
         <div className="flex justify-between items-end px-2">
           <div>
             <h1 className={`text-3xl font-extrabold tracking-tight ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
-              Directory
+          Businesses
             </h1>
             <p className={`text-[11px] font-bold uppercase tracking-wider mt-0.5 ${isLight ? 'text-[#718096]' : 'text-[#9CA3AF]'}`}>
-              Registered Businesses
+              Corporate Division
             </p>
           </div>
           
@@ -136,7 +136,7 @@ const BusinessDirectoryApp = () => {
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#48477A]/10 text-[#48477A] border border-[#48477A]/20">
             <Info size={14} strokeWidth={2.5} />
             <span className="text-[11px] font-bold uppercase tracking-wider">
-              {businessUnits.length} Units
+              {businessUnits.length} Active Division 
             </span>
           </div>
         </div>

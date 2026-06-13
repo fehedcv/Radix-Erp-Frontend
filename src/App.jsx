@@ -72,6 +72,8 @@ import PushNotificationHandler from './components/PushNotificationHandler';
 import NotificationToast from './components/NotificationToast';
 import { cleanupPushNotifications } from './services/pushNotifications';
 import { cleanupWebPush } from './services/webPush';
+import TermsPage from './pages/auth/TermsPage';
+import PrivacyPolicyPage from './pages/auth/PrivacyPolicyPage';
 
 const AppContent = () => {
   const [userRole, setUserRole] = useState(null);
@@ -294,7 +296,8 @@ const AppContent = () => {
           path="/"
           element={!userRole ? <LandingPage onEnterPortal={() => window.location.href='/login'} /> : <Navigate to={`/${userRole}`} replace />}
         />
-
+        <Route path="/terms" element={<TermsPage />} />
+<Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route
           path="/login"
           element={

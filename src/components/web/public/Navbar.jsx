@@ -41,7 +41,7 @@ const Navbar = ({ onEnterPortal }) => {
         >
           <span className="absolute inset-0 border border-white/20 rounded-full transition-colors duration-300 group-hover:border-transparent"></span>
           <span className="absolute inset-0 bg-white transition-transform duration-500 ease-out translate-y-full group-hover:translate-y-0 rounded-full"></span>
-          <span className="relative z-10 transition-colors duration-300 group-hover:text-black">Let's Earn</span>
+          <span className="relative z-10 transition-colors duration-300 group-hover:text-black">Access Network</span>
         </button>
       </nav>
     </header>

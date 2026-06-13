@@ -352,7 +352,7 @@ const ProfilePageApp = () => {
             
             <div className="mt-4 flex justify-center">
                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20">
-                 <CheckCircle2 size={12} strokeWidth={3} /> {profile.status} Partner
+                 <CheckCircle2 size={12} strokeWidth={3} /> Radix Partner
                </span>
             </div>
           </div>
@@ -366,7 +366,7 @@ const ProfilePageApp = () => {
                 Activity Level
               </h4>
               <p className={`text-3xl font-extrabold tracking-tighter ${isLight ? 'text-[#1A202C]' : 'text-[#F4F5F7]'}`}>
-                {profile.totalLeads} <span className="text-[11px] font-bold tracking-tight text-[#81B398]">Submissions</span>
+                {profile.totalLeads} <span className="text-[11px] font-bold tracking-tight text-[#81B398]">Projects</span>
               </p>
             </div>
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${
@@ -383,7 +383,7 @@ const ProfilePageApp = () => {
             <h4 className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 border-b pb-4 ${
               isLight ? 'border-[#E2E8F0] text-[#718096]' : 'border-white/10 text-[#9CA3AF]'
             }`}>
-              <User size={14} className="text-[#81B398]" /> Personal Data
+              <User size={14} className="text-[#81B398]" /> Executive Details
             </h4>
 
             <div className="space-y-5">

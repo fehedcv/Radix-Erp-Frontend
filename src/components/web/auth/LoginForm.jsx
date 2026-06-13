@@ -9,7 +9,7 @@ const LoginForm = ({ onSubmit, error, loading, formVariants, onForgotPassword })
   return (
     <motion.div key="login" variants={formVariants} initial="hidden" animate="visible" exit="exit" className="space-y-4">
       <header className="hidden lg:block mb-4 text-center">
-        <h2 className="text-2xl font-medium text-white">Welcome Back</h2>
+        <h2 className="text-2xl font-medium text-white">keep it as Welcome Back, Partner.</h2>
       </header>
       <form onSubmit={onSubmit} className="space-y-3">
         <div className="space-y-1">

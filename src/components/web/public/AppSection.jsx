@@ -10,14 +10,14 @@ const AppSection = () => {
         
         <div className="max-w-4xl mx-auto relative z-10 font-['Syne',sans-serif]">
           <h2 className="font-['Syne',sans-serif] text-4xl md:text-6xl font-light tracking-tight text-white mb-6">
-            Radix Android <br />
+            Your Executive<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#B282FE] to-[#7038FF]">
-              Application
+              Command Center.
             </span>
           </h2>
           
           <p className="text-white/50 text-lg leading-relaxed font-light max-w-2xl mx-auto">
-            Take your business networking to the next level. Submit high-quality leads directly from your contacts, track verification milestones in real-time, and manage your earned credits with our high-performance mobile portal.
+            Command your global network from anywhere. Seamlessly route high-value projects to our dedicated execution.
           </p>
         </div>
       </div>

@@ -13,7 +13,7 @@ import { useTheme } from '../../context/ThemeContext';
 const STATUSES = [
   'All',
   'Pending',
-  'Verified',
+  'Approved',
   'In Progress',
   'Completed',
   'Rejected'
@@ -69,7 +69,7 @@ const fetchData = useCallback(async (forceRefresh = false) => {
     const normalizeStatus = (s) => {
       const map = {
         pending: 'Pending',
-        verified: 'Verified',
+        verified: 'Approved',
         'in progress': 'In Progress',
         completed: 'Completed',
         rejected: 'Rejected',
@@ -82,7 +82,7 @@ const fetchData = useCallback(async (forceRefresh = false) => {
     const normalized =
       (data?.leads || []).map((lead, index) => ({
         ...lead,
-        displayId: `Lead-${index + 1}`,
+        displayId: `PRJ-${String(index + 1).padStart(3, '0')}`,
         status: normalizeStatus(lead.status),
         date: (lead.date || '').split('T')[0]
       }));
@@ -141,7 +141,7 @@ const fetchData = useCallback(async (forceRefresh = false) => {
 
     return {
       trend: {
-        series: [{ name: 'Total Leads', data: sortedDates.length ? sortedDates.map((d) => dailyCounts[d]) : [0] }],
+        series: [{ name: 'Total Projects', data: sortedDates.length ? sortedDates.map((d) => dailyCounts[d]) : [0] }],
         options: {
           chart: { type: 'area', toolbar: { show: false }, fontFamily: 'Plus Jakarta Sans', background: 'transparent', parentHeightOffset: 0 },
           colors: ['#48477A'], // Earth-Tech Indigo
@@ -172,7 +172,7 @@ const fetchData = useCallback(async (forceRefresh = false) => {
         },
       },
       performance: {
-        series: [{ name: 'Lead Count', data: Object.values(unitActivity).length ? Object.values(unitActivity).slice(0, 7) : [0] }],
+        series: [{ name: 'Project Count', data: Object.values(unitActivity).length ? Object.values(unitActivity).slice(0, 7) : [0] }],
         options: {
           chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'Plus Jakarta Sans', background: 'transparent', parentHeightOffset: 0 },
           colors: ['#81B398'],
@@ -192,20 +192,20 @@ const fetchData = useCallback(async (forceRefresh = false) => {
   }, [filteredLeads, isLight]);
 
   const handleExport = () => {
-    const headers = ['ID', 'Customer', 'Unit', 'Agent', 'Status', 'Date'];
+    const headers = ['ID', 'Client', 'Division', 'Partner', 'Status', 'Date'];
     const rows = filteredLeads.map((l) =>
       [l.displayId || l.id, l.clientName, l.businessUnit, l.agentName, l.status, l.date].join(',')
     );
     const blob = new Blob([[headers.join(','), ...rows].join('\n')], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'Radix_Master_Leads_Report.csv'; a.click();
+    a.href = url; a.download = 'Radix_Master_Contracts_Report.csv'; a.click();
   };
 
   // --- UI HELPERS ---
   const getStatusBadgeStyles = (status) => {
     const s = status?.toLowerCase();
-    if (s === 'completed' || s === 'verified' || s === 'approved') return 'bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20';
+    if (s === 'completed' || s === 'approved') return 'bg-[#81B398]/10 text-[#81B398] border border-[#81B398]/20';
     if (s === 'rejected') return 'bg-[#F0524F]/10 text-[#F0524F] border border-[#F0524F]/20';
     if (s === 'pending') return 'bg-[#DAC18A]/10 text-[#DAC18A] border border-[#DAC18A]/20';
     if (s === 'in progress' || s === 'started') return 'bg-[#48477A]/10 text-[#48477A] border border-[#48477A]/20';
@@ -243,10 +243,10 @@ const fetchData = useCallback(async (forceRefresh = false) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 pt-2">
         <div className="space-y-1.5">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-none">
-            Master Lead Tracker
+            Master Contract Ledger
           </h1>
           <p className={`text-sm font-medium ${textSecondary}`}>
-            Global overview of all inquiries across the network.
+            Global overview of all active client projects across the network.
           </p>
         </div>
         <button 
@@ -261,7 +261,7 @@ const fetchData = useCallback(async (forceRefresh = false) => {
 
       {/* 2. TOP SUMMARY STATS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
-         <QuickStat label="Total Leads" count={summary.total || 0} isLight={isLight} color="bg-[#48477A]/10 text-[#48477A] border-[#48477A]/20" />
+         <QuickStat label="Total Projects" count={summary.total || 0} isLight={isLight} color="bg-[#48477A]/10 text-[#48477A] border-[#48477A]/20" />
          <QuickStat label="Pending" count={summary.pending || 0} isLight={isLight} color="bg-[#DAC18A]/10 text-[#DAC18A] border-[#DAC18A]/20" />
          <QuickStat label="In Progress" count={summary.in_progress || 0} isLight={isLight} color="bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/20" />
          <QuickStat label="Completed" count={summary.completed || 0} isLight={isLight} color="bg-[#81B398]/10 text-[#81B398] border-[#81B398]/20" />
@@ -269,11 +269,11 @@ const fetchData = useCallback(async (forceRefresh = false) => {
 
       {/* 3. ANALYTICS SUITE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-        <ChartCard title="Inquiry Growth" subtitle="Monitoring daily lead intake" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-12">
+        <ChartCard title="Project Influx" subtitle="Monitoring daily project generation." isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-12">
           <Chart options={chartConfigs.trend.options} series={chartConfigs.trend.series} type="area" height="100%" width="100%" />
         </ChartCard>
         
-        <ChartCard title="Partner Activity" subtitle="Leads across business units" isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-7">
+        <ChartCard title="Partner Activity" subtitle="Active projects across execution divisions." isLight={isLight} surfaceClass={surfaceClass} className="lg:col-span-7">
           <Chart options={chartConfigs.performance.options} series={chartConfigs.performance.series} type="bar" height="100%" width="100%" />
         </ChartCard>
         
@@ -289,7 +289,7 @@ const fetchData = useCallback(async (forceRefresh = false) => {
         <div className={`p-5 lg:p-6 border-b space-y-5 ${isLight ? 'bg-[#F4F5F7]/40 border-[#E2E8F0]' : 'bg-[#131720]/30 border-white/5'}`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-              <LayoutGrid size={18} className="text-[#81B398]" /> Lead Registry
+              <LayoutGrid size={18} className="text-[#81B398]" /> Contract Manifest
             </h3>
             <span className={`text-xs font-semibold px-3 py-1 rounded-md border ${isLight ? 'bg-[#FFFFFF] border-[#E2E8F0] text-[#718096]' : 'bg-[#1A202C] border-white/5 text-[#9CA3AF]'}`}>
               {filteredLeads.length} Records found
@@ -302,7 +302,7 @@ const fetchData = useCallback(async (forceRefresh = false) => {
               <Search size={16} className={textSecondary} />
               <input 
                 type="text"
-                placeholder="Search Customer..."
+                placeholder="Search Client..."
                 className={`w-full bg-transparent text-sm font-medium outline-none ${textPrimary} placeholder:${textSecondary}`}
                 value={customerSearch}
                 onChange={(e) => setCustomerSearch(e.target.value)}
@@ -322,7 +322,7 @@ const fetchData = useCallback(async (forceRefresh = false) => {
               >
                 <option value="All">All Statuses</option>
                 <option value="Pending">Pending</option>
-                <option value="Verified">Verified</option>
+                <option value="Approved">Approved</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
                 <option value="Rejected">Rejected</option>
@@ -352,7 +352,7 @@ const fetchData = useCallback(async (forceRefresh = false) => {
                 value={agentFilter} 
                 onChange={(e) => setAgentFilter(e.target.value)}
               >
-                <option value="All">All Agents</option>
+                <option value="All">All Partners</option>
                 {Array.from(new Set(leads.map(l => l.agentName).filter(Boolean))).map(agent => (
                   <option key={agent} value={agent}>{agent}</option>
                 ))}
@@ -366,7 +366,7 @@ const fetchData = useCallback(async (forceRefresh = false) => {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
               <Loader2 size={32} className={`animate-spin ${isLight ? 'text-[#81B398]' : 'text-[#81B398]'}`} />
-              <p className={`text-xs font-bold uppercase tracking-widest ${textSecondary}`}>Loading Leads...</p>
+              <p className={`text-xs font-bold uppercase tracking-widest ${textSecondary}`}>Loading Projects...</p>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4 text-[#F0524F]">
@@ -377,13 +377,13 @@ const fetchData = useCallback(async (forceRefresh = false) => {
           ) : filteredLeads.length === 0 ? (
             <div className={`flex flex-col items-center justify-center py-24 gap-4 ${textSecondary}`}>
               <LayoutGrid size={32} className="opacity-50" />
-              <p className="text-xs font-bold uppercase tracking-widest">No leads found</p>
+              <p className="text-xs font-bold uppercase tracking-widest">No projects found</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead>
                 <tr className={`${isLight ? 'bg-[#F4F5F7]' : 'bg-[#131720]'}`}>
-                  {['Reference', 'Customer', 'Branch', 'Agent', 'Status', 'Action'].map((h, i) => (
+                  {['Reference', 'Client', 'Division', 'Partner', 'Status', 'Action'].map((h, i) => (
                     <th key={h} className={`px-6 py-4 text-xs font-bold uppercase tracking-wider border-b ${textSecondary} ${isLight ? 'border-[#E2E8F0]' : 'border-white/5'} ${i >= 4 ? 'text-center' : ''} ${i === 5 ? 'text-right' : ''}`}>
                       {h}
                     </th>
@@ -483,7 +483,7 @@ const fetchData = useCallback(async (forceRefresh = false) => {
                     </h5>
                     <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                       <div>
-                        <span className={`text-[10px] font-semibold uppercase tracking-wider block mb-1 ${textSecondary}`}>Customer Name</span>
+                        <span className={`text-[10px] font-semibold uppercase tracking-wider block mb-1 ${textSecondary}`}>Client Name</span>
                         <span className="text-sm font-bold">{selectedLead.clientName}</span>
                       </div>
                       <div>
@@ -510,7 +510,7 @@ const fetchData = useCallback(async (forceRefresh = false) => {
                   {/* BRANCH & STATUS */}
                   <section className="grid grid-cols-2 gap-4">
                     <div className={`p-4 border rounded-xl ${isLight ? 'bg-[#F4F5F7] border-[#E2E8F0]' : 'bg-[#131720] border-transparent'}`}>
-                      <p className={`text-[10px] font-semibold uppercase tracking-wider mb-2 ${textSecondary}`}>Handling Branch</p>
+                      <p className={`text-[10px] font-semibold uppercase tracking-wider mb-2 ${textSecondary}`}>Execution Division</p>
                       <div className="flex items-center gap-2">
                         <Building2 size={16} className="text-[#81B398]" />
                         <p className="text-sm font-bold truncate">{selectedLead.businessUnit}</p>
