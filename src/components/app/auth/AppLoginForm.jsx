@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { AuthInput, ErrorMsg, SubmitBtn } from './SharedElementsApp';
 
-const AppLoginForm = ({ onSubmit, error, loading, setTab }) => {
+const AppLoginForm = ({ onSubmit, error, loading, setTab, onForgotPassword }) => {
   const [showPass, setShowPass] = useState(false);
 
   return (
@@ -39,11 +39,11 @@ const AppLoginForm = ({ onSubmit, error, loading, setTab }) => {
             Password
           </label>
           <div className="relative">
-            <AuthInput 
-              name="password" 
-              type={showPass ? 'text' : 'password'} 
-              placeholder="••••••••" 
-              required 
+            <AuthInput
+              name="password"
+              type={showPass ? 'text' : 'password'}
+              placeholder="••••••••"
+              required
               className="bg-[#18181B] border-white/10 focus:border-[#A475FF] transition-colors"
             />
             <button
@@ -52,6 +52,15 @@ const AppLoginForm = ({ onSubmit, error, loading, setTab }) => {
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-white transition-colors"
             >
               {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          <div className="flex justify-end mt-1">
+            <button
+              type="button"
+              onClick={onForgotPassword}
+              className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#6B7280] hover:text-[#A475FF] transition-colors"
+            >
+              Forgot Password?
             </button>
           </div>
         </div>

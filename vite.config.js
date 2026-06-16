@@ -43,9 +43,12 @@ export default defineConfig({
       workbox: {
         // Precache all built JS/CSS/HTML + image assets
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
+        // Never precache the FCM SW — if the PWA SW serves a stale cached
+        // copy, push subscriptions silently break in production builds.
+        globIgnores: ['firebase-messaging-sw.js'],
         // SPA fallback — serve index.html for all navigation requests
         navigateFallback: '/index.html',
-        // Don't intercept the Firebase messaging SW or Capacitor assets
+        // Don't apply the HTML fallback to the FCM SW path
         navigateFallbackDenylist: [/^\/firebase-messaging-sw\.js/],
         runtimeCaching: [
           {

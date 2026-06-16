@@ -15,6 +15,8 @@ import { supabase } from './supabase/supabaseClient';
 // --- PUBLIC PAGES ---
 import LandingPage from './pages/public/LandingPage';
 import AuthGateway from './pages/auth/AuthGateway';
+import ResetPassword from './pages/auth/ResetPassword';
+import ResetPasswordApp from './pages/auth/ResetPasswordApp';
 
 // --- ADMIN HUB & SUB-PAGES ---
 import AdminHub from "./pages/admin/AdminHub";
@@ -146,6 +148,12 @@ const AppContent = () => {
           if (session?.user) {
             await fetchUserRole(session.user.id).catch(() => {});
           }
+          break;
+
+        case 'PASSWORD_RECOVERY':
+          // User followed a password reset link — keep them on /reset-password.
+          // Do not set userRole so they aren't redirected to their dashboard.
+          if (isMountedRef.current) setIsLoading(false);
           break;
 
         case 'SIGNED_OUT':
@@ -348,6 +356,12 @@ const AppContent = () => {
             {/* <Route path="settings" element={<BusinessSettings />} /> */}
           </Route>
         )}
+
+        {/* Public — accessible with or without a session (password recovery flow) */}
+        <Route
+          path="/reset-password"
+          element={isNative ? <ResetPasswordApp /> : <ResetPassword />}
+        />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

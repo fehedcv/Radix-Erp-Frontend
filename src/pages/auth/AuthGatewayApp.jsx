@@ -8,6 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 import AppLoginForm from '../../components/app/auth/AppLoginForm';
 import AppSignupForm from '../../components/app/auth/AppSignupForm';
 import AppSuccessView from '../../components/app/auth/AppSuccessView';
+import AppForgotPasswordForm from '../../components/app/auth/AppForgotPasswordForm';
 
 const AuthGatewayApp = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
@@ -169,13 +170,18 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
         
         {/* Forms aligned directly to the center */}
         {tab === 'login' && (
-          <AppLoginForm 
+          <AppLoginForm
             onSubmit={handleLogin}
             error={loginError}
             loading={loginLoading}
-            isLight={false} 
+            isLight={false}
             setTab={setTab}
+            onForgotPassword={() => { setLoginError(''); setTab('forgot'); }}
           />
+        )}
+
+        {tab === 'forgot' && (
+          <AppForgotPasswordForm setTab={setTab} />
         )}
 
         {tab === 'signup' && (
