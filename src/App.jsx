@@ -74,14 +74,17 @@ import { cleanupPushNotifications } from './services/pushNotifications';
 import { cleanupWebPush } from './services/webPush';
 import TermsPage from './pages/auth/TermsPage';
 import PrivacyPolicyPage from './pages/auth/PrivacyPolicyPage';
+import WelcomeModal from './components/WelcomeModal';
 
 const AppContent = () => {
   const [userRole, setUserRole] = useState(null);
   const [authUserId, setAuthUserId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
   const isMountedRef = useRef(true);
   const userRoleRef = useRef(null);
   const isFetchingRoleRef = useRef(false);
+  const isCheckingFirstLoginRef = useRef(false);
   const { theme } = useTheme();
   const isNative = Capacitor.isNativePlatform();
 
@@ -194,6 +197,29 @@ const AppContent = () => {
     setAuthUserId(null);
   };
 
+  async function checkFirstLogin(userId, role) {
+    // Only show welcome for agent users
+    if (role !== 'agent') return;
+    if (!isMountedRef.current) return;
+    if (!userId) return;
+    if (isCheckingFirstLoginRef.current) return;
+    isCheckingFirstLoginRef.current = true;
+    try {
+      const { data, error } = await supabase.rpc('is_first_login');
+      if (error) {
+        console.error('is_first_login rpc error', error);
+        return;
+      }
+
+      const isFirst = data === true || (data && (data === 'true' || data.is_first_login === true));
+      if (isFirst) setShowWelcome(true);
+    } catch (err) {
+      console.error('is_first_login failed', err);
+    } finally {
+      isCheckingFirstLoginRef.current = false;
+    }
+  }
+
   const fetchUserRole = async (userId) => {
     if (isFetchingRoleRef.current) {
       console.log('[auth] fetchUserRole skipped — already in progress');
@@ -247,6 +273,11 @@ const AppContent = () => {
             name: data.full_name
           }));
         } catch {} // eslint-disable-line no-empty
+        try {
+          await checkFirstLogin(userId, role);
+        } catch (e) {
+          console.error('checkFirstLogin error', e);
+        }
       }
     } catch (err) {
       if (!isMountedRef.current) return;
@@ -290,6 +321,7 @@ const AppContent = () => {
 
       {/* In-app toast overlay for foreground notifications */}
       <NotificationToast />
+      <WelcomeModal open={showWelcome} onClose={() => setShowWelcome(false)} />
 
       <Routes>
         <Route
