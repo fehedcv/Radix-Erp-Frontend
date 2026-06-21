@@ -64,7 +64,7 @@ const BusinessHub = ({ onLogout }) => {
 
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard, path: '/business/dashboard' },
-    { id: 'leads', label: 'Active Contracts', icon: Users, path: '/business/leads' },
+    { id: 'leads', label: 'Contracts', icon: Users, path: '/business/leads' },
     { id: 'portfolio', label: 'Profile', icon: FolderEdit, path: '/business/portfolio' },
   ];
 
@@ -96,7 +96,7 @@ const BusinessHub = ({ onLogout }) => {
     }`}>
       
       {/* 1. DESKTOP SIDEBAR (Permanent Gray/Dark Theme) */}
-      <aside className="hidden lg:flex flex-col w-[260px] h-screen shrink-0 transition-all duration-300">
+      <aside className="hidden lg:flex flex-col w-[260px] h-screen shrink-0 transition-all duration-300 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         
         {/* Top Brand Logo */}
         <div className="px-6 pt-8 pb-4">
@@ -168,7 +168,7 @@ const BusinessHub = ({ onLogout }) => {
       </aside>
 
       {/* 2. MAIN CONTENT AREA (Floating Rounded Card) */}
-      <main className={`flex-1 flex flex-col min-w-0 h-screen lg:h-[calc(100vh-24px)] lg:my-3 lg:mr-3 lg:rounded-xl overflow-hidden relative shadow-2xl transition-colors duration-300 ${
+      <main className={`flex-1 flex flex-col min-w-0 h-screen lg:h-[calc(100vh-24px)] lg:my-3 lg:mr-3 lg:rounded-xl overflow-hidden relative shadow-2xl transition-colors duration-300 pt-[env(safe-area-inset-top)] ${
         isLight ? 'bg-[#F4F5F7] text-[#1A202C]' : 'bg-[#131720] text-[#F4F5F7]'
       }`}>
         
@@ -200,7 +200,7 @@ const BusinessHub = ({ onLogout }) => {
 </header>
 
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-10 pb-24 lg:pb-10">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-10 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-10">
           <div className="max-w-[1400px] mx-auto">
             <AnimatePresence mode="wait">
               <motion.div
@@ -218,7 +218,7 @@ const BusinessHub = ({ onLogout }) => {
       </main>
 
       {/* 3. MOBILE NAVIGATION */}
-      <nav className={`lg:hidden fixed bottom-0 left-0 right-0 h-[72px] flex justify-around items-center px-2 z-50 border-t transition-colors duration-300 pb-safe ${
+      <nav className={`lg:hidden fixed bottom-0 left-0 right-0 h-[calc(72px+env(safe-area-inset-bottom))] flex justify-around items-center px-2 z-50 border-t transition-colors duration-300 pb-[env(safe-area-inset-bottom)] ${
         isLight ? 'bg-[#FFFFFF] border-[#E2E8F0]' : 'bg-[#222938] border-white/5'
       }`}>
         {navItems.map((item) => {
@@ -226,7 +226,7 @@ const BusinessHub = ({ onLogout }) => {
           return (
             <NavLink 
               key={item.id} to={item.path} 
-              className={`flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${
+              className={`flex flex-col items-center justify-center w-16 h-full gap-1 pt-1 transition-colors ${
                 isActive ? 'text-[#81B398]' : (isLight ? 'text-[#718096]' : 'text-[#9CA3AF]')
               }`}
             >
@@ -239,7 +239,7 @@ const BusinessHub = ({ onLogout }) => {
         })}
         <button 
           onClick={() => setShowLogoutConfirm(true)} 
-          className={`flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${
+          className={`flex flex-col items-center justify-center w-16 h-full gap-1 pt-1 transition-colors ${
             isLight ? 'text-[#718096] hover:text-[#F0524F]' : 'text-[#9CA3AF] hover:text-[#F0524F]'
           }`}
         >
@@ -256,9 +256,9 @@ const BusinessHub = ({ onLogout }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
           >
-            <div 
+            <motion.div 
               initial={{ opacity: 0, scale: 0.95 }} 
               animate={{ opacity: 1, scale: 1 }} 
               exit={{ opacity: 0, scale: 0.95 }}
@@ -291,7 +291,7 @@ const BusinessHub = ({ onLogout }) => {
                   Confirm
                 </button>
               </div>
-            </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
