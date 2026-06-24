@@ -48,6 +48,8 @@ const DashboardOverview = () => {
           earningActivity: (data.earningActivity || []).map(val => [val])
         };
 
+        console.log("Dashboard Data:", transformedData);
+console.log("Earning Activity:", transformedData.earningActivity);
         setDashboardData(transformedData);
         setError(null);
       } catch (err) {
@@ -93,14 +95,12 @@ const DashboardOverview = () => {
     let finalChartData = [...Array(Math.max(0, 8 - extractedData.length)).fill(0), ...extractedData];
 
     const isCompletelyFlat = finalChartData.every(val => val === 0);
-    if (isCompletelyFlat) {
-      finalChartData = [5, 25, 12, 45, 30, 55, 35, 65]; 
-    }
+   
 
     // Area Chart Config
     const areaChartConfig = {
       series: [{
-        name: isCompletelyFlat ? 'Credits (Demo Data)' : 'Credits Earned',
+        name: 'Credits Earned',
         data: finalChartData
       }],
       options: {

@@ -158,14 +158,14 @@ const DashboardOverviewApp = () => {
 
     // Fallback to dummy data if chart is completely empty
     const isCompletelyFlat = finalChartData.every(val => Number(val) === 0);
-    if (isCompletelyFlat) {
-      finalChartData = [5, 25, 12, 45, 30, 55, 35, 65]; 
-    }
+    // if (isCompletelyFlat) {
+    //   finalChartData = [5, 25, 12, 45, 30, 55, 35, 65]; 
+    // }
 
     // BENTO CHART CONFIG (Using Sage Green #81B398)
     const areaChartConfig = {
       series: [{
-        name: isCompletelyFlat ? 'Credits (Demo Data)' : 'Credits Earned',
+        name:'Credits Earned',
         data: finalChartData
       }],
       options: {

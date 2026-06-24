@@ -41,12 +41,6 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
     setLoginLoading(true);
     setLoginError('');
 
-    if (!agreedToTerms) {
-      setLoginError('You must agree to the Terms & Conditions');
-      setLoginLoading(false);
-      return;
-    }
-
     const formData = new FormData(e.target);
     const email = formData.get('email');
     const password = formData.get('password');
@@ -203,8 +197,8 @@ const AuthGatewayApp = ({ onLoginSuccess }) => {
           />
         )}
 
-        {/* Terms & Conditions Checkbox (Hidden on Success Screen) */}
-        {tab !== 'success' && (
+        {/* Terms & Conditions Checkbox (ONLY VISIBLE ON SIGNUP) */}
+        {tab === 'signup' && (
           <div className="mt-5 pt-4 border-t border-white/[0.05] flex items-center justify-center gap-2 w-full">
             <input 
               type="checkbox" 

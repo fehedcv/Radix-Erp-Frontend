@@ -37,12 +37,6 @@ const AuthGateway = ({ onLoginSuccess }) => {
     setLoginLoading(true);
     setLoginError('');
 
-    if (!agreedToTerms) {
-      setLoginError('You must agree to the Terms & Conditions');
-      setLoginLoading(false);
-      return;
-    }
-
     const formData = new FormData(e.target);
     const email = formData.get('email');
     const password = formData.get('password');
@@ -118,7 +112,7 @@ const AuthGateway = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div ref={infoSideRef} className="h-[100dvh] w-full bg-[#05050A] lg:bg-black flex flex-col lg:flex-row items-center justify-center font-['Plus_Jakarta_Sans',sans-serif] overflow-hidden selection:bg-white/30 relative">
+    <div ref={infoSideRef} className="h-[100dvh] w-full bg-[#05050A] flex flex-col lg:flex-row items-center justify-center font-['Plus_Jakarta_Sans',sans-serif] overflow-hidden selection:bg-white/30 relative">
       
       <BackgroundDecorations infoSideRef={infoSideRef} />
 
@@ -184,19 +178,21 @@ const AuthGateway = ({ onLoginSuccess }) => {
               </AnimatePresence>
             </div>
 
-            {/* Terms & Conditions Checkbox */}
-            <div className="mt-5 pt-4 border-t border-white/[0.05] flex items-center gap-2 relative z-10">
-              <input 
-                type="checkbox" 
-                id="terms" 
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="w-4 h-4 cursor-pointer accent-white"
-              />
-              <label htmlFor="terms" className="text-xs text-white/60 cursor-pointer select-none">
-                I agree to the <Link to="/terms" target="_blank" className="text-white hover:underline">Terms & Conditions</Link>
-              </label>
-            </div>
+            {/* Terms & Conditions Checkbox - ONLY VISIBLE ON SIGNUP */}
+            {tab === 'signup' && (
+              <div className="mt-5 pt-4 border-t border-white/[0.05] flex items-center gap-2 relative z-10">
+                <input 
+                  type="checkbox" 
+                  id="terms" 
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="w-4 h-4 cursor-pointer accent-white"
+                />
+                <label htmlFor="terms" className="text-xs text-white/60 cursor-pointer select-none">
+                  I agree to the <Link to="/terms" target="_blank" className="text-white hover:underline">Terms & Conditions</Link>
+                </label>
+              </div>
+            )}
 
           </div>
 
